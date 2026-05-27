@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import {
   Plus, Search, Download, Copy, Printer,
   Pencil, Trash2, Link2, MessageCircle, X, Check,
-  Users, UserCheck, UserX, Clock,
+  Users, UserCheck, UserX, Clock, Upload,
 } from 'lucide-react'
+import ImportGuestsModal from '@/components/admin/ImportGuestsModal'
 
 interface Guest {
   id: string
@@ -37,9 +38,9 @@ interface Event {
 }
 
 interface Props {
-  event: Event
+  event:         Event
   initialGuests: Guest[]
-  tables: Table[]
+  tables:        Table[]
 }
 
 type ModalMode = 'add' | 'edit' | null
@@ -56,7 +57,7 @@ const RSVP_LABEL: Record<string, string> = {
   pending:   'En attente',
 }
 
-// ── MODAL COMPONENT ──────────────────────────────────────────
+// ── MODAL AJOUT / ÉDITION ─────────────────────────────────────
 function GuestModal({
   mode,
   guest,
@@ -81,7 +82,7 @@ function GuestModal({
     label:     guest?.label ?? '',
   })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
 
   const handleSubmit = async (sendWa = false) => {
     if (!form.full_name.trim()) { setError('Le nom est requis'); return }
@@ -89,10 +90,11 @@ function GuestModal({
     setError(null)
 
     const supabase = createClient()
+    const db       = supabase as any
     let result
 
     if (mode === 'add') {
-      result = await supabase.from('guests').insert({
+      result = await db.from('guests').insert({
         event_id:  eventId,
         full_name: form.full_name.trim(),
         phone:     form.phone.trim(),
@@ -102,7 +104,7 @@ function GuestModal({
         label:     form.label.trim(),
       })
     } else {
-      result = await supabase.from('guests').update({
+      result = await db.from('guests').update({
         full_name: form.full_name.trim(),
         phone:     form.phone.trim(),
         table_id:  form.table_id || null,
@@ -118,67 +120,67 @@ function GuestModal({
       return
     }
 
-    if (sendWa) {
-      alert('WhatsApp — bientôt disponible !')
-    }
+    if (sendWa) alert('WhatsApp — bientôt disponible !')
 
     setLoading(false)
     onSuccess()
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '11px 14px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    width:        '100%',
+    padding:      '11px 14px',
+    background:   'rgba(255,255,255,0.04)',
+    border:       '1px solid rgba(255,255,255,0.1)',
     borderRadius: '10px',
-    color: 'white',
-    fontFamily: 'var(--font-body)',
-    fontSize: '0.88rem',
-    outline: 'none',
+    color:        'white',
+    fontFamily:   'var(--font-body)',
+    fontSize:     '0.88rem',
+    outline:      'none',
   }
 
   const labelStyle: React.CSSProperties = {
-    display: 'block',
-    fontSize: '0.65rem',
+    display:       'block',
+    fontSize:      '0.65rem',
     letterSpacing: '0.2em',
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.35)',
-    marginBottom: '6px',
+    color:         'rgba(255,255,255,0.35)',
+    marginBottom:  '6px',
   }
 
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
+        position:       'fixed',
+        inset:          0,
+        background:     'rgba(0,0,0,0.7)',
+        zIndex:         1000,
+        display:        'flex',
+        alignItems:     'center',
         justifyContent: 'center',
-        padding: '24px',
+        padding:        '24px',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '480px',
-          background: '#141210',
-          border: '1px solid rgba(201,169,110,0.2)',
-          borderRadius: '24px',
-          padding: '32px',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-        }}
-      >
-        {/* Header modal */}
+      <div style={{
+        width:        '100%',
+        maxWidth:     '480px',
+        background:   '#141210',
+        border:       '1px solid rgba(201,169,110,0.2)',
+        borderRadius: '24px',
+        padding:      '32px',
+        maxHeight:    '90vh',
+        overflowY:    'auto',
+      }}>
+
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 300, color: 'white' }}>
             {mode === 'add' ? 'Nouvel invité' : 'Modifier l\'invité'}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}
+          >
             <X size={20} />
           </button>
         </div>
@@ -279,22 +281,22 @@ function GuestModal({
               onClick={() => handleSubmit(false)}
               disabled={loading}
               style={{
-                flex: 1,
-                padding: '14px',
-                borderRadius: '100px',
-                border: '1px solid rgba(201,169,110,0.5)',
-                background: 'rgba(201,169,110,0.1)',
-                color: 'var(--gold-light)',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.78rem',
+                flex:          1,
+                padding:       '14px',
+                borderRadius:  '100px',
+                border:        '1px solid rgba(201,169,110,0.5)',
+                background:    'rgba(201,169,110,0.1)',
+                color:         'var(--gold-light)',
+                fontFamily:    'var(--font-body)',
+                fontSize:      '0.78rem',
                 letterSpacing: '0.15em',
                 textTransform: 'uppercase',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.6 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
+                cursor:        loading ? 'not-allowed' : 'pointer',
+                opacity:       loading ? 0.6 : 1,
+                display:       'flex',
+                alignItems:    'center',
+                justifyContent:'center',
+                gap:           '6px',
               }}
             >
               <Check size={14} />
@@ -305,17 +307,17 @@ function GuestModal({
               disabled
               title="Bientôt disponible"
               style={{
-                padding: '14px 20px',
+                padding:      '14px 20px',
                 borderRadius: '100px',
-                border: '1px solid rgba(255,255,255,0.08)',
-                background: 'transparent',
-                color: 'rgba(255,255,255,0.2)',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.78rem',
-                cursor: 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
+                border:       '1px solid rgba(255,255,255,0.08)',
+                background:   'transparent',
+                color:        'rgba(255,255,255,0.2)',
+                fontFamily:   'var(--font-body)',
+                fontSize:     '0.78rem',
+                cursor:       'not-allowed',
+                display:      'flex',
+                alignItems:   'center',
+                gap:          '6px',
               }}
             >
               <MessageCircle size={14} />
@@ -330,12 +332,13 @@ function GuestModal({
 
 // ── PAGE PRINCIPALE ───────────────────────────────────────────
 export default function GuestsClient({ event, initialGuests, tables }: Props) {
-  const [guests, setGuests] = useState<Guest[]>(initialGuests)
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'ALL' | 'HOMME' | 'FEMME'>('ALL')
-  const [modalMode, setModalMode] = useState<ModalMode>(null)
+  const [guests, setGuests]             = useState<Guest[]>(initialGuests)
+  const [search, setSearch]             = useState('')
+  const [filter, setFilter]             = useState<'ALL' | 'HOMME' | 'FEMME'>('ALL')
+  const [modalMode, setModalMode]       = useState<ModalMode>(null)
   const [editingGuest, setEditingGuest] = useState<Guest | undefined>()
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [showImport, setShowImport]     = useState(false)
 
   // Stats
   const total     = guests.length
@@ -359,7 +362,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
   const reload = async () => {
     const supabase = createClient()
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('guests')
       .select('*, guest_tables(name,category), rsvp_responses(status)')
       .eq('event_id', event.id)
@@ -369,7 +372,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
   const handleDelete = async (guestId: string) => {
     const supabase = createClient()
-    await supabase.from('guests').delete().eq('id', guestId)
+    await (supabase as any).from('guests').delete().eq('id', guestId)
     setDeleteConfirm(null)
     await reload()
   }
@@ -392,30 +395,30 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     ])
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
     a.download = 'invites-' + event.groom_name + '-' + event.bride_name + '.csv'
     a.click()
   }
 
   const cellStyle: React.CSSProperties = {
-    padding: '14px 16px',
-    fontSize: '0.85rem',
-    color: 'rgba(255,255,255,0.75)',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
-    whiteSpace: 'nowrap',
+    padding:       '14px 16px',
+    fontSize:      '0.85rem',
+    color:         'rgba(255,255,255,0.75)',
+    borderBottom:  '1px solid rgba(255,255,255,0.04)',
+    whiteSpace:    'nowrap',
   }
 
   const thStyle: React.CSSProperties = {
-    padding: '12px 16px',
-    fontSize: '0.65rem',
+    padding:       '12px 16px',
+    fontSize:      '0.65rem',
     letterSpacing: '0.2em',
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.3)',
-    textAlign: 'left',
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-    whiteSpace: 'nowrap',
+    color:         'rgba(255,255,255,0.3)',
+    textAlign:     'left',
+    borderBottom:  '1px solid rgba(255,255,255,0.08)',
+    whiteSpace:    'nowrap',
   }
 
   return (
@@ -431,7 +434,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         </h1>
       </div>
 
-      {/* Stats cards */}
+      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '32px' }}>
         {[
           { icon: Users,     label: 'Total',      value: total,     color: 'rgba(255,255,255,0.7)' },
@@ -442,10 +445,10 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           <div
             key={i}
             style={{
-              padding: '20px',
+              padding:    '20px',
               background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '16px',
+              border:     '1px solid rgba(255,255,255,0.06)',
+              borderRadius:'16px',
             }}
           >
             <stat.icon size={18} color={stat.color} style={{ marginBottom: '10px' }} />
@@ -464,21 +467,30 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
         {/* Recherche */}
         <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
-          <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
+          <Search
+            size={14}
+            style={{
+              position:  'absolute',
+              left:      '12px',
+              top:       '50%',
+              transform: 'translateY(-50%)',
+              color:     'rgba(255,255,255,0.3)',
+            }}
+          />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher nom, téléphone, table..."
             style={{
-              width: '100%',
-              padding: '10px 12px 10px 36px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              width:        '100%',
+              padding:      '10px 12px 10px 36px',
+              background:   'rgba(255,255,255,0.04)',
+              border:       '1px solid rgba(255,255,255,0.08)',
               borderRadius: '10px',
-              color: 'white',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.85rem',
-              outline: 'none',
+              color:        'white',
+              fontFamily:   'var(--font-body)',
+              fontSize:     '0.85rem',
+              outline:      'none',
             }}
           />
         </div>
@@ -490,14 +502,14 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
               key={f}
               onClick={() => setFilter(f)}
               style={{
-                padding: '8px 16px',
+                padding:      '8px 16px',
                 borderRadius: '8px',
-                border: filter === f ? '1px solid rgba(201,169,110,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                background: filter === f ? 'rgba(201,169,110,0.1)' : 'transparent',
-                color: filter === f ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)',
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
+                border:       filter === f ? '1px solid rgba(201,169,110,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                background:   filter === f ? 'rgba(201,169,110,0.1)' : 'transparent',
+                color:        filter === f ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)',
+                fontSize:     '0.78rem',
+                cursor:       'pointer',
+                transition:   'all 0.2s ease',
               }}
             >
               {f === 'ALL' ? 'Tous' : f === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
@@ -505,8 +517,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           ))}
         </div>
 
-        {/* Export + Ajouter */}
-        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+        {/* Actions export */}
+        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', flexWrap: 'wrap' }}>
           <button
             onClick={() => navigator.clipboard.writeText(filtered.map(g => g.full_name).join('\n'))}
             title="Copier les noms"
@@ -516,7 +528,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </button>
           <button
             onClick={exportCSV}
-            title="Exporter CSV"
             style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
           >
             <Download size={13} /> CSV
@@ -528,20 +539,40 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
             <Printer size={13} /> Print
           </button>
 
+          {/* Import CSV */}
+          <button
+            onClick={() => setShowImport(true)}
+            style={{
+              padding:      '8px 16px',
+              borderRadius: '8px',
+              border:       '1px solid rgba(255,255,255,0.15)',
+              background:   'rgba(255,255,255,0.05)',
+              color:        'rgba(255,255,255,0.6)',
+              cursor:       'pointer',
+              display:      'flex',
+              alignItems:   'center',
+              gap:          '6px',
+              fontSize:     '0.82rem',
+            }}
+          >
+            <Upload size={14} /> Importer CSV
+          </button>
+
+          {/* Ajouter */}
           <button
             onClick={() => { setEditingGuest(undefined); setModalMode('add') }}
             style={{
-              padding: '8px 18px',
+              padding:      '8px 18px',
               borderRadius: '8px',
-              border: '1px solid rgba(201,169,110,0.5)',
-              background: 'rgba(201,169,110,0.1)',
-              color: 'var(--gold-light)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.82rem',
-              letterSpacing: '0.05em',
+              border:       '1px solid rgba(201,169,110,0.5)',
+              background:   'rgba(201,169,110,0.1)',
+              color:        'var(--gold-light)',
+              cursor:       'pointer',
+              display:      'flex',
+              alignItems:   'center',
+              gap:          '6px',
+              fontSize:     '0.82rem',
+              letterSpacing:'0.05em',
             }}
           >
             <Plus size={15} /> Ajouter un invité
@@ -569,14 +600,16 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ ...cellStyle, textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)' }}>
-                    Aucun invité trouvé
+                    {search || filter !== 'ALL' ? 'Aucun invité trouvé' : 'Aucun invité — importez une liste ou ajoutez manuellement'}
                   </td>
                 </tr>
               ) : (
                 filtered.map(guest => {
                   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
                   return (
-                    <tr key={guest.id} style={{ transition: 'background 0.15s' }}
+                    <tr
+                      key={guest.id}
+                      style={{ transition: 'background 0.15s' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                     >
@@ -584,24 +617,25 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         <span style={{ color: 'white', fontWeight: 500 }}>{guest.full_name}</span>
                       </td>
                       <td style={cellStyle}>
-                        {guest.guest_tables?.name
-                          ? <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontSize: '0.78rem' }}>
-                              {guest.guest_tables.name}
-                            </span>
-                          : <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem' }}>—</span>
-                        }
+                        {guest.guest_tables?.name ? (
+                          <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontSize: '0.78rem' }}>
+                            {guest.guest_tables.name}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem' }}>—</span>
+                        )}
                       </td>
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.5)' }}>
                         {guest.phone || '—'}
                       </td>
                       <td style={cellStyle}>
                         <span style={{
-                          padding: '3px 10px',
-                          borderRadius: '6px',
-                          fontSize: '0.72rem',
-                          letterSpacing: '0.1em',
+                          padding:    '3px 10px',
+                          borderRadius:'6px',
+                          fontSize:   '0.72rem',
+                          letterSpacing:'0.1em',
                           background: guest.side === 'HOMME' ? 'rgba(100,149,237,0.1)' : 'rgba(255,182,193,0.1)',
-                          color: guest.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1',
+                          color:      guest.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1',
                         }}>
                           {guest.side === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
                         </span>
@@ -613,18 +647,18 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                       </td>
                       <td style={cellStyle}>
                         <span style={{
-                          color: RSVP_COLOR[rsvpStatus],
-                          fontSize: '0.82rem',
+                          color:   RSVP_COLOR[rsvpStatus],
+                          fontSize:'0.82rem',
                           display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
+                          alignItems:'center',
+                          gap:     '6px',
                         }}>
                           <span style={{
-                            width: '6px',
-                            height: '6px',
+                            width:        '6px',
+                            height:       '6px',
                             borderRadius: '50%',
-                            background: RSVP_COLOR[rsvpStatus],
-                            flexShrink: 0,
+                            background:   RSVP_COLOR[rsvpStatus],
+                            flexShrink:   0,
                           }} />
                           {RSVP_LABEL[rsvpStatus]}
                         </span>
@@ -642,7 +676,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           >
                             <Link2 size={13} />
                           </button>
-                          {/* WhatsApp (bientôt) */}
+                          {/* WhatsApp */}
                           <button
                             disabled
                             title="WhatsApp — bientôt"
@@ -662,7 +696,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           {deleteConfirm === guest.id ? (
                             <button
                               onClick={() => handleDelete(guest.id)}
-                              title="Confirmer suppression"
                               style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.4)', background: 'rgba(184,80,96,0.15)', color: '#E89AA6', cursor: 'pointer', fontSize: '0.72rem' }}
                             >
                               Confirmer
@@ -695,7 +728,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal ajout/édition */}
       {modalMode && (
         <GuestModal
           mode={modalMode}
@@ -706,6 +739,19 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           onSuccess={async () => {
             setModalMode(null)
             setEditingGuest(undefined)
+            await reload()
+          }}
+        />
+      )}
+
+      {/* Modal import CSV */}
+      {showImport && (
+        <ImportGuestsModal
+          eventId={event.id}
+          tables={tables}
+          onClose={() => setShowImport(false)}
+          onSuccess={async () => {
+            setShowImport(false)
             await reload()
           }}
         />
