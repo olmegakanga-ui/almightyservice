@@ -1,26 +1,291 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-script: 'Great Vibes', cursive;
+
+  --gold: #C9A96E;
+  --gold-light: #E8D5B0;
+  --gold-dark: #8B6914;
+  --gold-subtle: rgba(201, 169, 110, 0.12);
+  --gold-border: rgba(201, 169, 110, 0.25);
+  --gold-border-strong: rgba(201, 169, 110, 0.5);
+
+  --ivory: #FAF7F2;
+  --slate-900: #0D0B09;
+  --slate-800: #1A1614;
+  --slate-700: #2D2926;
+
+  --glass-bg: rgba(10, 8, 6, 0.45);
+  --glass-bg-light: rgba(10, 8, 6, 0.25);
+  --glass-blur: blur(20px);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  background: var(--slate-900);
+  color: white;
+  overflow-x: hidden;
 }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+/* ─── GLASS VARIANTS ─── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--gold-border);
+}
+
+.glass-light {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--gold-border);
+}
+
+.glass-strong {
+  background: rgba(10, 8, 6, 0.7);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--gold-border-strong);
+}
+
+/* ─── DIVIDER GOLD ─── */
+.divider-gold {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 0 auto;
+}
+
+.divider-gold-left {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+
+/* ─── TYPOGRAPHY ─── */
+.font-display { font-family: var(--font-display); }
+.font-script  { font-family: var(--font-script); }
+
+.label-overline {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  opacity: 0.65;
+}
+
+/* ─── GOLD BUTTON ─── */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 32px;
+  border-radius: 100px;
+  border: 1px solid var(--gold-border-strong);
+  background: rgba(201, 169, 110, 0.1);
+  color: var(--gold-light);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-gold:hover {
+  background: rgba(201, 169, 110, 0.2);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: transparent;
+  color: rgba(255,255,255,0.45);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-ghost:hover {
+  border-color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.7);
+}
+
+/* ─── ANIMATIONS ─── */
+
+/* Fade up — entrée premium */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Fade in simple */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Reveal texte — masque glissant */
+@keyframes revealText {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0% 0 0); }
+}
+
+/* Ligne qui s'étire */
+@keyframes expandLine {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Pulse doré discret */
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,169,110,0); }
+  50%      { box-shadow: 0 0 0 8px rgba(201,169,110,0.08); }
+}
+
+/* Flèche qui rebondit */
+@keyframes bounceArrow {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50%      { transform: translateY(8px); opacity: 0.4; }
+}
+
+/* Compte à rebours — flip chiffre */
+@keyframes flipIn {
+  from { transform: rotateX(-90deg); opacity: 0; }
+  to   { transform: rotateX(0deg); opacity: 1; }
+}
+
+/* Shimmer sur les cards */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Grain cinématique */
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10%      { transform: translate(-2%, -3%); }
+  20%      { transform: translate(3%, 2%); }
+  30%      { transform: translate(-1%, 4%); }
+  40%      { transform: translate(4%, -1%); }
+  50%      { transform: translate(-3%, 3%); }
+  60%      { transform: translate(2%, -4%); }
+  70%      { transform: translate(-4%, 1%); }
+  80%      { transform: translate(3%, -2%); }
+  90%      { transform: translate(-2%, 4%); }
+}
+
+/* Classes utilitaires d'animation */
+.animate-fade-up {
+  animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 1.2s ease both;
+}
+
+.animate-bounce-arrow {
+  animation: bounceArrow 2s ease-in-out infinite;
+}
+
+.animate-expand-line {
+  animation: expandLine 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: left;
+}
+
+/* Delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-800 { animation-delay: 0.8s; }
+
+/* ─── GRAIN OVERLAY ─── */
+.grain-overlay::after {
+  content: '';
+  position: fixed;
+  inset: -200%;
+  width: 400%;
+  height: 400%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.032;
+  pointer-events: none;
+  z-index: 5;
+  animation: grain 8s steps(10) infinite;
+}
+
+/* ─── SECTION WRAPPER ─── */
+.section-premium {
+  position: relative;
+  padding: 120px 24px;
+}
+
+.section-premium-sm {
+  position: relative;
+  padding: 80px 24px;
+}
+
+/* ─── GOLD LINE ACCENT ─── */
+.gold-line-accent {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+  border-radius: 2px;
+}
+
+/* ─── INTERSECTION OBSERVER helper ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+.reveal-delay-5 { transition-delay: 0.5s; }
