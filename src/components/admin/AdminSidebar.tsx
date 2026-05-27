@@ -1,12 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Users, Table2,
   Wine, BookOpen, Heart, LogOut,
-  ChevronLeft, QrCode, CheckSquare, Map,
+  ChevronLeft, QrCode, CheckSquare, Map, Menu, X,
 } from 'lucide-react'
 
 const eventNavItems = [
@@ -21,8 +22,9 @@ const eventNavItems = [
 ]
 
 export default function AdminSidebar() {
-  const pathname = usePathname()
-  const router   = useRouter()
+  const pathname  = usePathname()
+  const router    = useRouter()
+  const [open, setOpen] = useState(false)
 
   const match   = pathname.match(/\/admin\/events\/([^/]+)/)
   const eventId = match?.[1]
@@ -48,31 +50,47 @@ export default function AdminSidebar() {
     cursor: 'pointer',
   })
 
-  return (
-    <aside style={{
-      width: '240px',
-      minHeight: '100vh',
-      background: 'rgba(255,255,255,0.02)',
-      borderRight: '1px solid rgba(201,169,110,0.1)',
-      padding: '32px 16px',
+  const sidebarContent = (
+    <div style={{
       display: 'flex',
       flexDirection: 'column',
-      flexShrink: 0,
+      height: '100%',
+      padding: '32px 16px',
     }}>
-
       {/* Logo */}
-      <div style={{ padding: '0 8px 32px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '24px' }}>
-        <p style={{ fontFamily: 'var(--font-script)', fontSize: '1.5rem', color: 'var(--gold)' }}>
-          AlmightyService
-        </p>
-        <p style={{ fontSize: '0.6rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', marginTop: '2px' }}>
-          Admin
-        </p>
+      <div style={{
+        padding: '0 8px 32px',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        marginBottom: '24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <div>
+          <p style={{ fontFamily: 'var(--font-script)', fontSize: '1.5rem', color: 'var(--gold)' }}>
+            AlmightyService
+          </p>
+          <p style={{ fontSize: '0.6rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', marginTop: '2px' }}>
+            Admin
+          </p>
+        </div>
+        {/* Bouton fermer sur mobile */}
+        <button
+          onClick={() => setOpen(false)}
+          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'block' }}
+          className="lg-hide"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* Nav principal */}
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <Link href="/admin/events" style={linkStyle(pathname === '/admin/events')}>
+        <Link
+          href="/admin/events"
+          style={linkStyle(pathname === '/admin/events')}
+          onClick={() => setOpen(false)}
+        >
           <LayoutDashboard size={16} />
           Mes mariages
         </Link>
@@ -83,7 +101,17 @@ export default function AdminSidebar() {
         <div style={{ marginTop: '32px' }}>
           <Link
             href="/admin/events"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem', textDecoration: 'none', marginBottom: '16px', padding: '0 8px' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: 'rgba(255,255,255,0.3)',
+              fontSize: '0.72rem',
+              textDecoration: 'none',
+              marginBottom: '16px',
+              padding: '0 8px',
+            }}
+            onClick={() => setOpen(false)}
           >
             <ChevronLeft size={12} />
             Tous les mariages
@@ -98,7 +126,7 @@ export default function AdminSidebar() {
               const href   = '/admin/events/' + eventId + '/' + item.slug
               const active = pathname === href
               return (
-                <Link key={item.slug} href={href} style={linkStyle(active)}>
+                <Link key={item.slug} href={href} style={linkStyle(active)} onClick={() => setOpen(false)}>
                   <item.icon size={16} />
                   {item.label}
                 </Link>
@@ -115,7 +143,7 @@ export default function AdminSidebar() {
               const href   = '/admin/events/' + eventId + '/' + item.slug
               const active = pathname === href
               return (
-                <Link key={item.slug} href={href} style={linkStyle(active)}>
+                <Link key={item.slug} href={href} style={linkStyle(active)} onClick={() => setOpen(false)}>
                   <item.icon size={16} />
                   {item.label}
                 </Link>
@@ -134,6 +162,99 @@ export default function AdminSidebar() {
         <LogOut size={16} />
         Se déconnecter
       </button>
-    </aside>
+    </div>
+  )
+
+  return (
+    <>
+      {/* ── DESKTOP : sidebar fixe ── */}
+      <aside
+        style={{
+          width: '240px',
+          minHeight: '100vh',
+          background: 'rgba(255,255,255,0.02)',
+          borderRight: '1px solid rgba(201,169,110,0.1)',
+          flexShrink: 0,
+          display: 'none',
+        }}
+        className="desktop-sidebar"
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* ── MOBILE : bouton hamburger ── */}
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          position: 'fixed',
+          top: '16px',
+          left: '16px',
+          zIndex: 200,
+          background: 'rgba(13,11,9,0.9)',
+          border: '1px solid rgba(201,169,110,0.3)',
+          borderRadius: '10px',
+          padding: '10px',
+          cursor: 'pointer',
+          display: 'none',
+          color: 'var(--gold)',
+        }}
+        className="mobile-menu-btn"
+      >
+        <Menu size={20} />
+      </button>
+
+      {/* ── MOBILE : drawer overlay ── */}
+      {open && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 300,
+            display: 'flex',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}
+        >
+          {/* Overlay sombre */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+          }} />
+
+          {/* Drawer */}
+          <div style={{
+            position: 'relative',
+            width: '280px',
+            height: '100vh',
+            background: '#0D0B09',
+            borderRight: '1px solid rgba(201,169,110,0.15)',
+            overflowY: 'auto',
+            zIndex: 1,
+          }}>
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+
+      {/* CSS responsive */}
+      <style>{`
+        @media (min-width: 768px) {
+          .desktop-sidebar {
+            display: block !important;
+          }
+          .mobile-menu-btn {
+            display: none !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .desktop-sidebar {
+            display: none !important;
+          }
+          .mobile-menu-btn {
+            display: flex !important;
+          }
+        }
+      `}</style>
+    </>
   )
 }
