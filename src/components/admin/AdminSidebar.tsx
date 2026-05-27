@@ -8,19 +8,20 @@ import {
   LayoutDashboard, Users, Table2,
   Wine, BookOpen, Heart, LogOut,
   ChevronLeft, QrCode, CheckSquare,
-  Map, Menu, X, MessageCircle,
+  Map, Menu, X, MessageCircle, Settings,
 } from 'lucide-react'
 
 const eventNavItems = [
-  { icon: Users,          label: 'Invités',       slug: 'guests' },
-  { icon: Table2,         label: 'Tables',        slug: 'tables' },
-  { icon: Wine,           label: 'Boissons',      slug: 'drinks' },
-  { icon: BookOpen,       label: "Livre d'or",    slug: 'guestbook' },
-  { icon: Heart,          label: 'Réactions',     slug: 'reactions' },
-  { icon: MessageCircle,  label: 'WhatsApp',      slug: 'whatsapp' },
-  { icon: QrCode,         label: 'Scanner QR',    slug: 'scan' },
-  { icon: CheckSquare,    label: 'Check-in',      slug: 'checkin' },
-  { icon: Map,            label: 'Plan de salle', slug: 'seating' },
+  { icon: Settings,      label: 'Paramètres',    slug: 'settings' },
+  { icon: Users,         label: 'Invités',        slug: 'guests' },
+  { icon: Table2,        label: 'Tables',         slug: 'tables' },
+  { icon: Wine,          label: 'Boissons',       slug: 'drinks' },
+  { icon: BookOpen,      label: "Livre d'or",     slug: 'guestbook' },
+  { icon: Heart,         label: 'Réactions',      slug: 'reactions' },
+  { icon: MessageCircle, label: 'WhatsApp',       slug: 'whatsapp' },
+  { icon: QrCode,        label: 'Scanner QR',     slug: 'scan' },
+  { icon: CheckSquare,   label: 'Check-in',       slug: 'checkin' },
+  { icon: Map,           label: 'Plan de salle',  slug: 'seating' },
 ]
 
 export default function AdminSidebar() {
@@ -53,19 +54,29 @@ export default function AdminSidebar() {
   })
 
   const sidebarContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '32px 16px' }}>
+    <div style={{
+      display:        'flex',
+      flexDirection:  'column',
+      height:         '100%',
+      padding:        '32px 16px',
+      overflowY:      'auto',
+    }}>
 
       {/* Logo */}
       <div style={{
-        padding:       '0 8px 32px',
-        borderBottom:  '1px solid rgba(255,255,255,0.06)',
-        marginBottom:  '24px',
-        display:       'flex',
-        justifyContent:'space-between',
-        alignItems:    'center',
+        padding:        '0 8px 32px',
+        borderBottom:   '1px solid rgba(255,255,255,0.06)',
+        marginBottom:   '24px',
+        display:        'flex',
+        justifyContent: 'space-between',
+        alignItems:     'center',
       }}>
         <div>
-          <p style={{ fontFamily: 'var(--font-script)', fontSize: '1.5rem', color: 'var(--gold)' }}>
+          <p style={{
+            fontFamily: 'var(--font-script)',
+            fontSize:   '1.5rem',
+            color:      'var(--gold)',
+          }}>
             AlmightyService
           </p>
           <p style={{
@@ -78,9 +89,11 @@ export default function AdminSidebar() {
             Admin
           </p>
         </div>
-        {/* Bouton fermer sur mobile */}
+
+        {/* Bouton fermer mobile */}
         <button
           onClick={() => setOpen(false)}
+          className="sidebar-close-btn"
           style={{
             background: 'none',
             border:     'none',
@@ -88,7 +101,6 @@ export default function AdminSidebar() {
             cursor:     'pointer',
             padding:    '4px',
           }}
-          className="sidebar-close-btn"
         >
           <X size={20} />
         </button>
@@ -138,8 +150,13 @@ export default function AdminSidebar() {
           }}>
             Gestion
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '16px' }}>
-            {eventNavItems.slice(0, 6).map(item => {
+          <div style={{
+            display:       'flex',
+            flexDirection: 'column',
+            gap:           '3px',
+            marginBottom:  '16px',
+          }}>
+            {eventNavItems.slice(0, 7).map(item => {
               const href   = '/admin/events/' + eventId + '/' + item.slug
               const active = pathname === href
               return (
@@ -168,7 +185,7 @@ export default function AdminSidebar() {
             Jour J
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            {eventNavItems.slice(6).map(item => {
+            {eventNavItems.slice(7).map(item => {
               const href   = '/admin/events/' + eventId + '/' + item.slug
               const active = pathname === href
               return (
@@ -198,6 +215,7 @@ export default function AdminSidebar() {
           background: 'none',
           width:      '100%',
           cursor:     'pointer',
+          marginTop:  '16px',
         }}
       >
         <LogOut size={16} />
@@ -212,12 +230,12 @@ export default function AdminSidebar() {
       <aside
         className="desktop-sidebar"
         style={{
-          width:        '240px',
-          minHeight:    '100vh',
-          background:   'rgba(255,255,255,0.02)',
-          borderRight:  '1px solid rgba(201,169,110,0.1)',
-          flexShrink:   0,
-          display:      'none',
+          width:       '240px',
+          minHeight:   '100vh',
+          background:  'rgba(255,255,255,0.02)',
+          borderRight: '1px solid rgba(201,169,110,0.1)',
+          flexShrink:  0,
+          display:     'none',
         }}
       >
         {sidebarContent}
@@ -228,17 +246,17 @@ export default function AdminSidebar() {
         onClick={() => setOpen(true)}
         className="mobile-menu-btn"
         style={{
-          position:   'fixed',
-          top:        '16px',
-          left:       '16px',
-          zIndex:     200,
-          background: 'rgba(13,11,9,0.9)',
-          border:     '1px solid rgba(201,169,110,0.3)',
-          borderRadius:'10px',
-          padding:    '10px',
-          cursor:     'pointer',
-          display:    'none',
-          color:      'var(--gold)',
+          position:     'fixed',
+          top:          '16px',
+          left:         '16px',
+          zIndex:       200,
+          background:   'rgba(13,11,9,0.9)',
+          border:       '1px solid rgba(201,169,110,0.3)',
+          borderRadius: '10px',
+          padding:      '10px',
+          cursor:       'pointer',
+          display:      'none',
+          color:        'var(--gold)',
         }}
       >
         <Menu size={20} />
