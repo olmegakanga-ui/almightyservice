@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Plus } from 'lucide-react'
 
 interface Event {
   id: string
@@ -21,13 +22,13 @@ function formatDate(iso: string) {
 }
 
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState<Event[]>([])
+  const [events, setEvents]   = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('events')
         .select('*')
         .order('event_date', { ascending: true })
@@ -37,7 +38,7 @@ export default function AdminEventsPage() {
     load()
   }, [])
 
-  const sections = ['guests', 'tables', 'drinks', 'guestbook', 'reactions']
+  const sections = ['guests', 'tables', 'drinks', 'guestbook', 'reactions', 'whatsapp']
 
   if (loading) {
     return (
@@ -53,49 +54,115 @@ export default function AdminEventsPage() {
     <div style={{ padding: '48px 40px' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: '40px' }}>
-        <p style={{
-          fontSize: '0.65rem',
-          letterSpacing: '0.35em',
-          textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.3)',
-          marginBottom: '8px',
-        }}>
-          AlmightyService
-        </p>
-        <h1 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '2.5rem',
-          fontWeight: 300,
-          color: 'white',
-        }}>
-          Mes Mariages
-        </h1>
+      <div style={{
+        marginBottom:   '40px',
+        display:        'flex',
+        justifyContent: 'space-between',
+        alignItems:     'flex-start',
+        flexWrap:       'wrap',
+        gap:            '16px',
+      }}>
+        <div>
+          <p style={{
+            fontSize:      '0.65rem',
+            letterSpacing: '0.35em',
+            textTransform: 'uppercase',
+            color:         'rgba(255,255,255,0.3)',
+            marginBottom:  '8px',
+          }}>
+            AlmightyService
+          </p>
+          <h1 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize:   '2.5rem',
+            fontWeight: 300,
+            color:      'white',
+          }}>
+            Mes Mariages
+          </h1>
+        </div>
+
+        <Link
+          href="/admin/events/new"
+          style={{
+            display:        'inline-flex',
+            alignItems:     'center',
+            gap:            '8px',
+            padding:        '14px 24px',
+            borderRadius:   '100px',
+            border:         '1px solid rgba(201,169,110,0.5)',
+            background:     'rgba(201,169,110,0.1)',
+            color:          'var(--gold-light)',
+            textDecoration: 'none',
+            fontFamily:     'var(--font-body)',
+            fontSize:       '0.85rem',
+            letterSpacing:  '0.1em',
+          }}
+        >
+          <Plus size={15} /> Nouveau mariage
+        </Link>
       </div>
 
-      {/* Grid */}
+      {/* Liste vide */}
+      {events.length === 0 && (
+        <div style={{
+          textAlign:    'center',
+          padding:      '80px 24px',
+          background:   'rgba(255,255,255,0.02)',
+          border:       '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '20px',
+        }}>
+          <p style={{
+            fontFamily: 'var(--font-display)',
+            fontSize:   '1.5rem',
+            color:      'rgba(255,255,255,0.3)',
+            marginBottom: '16px',
+          }}>
+            Aucun mariage créé
+          </p>
+          <Link
+            href="/admin/events/new"
+            style={{
+              display:        'inline-flex',
+              alignItems:     'center',
+              gap:            '8px',
+              padding:        '14px 28px',
+              borderRadius:   '100px',
+              border:         '1px solid rgba(201,169,110,0.4)',
+              background:     'rgba(201,169,110,0.1)',
+              color:          'var(--gold-light)',
+              textDecoration: 'none',
+              fontSize:       '0.85rem',
+            }}
+          >
+            <Plus size={15} /> Créer votre premier mariage
+          </Link>
+        </div>
+      )}
+
+      {/* Grid events */}
       <div style={{
-        display: 'grid',
+        display:             'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-        gap: '20px',
+        gap:                 '20px',
       }}>
         {events.map(event => (
           <div
             key={event.id}
             style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(201,169,110,0.15)',
+              background:   'rgba(255,255,255,0.03)',
+              border:       '1px solid rgba(201,169,110,0.15)',
               borderRadius: '20px',
-              overflow: 'hidden',
-              transition: 'all 0.3s ease',
+              overflow:     'hidden',
+              transition:   'all 0.3s ease',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.border = '1px solid rgba(201,169,110,0.4)'
-              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.border      = '1px solid rgba(201,169,110,0.4)'
+              e.currentTarget.style.transform   = 'translateY(-2px)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.border = '1px solid rgba(201,169,110,0.15)'
-              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.border      = '1px solid rgba(201,169,110,0.15)'
+              e.currentTarget.style.transform   = 'translateY(0)'
             }}
           >
             {/* Image */}
@@ -104,96 +171,93 @@ export default function AdminEventsPage() {
               style={{ textDecoration: 'none', display: 'block' }}
             >
               <div style={{
-                height: '140px',
-                backgroundImage: 'url(' + event.background_image_url + ')',
-                backgroundSize: 'cover',
+                height:          '140px',
+                backgroundImage: 'url(' + (event.background_image_url || 'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=800&q=80') + ')',
+                backgroundSize:  'cover',
                 backgroundPosition: 'center',
-                position: 'relative',
+                position:        'relative',
               }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'rgba(13,11,9,0.5)' }} />
                 <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
+                  position:       'absolute',
+                  inset:          0,
+                  display:        'flex',
+                  alignItems:     'center',
                   justifyContent: 'center',
                 }}>
-                  <p style={{
-                    fontFamily: 'var(--font-script)',
-                    fontSize: '2rem',
-                    color: 'white',
-                  }}>
+                  <p style={{ fontFamily: 'var(--font-script)', fontSize: '2rem', color: 'white' }}>
                     {event.groom_name} & {event.bride_name}
                   </p>
                 </div>
+                {/* Badge statut */}
                 <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  padding: '4px 12px',
+                  position:     'absolute',
+                  top:          '12px',
+                  right:        '12px',
+                  padding:      '4px 12px',
                   borderRadius: '100px',
-                  background: event.status === 'active'
+                  background:   event.status === 'active'
                     ? 'rgba(90,138,106,0.3)'
+                    : event.status === 'draft'
+                    ? 'rgba(234,154,0,0.2)'
                     : 'rgba(255,255,255,0.1)',
-                  border: event.status === 'active'
+                  border:       event.status === 'active'
                     ? '1px solid rgba(90,138,106,0.5)'
+                    : event.status === 'draft'
+                    ? '1px solid rgba(234,154,0,0.3)'
                     : '1px solid rgba(255,255,255,0.15)',
-                  fontSize: '0.65rem',
+                  fontSize:      '0.65rem',
                   letterSpacing: '0.15em',
                   textTransform: 'uppercase',
-                  color: event.status === 'active' ? '#7EC89A' : 'rgba(255,255,255,0.5)',
+                  color:         event.status === 'active'
+                    ? '#7EC89A'
+                    : event.status === 'draft'
+                    ? '#F5A623'
+                    : 'rgba(255,255,255,0.5)',
                 }}>
-                  {event.status}
+                  {event.status === 'draft' ? 'Brouillon' : event.status === 'active' ? 'Actif' : 'Terminé'}
                 </div>
               </div>
 
               {/* Infos */}
               <div style={{ padding: '20px 24px 16px' }}>
                 <p style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.2rem',
-                  color: 'white',
+                  fontFamily:   'var(--font-display)',
+                  fontSize:     '1.2rem',
+                  color:        'white',
                   marginBottom: '4px',
                 }}>
                   {event.groom_name} & {event.bride_name}
                 </p>
-                <p style={{
-                  color: 'rgba(255,255,255,0.4)',
-                  fontSize: '0.82rem',
-                }}>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem' }}>
                   {formatDate(event.event_date)} · {event.venue_name}
                 </p>
               </div>
             </Link>
 
             {/* Liens rapides */}
-            <div style={{
-              padding: '0 24px 20px',
-              display: 'flex',
-              gap: '8px',
-              flexWrap: 'wrap',
-            }}>
+            <div style={{ padding: '0 24px 20px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {sections.map(section => (
                 <Link
                   key={section}
                   href={'/admin/events/' + event.id + '/' + section}
                   style={{
-                    padding: '4px 12px',
-                    borderRadius: '100px',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: 'rgba(255,255,255,0.4)',
-                    fontSize: '0.7rem',
-                    letterSpacing: '0.1em',
+                    padding:        '4px 10px',
+                    borderRadius:   '100px',
+                    border:         '1px solid rgba(255,255,255,0.08)',
+                    color:          'rgba(255,255,255,0.35)',
+                    fontSize:       '0.68rem',
+                    letterSpacing:  '0.08em',
                     textDecoration: 'none',
-                    transition: 'all 0.2s ease',
+                    transition:     'all 0.2s ease',
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.borderColor = 'rgba(201,169,110,0.3)'
-                    e.currentTarget.style.color = 'var(--gold-light)'
+                    e.currentTarget.style.color       = 'var(--gold-light)'
                   }}
                   onMouseLeave={e => {
                     e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.4)'
+                    e.currentTarget.style.color       = 'rgba(255,255,255,0.35)'
                   }}
                 >
                   {section}
