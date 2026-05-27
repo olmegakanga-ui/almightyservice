@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Camera, CameraOff, RefreshCw } from 'lucide-react'
+import { Camera, CameraOff } from 'lucide-react'
 import GuestCheckinCard from './GuestCheckinCard'
 import ManualGuestSearch from './ManualGuestSearch'
 
@@ -33,80 +33,17 @@ export default function ScanClient({ event }: { event: Event }) {
   const [guest, setGuest]         = useState<GuestInfo | null>(null)
   const [scanError, setScanError] = useState<string | null>(null)
   const [cameraError, setCameraError] = useState(false)
-  const videoRef  = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const scannerRef = useRef<unknown>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  // Démarre la caméra
-  const startCamera = async () => {
-    setScanError(null)
-    setCameraError(false)
-    setScanning(true)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-      }
-      startQrDetection()
-    } catch {
-      setCameraError(true)
-      setScanning(false)
-    }
-  }
-
-  // Arrête la caméra
-  const stopCamera = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop())
-      streamRef.current = null
-    }
-    setScanning(false)
-  }
-
-  // Détection QR via BarcodeDetector (API native navigateur)
-  const startQrDetection = () => {
-    if (!('BarcodeDetector' in window)) {
-      setScanError('Ce navigateur ne supporte pas le scan QR natif. Utilisez la recherche manuelle.')
-      stopCamera()
-      return
-    }
-
-    // @ts-expect-error BarcodeDetector est une API expérimentale
-    const detector = new BarcodeDetector({ formats: ['qr_code'] })
-
-    intervalRef.current = setInterval(async () => {
-      if (!videoRef.current || videoRef.current.readyState < 2) return
-
-      try {
-        const codes = await detector.detect(videoRef.current)
-        if (codes.length > 0) {
-          const rawValue = codes[0].rawValue
-          stopCamera()
-          await processQrCode(rawValue)
-        }
-      } catch {
-        // Continue scanning
-      }
-    }, 500)
-  }
-
-  // Traite le contenu du QR Code
   const processQrCode = async (raw: string) => {
     setScanError(null)
     try {
-      // Le QR contient un JSON avec { guestId, token, name, table }
       let token: string
-
       try {
         const parsed = JSON.parse(raw)
         token = parsed.token ?? raw
       } catch {
-        // Si ce n'est pas du JSON, on traite la valeur brute comme token
         token = raw
       }
 
@@ -124,48 +61,102 @@ export default function ScanClient({ event }: { event: Event }) {
       }
 
       setGuest(data.guest)
-
     } catch {
       setScanError('Erreur lors du traitement du QR Code')
     }
   }
 
-  // Sélection depuis la recherche manuelle
-  const handleManualSelect = (g: GuestInfo) => {
-    setGuest(g)
+  const startScanner = async () => {
+    if (!containerRef.current) return
+    setScanError(null)
+    setCameraError(false)
+
+    try {
+      // Import dynamique pour éviter les erreurs SSR
+      const { Html5Qrcode } = await import('html5-qrcode')
+
+      const scanner = new Html5Qrcode('qr-reader')
+      scannerRef.current = scanner
+
+      await scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 220, height: 220 },
+          aspectRatio: 1.0,
+        },
+        async (decodedText: string) => {
+          // QR détecté — arrête le scanner et traite
+          await scanner.stop()
+          setScanning(false)
+          await processQrCode(decodedText)
+        },
+        () => {
+          // Pas de QR détecté — continue (ne rien faire)
+        }
+      )
+
+      setScanning(true)
+    } catch (err) {
+      console.error('Erreur caméra:', err)
+      setCameraError(true)
+      setScanning(false)
+    }
   }
 
-  const reset = () => {
+  const stopScanner = async () => {
+    if (scannerRef.current) {
+      try {
+        const { Html5Qrcode } = await import('html5-qrcode')
+        const scanner = scannerRef.current as InstanceType<typeof Html5Qrcode>
+        if (scanner) await scanner.stop()
+      } catch {
+        // Ignore les erreurs d'arrêt
+      }
+      scannerRef.current = null
+    }
+    setScanning(false)
+  }
+
+  const reset = async () => {
     setGuest(null)
     setScanError(null)
+    setCameraError(false)
     if (mode === 'camera') {
-      startCamera()
+      await startScanner()
     }
   }
 
+  // Démarre le scanner quand on arrive en mode caméra
   useEffect(() => {
     if (mode === 'camera' && !guest) {
-      startCamera()
+      // Petit délai pour que le DOM soit prêt
+      const t = setTimeout(() => startScanner(), 300)
+      return () => {
+        clearTimeout(t)
+        stopScanner()
+      }
     } else {
-      stopCamera()
+      stopScanner()
     }
-    return () => stopCamera()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode])
 
+  // Nettoyage au démontage
   useEffect(() => {
-    return () => stopCamera()
+    return () => { stopScanner() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
     <div style={{
       minHeight: '100vh',
       background: '#0D0B09',
-      padding: '0',
       display: 'flex',
       flexDirection: 'column',
     }}>
 
-      {/* Header compact */}
+      {/* Header */}
       <div style={{
         padding: '16px 20px',
         borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -183,7 +174,6 @@ export default function ScanClient({ event }: { event: Event }) {
           </p>
         </div>
 
-        {/* Toggle mode */}
         <div style={{ display: 'flex', gap: '6px' }}>
           <button
             onClick={() => setMode('camera')}
@@ -219,10 +209,9 @@ export default function ScanClient({ event }: { event: Event }) {
         </div>
       </div>
 
-      {/* Contenu principal */}
+      {/* Contenu */}
       <div style={{ flex: 1, padding: '20px', maxWidth: '480px', width: '100%', margin: '0 auto' }}>
 
-        {/* Résultat invité */}
         {guest ? (
           <GuestCheckinCard
             guest={guest}
@@ -234,20 +223,25 @@ export default function ScanClient({ event }: { event: Event }) {
             {/* Mode caméra */}
             {mode === 'camera' && (
               <div>
-                <div style={{
-                  position: 'relative',
-                  borderRadius: '20px',
-                  overflow: 'hidden',
-                  background: '#000',
-                  aspectRatio: '1',
-                  marginBottom: '20px',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}>
-                  <video
-                    ref={videoRef}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: scanning ? 'block' : 'none' }}
-                    playsInline
-                    muted
+                {/* Conteneur QR scanner */}
+                <div
+                  style={{
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    background: '#000',
+                    marginBottom: '16px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    position: 'relative',
+                  }}
+                >
+                  {/* Zone de rendu html5-qrcode */}
+                  <div
+                    id="qr-reader"
+                    ref={containerRef}
+                    style={{
+                      width: '100%',
+                      display: cameraError ? 'none' : 'block',
+                    }}
                   />
 
                   {/* Overlay viseur */}
@@ -258,30 +252,51 @@ export default function ScanClient({ event }: { event: Event }) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      pointerEvents: 'none',
                     }}>
                       <div style={{
                         width: '200px',
                         height: '200px',
                         border: '2px solid var(--gold)',
                         borderRadius: '16px',
-                        opacity: 0.6,
+                        opacity: 0.7,
                       }} />
                     </div>
                   )}
 
-                  {/* Pas de caméra */}
-                  {!scanning && !cameraError && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '12px' }}>
-                      <Camera size={40} color="rgba(255,255,255,0.2)" />
-                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>Caméra inactive</p>
-                    </div>
-                  )}
-
+                  {/* Erreur caméra */}
                   {cameraError && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '12px', padding: '20px', textAlign: 'center' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      padding: '48px 24px',
+                      textAlign: 'center',
+                    }}>
                       <CameraOff size={40} color="#E89AA6" />
-                      <p style={{ color: '#E89AA6', fontSize: '0.85rem' }}>Accès caméra refusé</p>
-                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem' }}>Autorisez la caméra dans les paramètres du navigateur ou utilisez la recherche manuelle</p>
+                      <p style={{ color: '#E89AA6', fontSize: '0.9rem' }}>
+                        Accès caméra refusé
+                      </p>
+                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem' }}>
+                        Autorisez la caméra dans les paramètres Safari ou utilisez la recherche manuelle
+                      </p>
+                      <button
+                        onClick={() => setMode('manual')}
+                        style={{
+                          padding: '12px 24px',
+                          borderRadius: '100px',
+                          border: '1px solid rgba(201,169,110,0.4)',
+                          background: 'rgba(201,169,110,0.1)',
+                          color: 'var(--gold-light)',
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-body)',
+                        }}
+                      >
+                        Utiliser la recherche manuelle
+                      </button>
                     </div>
                   )}
                 </div>
@@ -296,61 +311,30 @@ export default function ScanClient({ event }: { event: Event }) {
                     marginBottom: '16px',
                   }}>
                     <p style={{ color: '#E89AA6', fontSize: '0.85rem' }}>{scanError}</p>
+                    <button
+                      onClick={reset}
+                      style={{
+                        marginTop: '8px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'rgba(255,255,255,0.4)',
+                        fontSize: '0.78rem',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      Réessayer →
+                    </button>
                   </div>
                 )}
 
-                {/* Boutons caméra */}
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  {!scanning && (
-                    <button
-                      onClick={startCamera}
-                      style={{
-                        flex: 1,
-                        padding: '16px',
-                        borderRadius: '100px',
-                        border: '1px solid rgba(201,169,110,0.4)',
-                        background: 'rgba(201,169,110,0.1)',
-                        color: 'var(--gold-light)',
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '0.88rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <Camera size={16} /> Activer la caméra
-                    </button>
-                  )}
-
-                  {scanning && (
-                    <button
-                      onClick={stopCamera}
-                      style={{
-                        flex: 1,
-                        padding: '16px',
-                        borderRadius: '100px',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        background: 'transparent',
-                        color: 'rgba(255,255,255,0.4)',
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '0.88rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <RefreshCw size={14} /> Redémarrer
-                    </button>
-                  )}
-                </div>
-
-                {/* Instruction */}
                 {scanning && !scanError && (
-                  <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginTop: '12px' }}>
+                  <p style={{
+                    textAlign: 'center',
+                    color: 'rgba(255,255,255,0.25)',
+                    fontSize: '0.78rem',
+                    marginTop: '8px',
+                  }}>
                     Pointez la caméra vers le QR Code de l&apos;invité
                   </p>
                 )}
@@ -361,7 +345,7 @@ export default function ScanClient({ event }: { event: Event }) {
             {mode === 'manual' && (
               <ManualGuestSearch
                 eventId={event.id}
-                onSelectGuest={handleManualSelect}
+                onSelectGuest={guest => setGuest(guest as GuestInfo)}
               />
             )}
           </>
