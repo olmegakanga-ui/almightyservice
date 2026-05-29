@@ -16,11 +16,14 @@ export async function POST(request: NextRequest) {
     const { guestId, eventId, messageType } = await request.json()
 
     if (!guestId || !eventId || !messageType) {
-      return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Paramètres manquants' },
+        { status: 400 }
+      )
     }
 
     const supabase = await createClient()
-    const db = supabase as any
+    const db       = supabase as any
 
     // Charger l'invité
     const { data: guest } = await db
@@ -30,57 +33,53 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!guest) {
-      return NextResponse.json({ error: 'Invité introuvable' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Invité introuvable' },
+        { status: 404 }
+      )
     }
 
-    // Charger l'événement
+    // Charger l'événement avec l'image
     const { data: event } = await db
       .from('events')
-      .select('groom_name, bride_name, event_date, venue_name')
+      .select('groom_name, bride_name, event_date, event_time, venue_name, background_image_url')
       .eq('id', eventId)
       .single()
 
     if (!event) {
-      return NextResponse.json({ error: 'Événement introuvable' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Événement introuvable' },
+        { status: 404 }
+      )
     }
 
     // Construire l'URL d'invitation
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-      ?? process.env.VERCEL_URL
-      ?? 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://almightyservice.vercel.app'
+    const invitationUrl = `${baseUrl}/invitation/${guest.invitation_token}`
 
-    const invitationUrl = `${baseUrl.startsWith('http') ? baseUrl : 'https://' + baseUrl}/invitation/${guest.invitation_token}`
-
+    // Données du template
     const templateData = {
       guestName:     guest.full_name,
       groomName:     event.groom_name,
       brideName:     event.bride_name,
       eventDate:     formatDate(event.event_date),
-      eventTime:     formatTime(event.event_date),
+      eventTime:     event.event_time ?? formatTime(event.event_date),
       venueName:     event.venue_name,
       invitationUrl,
+      imageUrl:      event.background_image_url ?? undefined,
     }
 
-    // Choisir le template
+    // Choisir le template texte selon le type
     let messageText: string
     switch (messageType) {
-      case 'INVITATION':
-        messageText = invitationTemplate(templateData)
-        break
-      case 'RELANCE':
-        messageText = reminderTemplate(templateData)
-        break
-      case 'RAPPEL_WA':
-        messageText = lastReminderTemplate(templateData)
-        break
-      case 'MERCI':
-        messageText = dayOfTemplate(templateData)
-        break
-      default:
-        messageText = invitationTemplate(templateData)
+      case 'INVITATION': messageText = invitationTemplate(templateData);   break
+      case 'RELANCE':    messageText = reminderTemplate(templateData);     break
+      case 'RAPPEL_WA':  messageText = lastReminderTemplate(templateData); break
+      case 'MERCI':      messageText = dayOfTemplate(templateData);        break
+      default:           messageText = invitationTemplate(templateData)
     }
 
-    // Enregistrer le message en DB (status pending)
+    // Enregistrer le message en DB
     const { data: waMessage } = await db
       .from('whatsapp_messages')
       .insert({
@@ -94,8 +93,12 @@ export async function POST(request: NextRequest) {
       .select('id')
       .single()
 
-    // Envoyer le message
-    const result = await sendWhatsAppMessage(guest.phone, messageText)
+    // Envoyer — template Meta pour INVITATION, texte libre pour les autres
+    const result = await sendWhatsAppMessage(
+      guest.phone,
+      messageText,
+      messageType === 'INVITATION' ? templateData : undefined
+    )
 
     // Mettre à jour le statut
     await db
@@ -108,9 +111,10 @@ export async function POST(request: NextRequest) {
       .eq('id', waMessage?.id)
 
     if (!result.success) {
-      return NextResponse.json({
-        error: result.error ?? 'Échec de l\'envoi',
-      }, { status: 500 })
+      return NextResponse.json(
+        { error: result.error ?? 'Échec envoi' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
@@ -122,6 +126,9 @@ export async function POST(request: NextRequest) {
 
   } catch (err) {
     console.error('Erreur API WhatsApp send:', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Erreur serveur' },
+      { status: 500 }
+    )
   }
 }
