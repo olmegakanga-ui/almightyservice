@@ -66,12 +66,11 @@ export default function SettingsClient({ event }: Props) {
   const [saved, setSaved]   = useState(false)
   const [error, setError]   = useState<string | null>(null)
 
-  // État formulaire
   const [form, setForm] = useState({
     groom_name:            event.groom_name,
     bride_name:            event.bride_name,
     event_date:            event.event_date?.split('T')[0] ?? '',
-    event_time:            event.event_time ?? event.event_date?.split('T')[1]?.slice(0,5) ?? '19:00',
+    event_time:            event.event_time ?? event.event_date?.split('T')[1]?.slice(0, 5) ?? '19:00',
     venue_name:            event.venue_name,
     venue_address:         event.venue_address,
     venue_lat:             String(event.venue_lat),
@@ -146,6 +145,7 @@ export default function SettingsClient({ event }: Props) {
 
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
+      router.refresh()
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
@@ -154,33 +154,58 @@ export default function SettingsClient({ event }: Props) {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    width:        '100%',
-    padding:      '12px 16px',
-    background:   'rgba(255,255,255,0.05)',
-    border:       '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '12px',
-    color:        'white',
-    fontFamily:   'var(--font-body)',
-    fontSize:     '0.9rem',
-    outline:      'none',
-    transition:   'border-color 0.2s ease',
+  const handlePreview = async () => {
+    const supabase = createClient()
+    const { data: firstGuest } = await (supabase as any)
+      .from('guests')
+      .select('invitation_token')
+      .eq('event_id', event.id)
+      .not('invitation_token', 'is', null)
+      .limit(1)
+      .single()
+
+    if (firstGuest?.invitation_token) {
+      window.open('/invitation/' + firstGuest.invitation_token, '_blank')
+    } else {
+      alert('Aucun invité trouvé. Ajoutez d\'abord un invité.')
+    }
   }
 
-  const labelStyle: React.CSSProperties = {
-    display:       'block',
-    fontSize:      '0.68rem',
-    letterSpacing: '0.2em',
-    textTransform: 'uppercase',
-    color:         'rgba(255,255,255,0.4)',
-    marginBottom:  '8px',
-  }
+  const handleDuplicate = async () => {
+    const supabase = createClient()
+    const db       = supabase as any
 
-  const focus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = 'rgba(201,169,110,0.5)'
-  }
-  const blur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = 'rgba(255,255,255,0.1)'
+    const { data: newEvent } = await db
+      .from('events')
+      .insert({
+        slug:                  event.groom_name + '-' + event.bride_name + '-copy-' + Date.now(),
+        groom_name:            event.groom_name + ' (Copie)',
+        bride_name:            event.bride_name,
+        event_date:            event.event_date,
+        event_time:            event.event_time,
+        venue_name:            event.venue_name,
+        venue_address:         event.venue_address,
+        venue_lat:             event.venue_lat,
+        venue_lng:             event.venue_lng,
+        background_image_url:  event.background_image_url,
+        invitation_text:       event.invitation_text,
+        hero_message:          event.hero_message,
+        end_message:           event.end_message,
+        theme_name:            event.theme_name,
+        rsvp_deadline:         event.rsvp_deadline,
+        theme_color_primary:   event.theme_color_primary,
+        theme_color_secondary: event.theme_color_secondary,
+        status:                'draft',
+        program_json:          event.program_json,
+        drink_options_json:    event.drink_options_json,
+        whatsapp_transfer_allowed: event.whatsapp_transfer_allowed,
+      })
+      .select('id')
+      .single()
+
+    if (newEvent) {
+      router.push('/admin/events/' + newEvent.id + '/settings')
+    }
   }
 
   // ── Programme ────────────────────────────────────────────
@@ -223,7 +248,7 @@ export default function SettingsClient({ event }: Props) {
     setDrinks(prev => prev.map((cat, i) =>
       i === ci ? {
         ...cat,
-        drinks: cat.drinks.map((d, j) => j === di ? value : d)
+        drinks: cat.drinks.map((d, j) => j === di ? value : d),
       } : cat
     ))
   }
@@ -232,38 +257,70 @@ export default function SettingsClient({ event }: Props) {
     setDrinks(prev => prev.map((cat, i) =>
       i === ci ? {
         ...cat,
-        drinks: cat.drinks.filter((_, j) => j !== di)
+        drinks: cat.drinks.filter((_, j) => j !== di),
       } : cat
     ))
   }
 
-  // ── Preview / Duplicate ──────────────────────────────────
-  const handlePreview = () => {
-    window.open(`/invitation/demo-token-001`, '_blank')
+  const inputStyle: React.CSSProperties = {
+    width:        '100%',
+    padding:      '12px 16px',
+    background:   'rgba(255,255,255,0.05)',
+    border:       '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '12px',
+    color:        'white',
+    fontFamily:   'var(--font-body)',
+    fontSize:     '0.9rem',
+    outline:      'none',
+    transition:   'border-color 0.2s ease',
   }
 
-  const handleDuplicate = async () => {
-    const supabase = createClient()
-    const db       = supabase as any
-
-    const { data: newEvent } = await db
-      .from('events')
-      .insert({
-        ...event,
-        id:         undefined,
-        slug:       event.groom_name + '-' + event.bride_name + '-copy-' + Date.now(),
-        groom_name: event.groom_name + ' (Copie)',
-        status:     'draft',
-        created_at: undefined,
-        updated_at: undefined,
-      })
-      .select('id')
-      .single()
-
-    if (newEvent) {
-      router.push('/admin/events/' + newEvent.id + '/settings')
-    }
+  const labelStyle: React.CSSProperties = {
+    display:       'block',
+    fontSize:      '0.68rem',
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase',
+    color:         'rgba(255,255,255,0.4)',
+    marginBottom:  '8px',
   }
+
+  const focus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = 'rgba(201,169,110,0.5)'
+  }
+  const blur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = 'rgba(255,255,255,0.1)'
+  }
+
+  const SaveButton = () => (
+    <button
+      onClick={handleSave}
+      disabled={saving}
+      style={{
+        display:      'flex',
+        alignItems:   'center',
+        gap:          '8px',
+        padding:      '12px 24px',
+        borderRadius: '100px',
+        border:       'none',
+        background:   saved
+          ? 'rgba(90,138,106,0.8)'
+          : 'rgba(201,169,110,0.8)',
+        color:        'white',
+        fontSize:     '0.85rem',
+        fontWeight:   500,
+        cursor:       saving ? 'not-allowed' : 'pointer',
+        transition:   'all 0.3s ease',
+      }}
+    >
+      {saving ? (
+        <><Loader size={15} style={{ animation: 'spin 1s linear infinite' }} /> Sauvegarde...</>
+      ) : saved ? (
+        <><Check size={15} /> Sauvegardé !</>
+      ) : (
+        <><Save size={15} /> Sauvegarder</>
+      )}
+    </button>
+  )
 
   return (
     <div style={{ padding: '40px' }}>
@@ -286,7 +343,6 @@ export default function SettingsClient({ event }: Props) {
           </h1>
         </div>
 
-        {/* Actions */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={handlePreview}
@@ -324,34 +380,7 @@ export default function SettingsClient({ event }: Props) {
             <Copy size={14} /> Dupliquer
           </button>
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              display:      'flex',
-              alignItems:   'center',
-              gap:          '8px',
-              padding:      '12px 24px',
-              borderRadius: '100px',
-              border:       'none',
-              background:   saved
-                ? 'rgba(90,138,106,0.8)'
-                : 'rgba(201,169,110,0.8)',
-              color:        'white',
-              fontSize:     '0.85rem',
-              fontWeight:   500,
-              cursor:       saving ? 'not-allowed' : 'pointer',
-              transition:   'all 0.3s ease',
-            }}
-          >
-            {saving ? (
-              <><Loader size={15} style={{ animation: 'spin 1s linear infinite' }} /> Sauvegarde...</>
-            ) : saved ? (
-              <><Check size={15} /> Sauvegardé !</>
-            ) : (
-              <><Save size={15} /> Sauvegarder</>
-            )}
-          </button>
+          <SaveButton />
         </div>
       </div>
 
@@ -445,12 +474,21 @@ export default function SettingsClient({ event }: Props) {
 
           <div>
             <label style={labelStyle}>Statut</label>
-            <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.status} onChange={e => set('status', e.target.value)} onFocus={focus} onBlur={blur}>
+            <select
+              style={{ ...inputStyle, cursor: 'pointer' }}
+              value={form.status}
+              onChange={e => set('status', e.target.value)}
+              onFocus={focus}
+              onBlur={blur}
+            >
               <option value="draft">Brouillon</option>
               <option value="active">Publié (actif)</option>
               <option value="completed">Terminé</option>
               <option value="archived">Archivé</option>
             </select>
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: '6px' }}>
+              En brouillon, les invitations ne sont pas accessibles
+            </p>
           </div>
         </div>
       )}
@@ -478,7 +516,13 @@ export default function SettingsClient({ event }: Props) {
           </div>
           <div>
             <label style={labelStyle}>Thème</label>
-            <input style={inputStyle} value={form.theme_name} onChange={e => set('theme_name', e.target.value)} onFocus={focus} onBlur={blur} placeholder="Ex: Noir & Or" />
+            <input
+              style={inputStyle}
+              value={form.theme_name}
+              onChange={e => set('theme_name', e.target.value)}
+              placeholder="Ex: Noir & Or"
+              onFocus={focus} onBlur={blur}
+            />
           </div>
           <div>
             <label style={labelStyle}>Message de fin</label>
@@ -504,14 +548,14 @@ export default function SettingsClient({ event }: Props) {
               <div
                 key={idx}
                 style={{
-                  display:      'grid',
+                  display:             'grid',
                   gridTemplateColumns: '120px 1fr 40px',
-                  gap:          '12px',
-                  alignItems:   'center',
-                  padding:      '16px',
-                  background:   'rgba(255,255,255,0.03)',
-                  border:       '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: '14px',
+                  gap:                 '12px',
+                  alignItems:          'center',
+                  padding:             '16px',
+                  background:          'rgba(255,255,255,0.03)',
+                  border:              '1px solid rgba(255,255,255,0.07)',
+                  borderRadius:        '14px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -534,14 +578,14 @@ export default function SettingsClient({ event }: Props) {
                 <button
                   onClick={() => removeProgramItem(idx)}
                   style={{
-                    padding:      '8px',
-                    borderRadius: '8px',
-                    border:       '1px solid rgba(184,80,96,0.3)',
-                    background:   'rgba(184,80,96,0.1)',
-                    color:        '#E89AA6',
-                    cursor:       'pointer',
-                    display:      'flex',
-                    alignItems:   'center',
+                    padding:        '8px',
+                    borderRadius:   '8px',
+                    border:         '1px solid rgba(184,80,96,0.3)',
+                    background:     'rgba(184,80,96,0.1)',
+                    color:          '#E89AA6',
+                    cursor:         'pointer',
+                    display:        'flex',
+                    alignItems:     'center',
                     justifyContent: 'center',
                   }}
                 >
@@ -589,7 +633,6 @@ export default function SettingsClient({ event }: Props) {
                   borderRadius: '16px',
                 }}
               >
-                {/* Nom catégorie */}
                 <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center' }}>
                   <input
                     style={{ ...inputStyle, flex: 1 }}
@@ -614,7 +657,6 @@ export default function SettingsClient({ event }: Props) {
                   </button>
                 </div>
 
-                {/* Boissons de la catégorie */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                   {cat.drinks.map((drink, di) => (
                     <div key={di} style={{ display: 'flex', gap: '8px' }}>
@@ -716,6 +758,23 @@ export default function SettingsClient({ event }: Props) {
             </p>
           </div>
 
+          {/* Aperçu deadline */}
+          {form.rsvp_deadline && (
+            <div style={{
+              padding:      '14px 16px',
+              background:   'rgba(201,169,110,0.05)',
+              border:       '1px solid rgba(201,169,110,0.15)',
+              borderRadius: '12px',
+            }}>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>
+                Les invités verront :{' '}
+                <span style={{ color: 'var(--gold-light)' }}>
+                  Date limite : {new Date(form.rsvp_deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              </p>
+            </div>
+          )}
+
           <div>
             <label style={labelStyle}>Transfert WhatsApp</label>
             <div
@@ -799,7 +858,7 @@ export default function SettingsClient({ event }: Props) {
             </div>
           </div>
 
-          {/* Aperçu */}
+          {/* Aperçu couleurs */}
           <div style={{
             padding:      '20px',
             borderRadius: '16px',
@@ -818,12 +877,7 @@ export default function SettingsClient({ event }: Props) {
       )}
 
       {/* Bouton save fixe en bas */}
-      <div style={{
-        position:   'fixed',
-        bottom:     '24px',
-        right:      '24px',
-        zIndex:     100,
-      }}>
+      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 100 }}>
         <button
           onClick={handleSave}
           disabled={saving}

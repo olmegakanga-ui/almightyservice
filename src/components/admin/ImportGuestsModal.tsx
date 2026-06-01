@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { X, Upload, Download, Check, AlertTriangle } from 'lucide-react'
+import { X, Upload, Download, Check, AlertTriangle, Loader } from 'lucide-react'
 
 interface Table {
   id: string
@@ -11,9 +11,9 @@ interface Table {
 }
 
 interface Props {
-  eventId: string
-  tables:  Table[]
-  onClose: () => void
+  eventId:   string
+  tables:    Table[]
+  onClose:   () => void
   onSuccess: () => void
 }
 
@@ -28,36 +28,46 @@ interface ParsedGuest {
   error?:    string
 }
 
-export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess }: Props) {
-  const [step, setStep]         = useState<'upload' | 'preview' | 'done'>('upload')
-  const [guests, setGuests]     = useState<ParsedGuest[]>([])
-  const [importing, setImporting] = useState(false)
-  const [imported, setImported] = useState(0)
-  const [errors, setErrors]     = useState<string[]>([])
-  const inputRef                = useRef<HTMLInputElement>(null)
+function generateToken(fullName: string): string {
+  const clean = fullName
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 20)
+  const rand = Math.random().toString(36).substring(2, 8)
+  const ts   = Date.now().toString(36).substring(-4)
+  return `inv-${clean}-${rand}${ts}`
+}
 
-  // Télécharger le template CSV
+export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess }: Props) {
+  const [step, setStep]           = useState<'upload' | 'preview' | 'done'>('upload')
+  const [guests, setGuests]       = useState<ParsedGuest[]>([])
+  const [importing, setImporting] = useState(false)
+  const [imported, setImported]   = useState(0)
+  const [errors, setErrors]       = useState<string[]>([])
+  const inputRef                  = useRef<HTMLInputElement>(null)
+
   const downloadTemplate = () => {
-    const headers = 'Nom complet,Téléphone,Côté (HOMME/FEMME),Est couple (OUI/NON),Étiquette,Nom de la table'
+    const headers  = 'Nom complet,Téléphone,Côté (HOMME/FEMME),Est couple (OUI/NON),Étiquette,Nom de la table'
     const example1 = 'Benjamin Awuya,243810000001,HOMME,NON,Famille,Actif Matériel'
     const example2 = 'Sophie Mutombo,243810000002,FEMME,OUI,Amis,Grâce Divine'
-    const csv = [headers, example1, example2].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'template-invites.csv'
+    const csv      = [headers, example1, example2].join('\n')
+    const blob     = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const a        = document.createElement('a')
+    a.href         = URL.createObjectURL(blob)
+    a.download     = 'template-invites.csv'
     a.click()
   }
 
-  // Parser le CSV
   const parseCSV = (text: string): ParsedGuest[] => {
-    const lines = text.split('\n').filter(l => l.trim())
+    const lines  = text.split('\n').filter(l => l.trim())
     const parsed: ParsedGuest[] = []
 
-    // Skip header
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''))
-
+      const cols      = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''))
       if (cols.length < 2) continue
 
       const fullName  = cols[0] ?? ''
@@ -70,7 +80,6 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
       const side: 'HOMME' | 'FEMME' = sideRaw === 'FEMME' ? 'FEMME' : 'HOMME'
       const isCouple = coupleRaw === 'OUI' || coupleRaw === 'TRUE' || coupleRaw === '1'
 
-      // Trouver la table par nom
       const table = tables.find(t =>
         t.name.toLowerCase() === tableName.toLowerCase()
       )
@@ -98,11 +107,10 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
       alert('Fichier CSV uniquement')
       return
     }
-
-    const reader = new FileReader()
-    reader.onload = e => {
-      const text = e.target?.result as string
-      const parsed = parseCSV(text)
+    const reader    = new FileReader()
+    reader.onload   = e => {
+      const text    = e.target?.result as string
+      const parsed  = parseCSV(text)
       setGuests(parsed)
       setStep('preview')
     }
@@ -122,6 +130,9 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
     let count = 0
 
     for (const guest of validGuests) {
+      // Générer un token unique pour chaque invité
+      const token = generateToken(guest.full_name)
+
       const { error } = await db.from('guests').insert({
         event_id:         eventId,
         full_name:        guest.full_name,
@@ -130,6 +141,8 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
         is_couple:        guest.is_couple,
         label:            guest.label,
         table_id:         guest.table_id,
+        invitation_token: token,
+        checked_in:       false,
       })
 
       if (error) {
@@ -163,15 +176,15 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        width:        '100%',
-        maxWidth:     '680px',
-        maxHeight:    '85vh',
-        background:   '#141210',
-        border:       '1px solid rgba(201,169,110,0.2)',
-        borderRadius: '24px',
-        overflow:     'hidden',
-        display:      'flex',
-        flexDirection:'column',
+        width:         '100%',
+        maxWidth:      '680px',
+        maxHeight:     '85vh',
+        background:    '#141210',
+        border:        '1px solid rgba(201,169,110,0.2)',
+        borderRadius:  '24px',
+        overflow:      'hidden',
+        display:       'flex',
+        flexDirection: 'column',
       }}>
 
         {/* Header */}
@@ -191,28 +204,31 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
               Importez votre liste depuis un fichier CSV
             </p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+          >
             <X size={20} />
           </button>
         </div>
 
-        {/* Contenu scrollable */}
+        {/* Contenu */}
         <div style={{ overflowY: 'auto', flex: 1, padding: '24px 28px' }}>
 
           {/* ── STEP 1 : Upload ── */}
           {step === 'upload' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-              {/* Template download */}
+              {/* Template */}
               <div style={{
-                padding:      '16px 20px',
-                background:   'rgba(201,169,110,0.05)',
-                border:       '1px solid rgba(201,169,110,0.15)',
-                borderRadius: '14px',
-                display:      'flex',
-                alignItems:   'center',
-                justifyContent:'space-between',
-                gap:          '16px',
+                padding:        '16px 20px',
+                background:     'rgba(201,169,110,0.05)',
+                border:         '1px solid rgba(201,169,110,0.15)',
+                borderRadius:   '14px',
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'space-between',
+                gap:            '16px',
               }}>
                 <div>
                   <p style={{ color: 'white', fontSize: '0.88rem', marginBottom: '4px' }}>
@@ -273,7 +289,7 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
                 </div>
               )}
 
-              {/* Zone de drop */}
+              {/* Zone drop */}
               <div
                 onClick={() => inputRef.current?.click()}
                 onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
@@ -318,7 +334,6 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
           {/* ── STEP 2 : Preview ── */}
           {step === 'preview' && (
             <div>
-              {/* Stats */}
               <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
                 <div style={{ padding: '12px 16px', background: 'rgba(90,138,106,0.1)', border: '1px solid rgba(90,138,106,0.2)', borderRadius: '10px' }}>
                   <p style={{ color: '#7EC89A', fontFamily: 'var(--font-display)', fontSize: '1.4rem', lineHeight: 1 }}>{validCount}</p>
@@ -332,13 +347,7 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
                 )}
               </div>
 
-              {/* Table preview */}
-              <div style={{
-                background:   'rgba(255,255,255,0.02)',
-                border:       '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '14px',
-                overflow:     'hidden',
-              }}>
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -351,33 +360,18 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
                   </thead>
                   <tbody>
                     {guests.slice(0, 20).map((g, i) => (
-                      <tr
-                        key={i}
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                      >
-                        <td style={{ padding: '10px 12px', color: g.valid ? 'white' : '#E89AA6' }}>
-                          {g.full_name || '—'}
-                        </td>
-                        <td style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.5)' }}>
-                          {g.phone || '—'}
-                        </td>
-                        <td style={{ padding: '10px 12px', color: g.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1', fontSize: '0.75rem' }}>
-                          {g.side}
-                        </td>
-                        <td style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>
-                          {g.is_couple ? 'Oui' : 'Non'}
-                        </td>
+                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                        <td style={{ padding: '10px 12px', color: g.valid ? 'white' : '#E89AA6' }}>{g.full_name || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.5)' }}>{g.phone || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: g.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1', fontSize: '0.75rem' }}>{g.side}</td>
+                        <td style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>{g.is_couple ? 'Oui' : 'Non'}</td>
                         <td style={{ padding: '10px 12px', color: g.table_id ? 'var(--gold-light)' : 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>
-                          {g.table_id
-                            ? tables.find(t => t.id === g.table_id)?.name ?? '—'
-                            : '—'}
+                          {g.table_id ? tables.find(t => t.id === g.table_id)?.name ?? '—' : '—'}
                         </td>
                         <td style={{ padding: '10px 12px' }}>
-                          {g.valid ? (
-                            <span style={{ color: '#7EC89A', fontSize: '0.72rem' }}>✓ OK</span>
-                          ) : (
-                            <span style={{ color: '#E89AA6', fontSize: '0.72rem' }}>✗ {g.error}</span>
-                          )}
+                          {g.valid
+                            ? <span style={{ color: '#7EC89A', fontSize: '0.72rem' }}>✓ OK</span>
+                            : <span style={{ color: '#E89AA6', fontSize: '0.72rem' }}>✗ {g.error}</span>}
                         </td>
                       </tr>
                     ))}
@@ -414,6 +408,9 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
               <p style={{ color: '#7EC89A', fontSize: '1rem', marginBottom: '16px' }}>
                 {imported} invité{imported > 1 ? 's' : ''} importé{imported > 1 ? 's' : ''} avec succès
               </p>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.82rem', marginBottom: '16px' }}>
+                Chaque invité a reçu un lien d&apos;invitation unique
+              </p>
               {errors.length > 0 && (
                 <div style={{ padding: '14px', background: 'rgba(184,80,96,0.08)', borderRadius: '12px', textAlign: 'left', marginTop: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -438,7 +435,10 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
           flexShrink:     0,
         }}>
           {step === 'upload' && (
-            <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.82rem' }}>
+            <button
+              onClick={onClose}
+              style={{ padding: '12px 24px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.82rem' }}
+            >
               Annuler
             </button>
           )}
@@ -469,7 +469,10 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
                   opacity:      validCount === 0 ? 0.4 : 1,
                 }}
               >
-                {importing ? 'Import en cours...' : `Importer ${validCount} invité${validCount > 1 ? 's' : ''}`}
+                {importing
+                  ? <><Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> Import en cours...</>
+                  : `Importer ${validCount} invité${validCount > 1 ? 's' : ''}`
+                }
               </button>
             </>
           )}
@@ -493,6 +496,13 @@ export default function ImportGuestsModal({ eventId, tables, onClose, onSuccess 
           )}
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }
