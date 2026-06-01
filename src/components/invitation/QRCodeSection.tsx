@@ -38,7 +38,6 @@ export default function QRCodeSection({
     return () => obs.disconnect()
   }, [])
 
-  // Générer le JWT sécurisé au chargement
   useEffect(() => {
     const generateJWT = async () => {
       setLoading(true)
@@ -115,71 +114,78 @@ export default function QRCodeSection({
           QR Code
         </h2>
 
-        {/* QR Code */}
-        <div
-          id="qr-canvas"
-          style={{
-            display:        'inline-flex',
-            flexDirection:  'column',
-            alignItems:     'center',
-            padding:        '28px',
-            background:     'white',
-            borderRadius:   '20px',
-            marginBottom:   '16px',
-            opacity:        visible ? 1 : 0,
-            transform:      visible ? 'scale(1)' : 'scale(0.9)',
-            transition:     'all 0.8s cubic-bezier(0.16,1,0.3,1)',
-          }}
-        >
-          <QRCodeCanvas
-            value={qrValue}
-            size={200}
-            level="H"
-            includeMargin={false}
-            imageSettings={{
-              src:      '/logo-qr.png',
-              width:    32,
-              height:   32,
-              excavate: true,
-            }}
-          />
-        </div>
-
-        {/* Badge sécurisé — SOUS le QR */}
+        {/* QR Code + Badge — colonne centrée */}
         <div style={{
-          display:        'inline-flex',
+          display:        'flex',
+          flexDirection:  'column',
           alignItems:     'center',
-          gap:            '6px',
-          padding:        '5px 14px',
-          borderRadius:   '100px',
-          background:     secured
-            ? 'rgba(90,138,106,0.1)'
-            : 'rgba(255,255,255,0.04)',
-          border:         secured
-            ? '1px solid rgba(90,138,106,0.3)'
-            : '1px solid rgba(255,255,255,0.08)',
+          gap:            '16px',
           marginBottom:   '32px',
         }}>
-          {loading ? (
-            <RefreshCw
-              size={11}
-              color="rgba(255,255,255,0.3)"
-              style={{ animation: 'spin 1s linear infinite' }}
+          {/* QR Code */}
+          <div
+            id="qr-canvas"
+            style={{
+              display:        'inline-flex',
+              flexDirection:  'column',
+              alignItems:     'center',
+              padding:        '28px',
+              background:     'white',
+              borderRadius:   '20px',
+              opacity:        visible ? 1 : 0,
+              transform:      visible ? 'scale(1)' : 'scale(0.9)',
+              transition:     'all 0.8s cubic-bezier(0.16,1,0.3,1)',
+            }}
+          >
+            <QRCodeCanvas
+              value={qrValue}
+              size={200}
+              level="H"
+              includeMargin={false}
+              imageSettings={{
+                src:      '/logo-qr.png',
+                width:    32,
+                height:   32,
+                excavate: true,
+              }}
             />
-          ) : (
-            <Shield size={11} color={secured ? '#7EC89A' : 'rgba(255,255,255,0.3)'} />
-          )}
-          <span style={{
-            fontSize:      '0.72rem',
-            color:         secured ? '#7EC89A' : 'rgba(255,255,255,0.3)',
-            letterSpacing: '0.1em',
+          </div>
+
+          {/* Badge sécurisé — centré sous le QR */}
+          <div style={{
+            display:     'inline-flex',
+            alignItems:  'center',
+            gap:         '6px',
+            padding:     '5px 14px',
+            borderRadius:'100px',
+            background:  secured
+              ? 'rgba(90,138,106,0.1)'
+              : 'rgba(255,255,255,0.04)',
+            border:      secured
+              ? '1px solid rgba(90,138,106,0.3)'
+              : '1px solid rgba(255,255,255,0.08)',
           }}>
-            {loading
-              ? 'Sécurisation...'
-              : secured
-              ? 'QR Code sécurisé JWT'
-              : 'QR Code standard'}
-          </span>
+            {loading ? (
+              <RefreshCw
+                size={11}
+                color="rgba(255,255,255,0.3)"
+                style={{ animation: 'spin 1s linear infinite' }}
+              />
+            ) : (
+              <Shield size={11} color={secured ? '#7EC89A' : 'rgba(255,255,255,0.3)'} />
+            )}
+            <span style={{
+              fontSize:      '0.72rem',
+              color:         secured ? '#7EC89A' : 'rgba(255,255,255,0.3)',
+              letterSpacing: '0.1em',
+            }}>
+              {loading
+                ? 'Sécurisation...'
+                : secured
+                ? 'QR Code sécurisé JWT'
+                : 'QR Code standard'}
+            </span>
+          </div>
         </div>
 
         {/* Infos invité */}
