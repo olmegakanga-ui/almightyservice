@@ -371,11 +371,20 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   }
 
   const handleDelete = async (guestId: string) => {
-    const supabase = createClient()
-    await (supabase as any).from('guests').delete().eq('id', guestId)
-    setDeleteConfirm(null)
-    await reload()
+  const supabase = createClient()
+  const { error } = await (supabase as any)
+    .from('guests')
+    .delete()
+    .eq('id', guestId)
+
+  if (error) {
+    console.error('ERREUR SUPPRESSION:', error)
+    alert('Erreur: ' + error.message)
   }
+
+  setDeleteConfirm(null)
+  await reload()
+}
 
   const copyLink = (token: string) => {
     const url = window.location.origin + '/invitation/' + token
