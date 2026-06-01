@@ -16,7 +16,7 @@ const Divider = () => (
   <div
     style={{
       height:     '1px',
-      background: 'linear-gradient(90deg, transparent, rgba(201,169,110,0.15), transparent)',
+      background: 'linear-gradient(90deg, transparent, rgba(201,169,110,0.2), transparent)',
       margin:     '0 48px',
     }}
   />
@@ -28,12 +28,9 @@ export default async function InvitationPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
-
   const data = await getInvitationByToken(token)
 
-  if (!data) {
-    notFound()
-  }
+  if (!data) notFound()
 
   const event: EventData = {
     id:                 data.eventId,
@@ -80,13 +77,12 @@ export default async function InvitationPage({
           backgroundRepeat:   'no-repeat',
         }}
       >
-        <div
-          style={{
-            position:   'absolute',
-            inset:      0,
-            background: 'linear-gradient(160deg, rgba(13,11,9,0.55) 0%, rgba(13,11,9,0.35) 50%, rgba(13,11,9,0.65) 100%)',
-          }}
-        />
+        {/* Overlay renforcé pour meilleure lisibilité */}
+        <div style={{
+          position:   'absolute',
+          inset:      0,
+          background: 'linear-gradient(160deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.60) 50%, rgba(0,0,0,0.82) 100%)',
+        }} />
       </div>
 
       {/* Grain cinématique */}
