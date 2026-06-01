@@ -1,16 +1,16 @@
 export interface MessageTemplateData {
-  guestName: string
-  groomName: string
-  brideName: string
-  eventDate: string
-  eventTime: string
-  venueName: string
+  guestName:     string
+  groomName:     string
+  brideName:     string
+  eventDate:     string
+  eventTime:     string
+  venueName:     string
   invitationUrl: string
 }
 
 export function formatDate(isoString: string): string {
-  const date = new Date(isoString)
-  const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
+  const date   = new Date(isoString)
+  const days   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
   const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
   return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
 }
@@ -73,7 +73,7 @@ N'oubliez pas votre QR Code dans votre invitation :
 _— AlmightyService_`
 }
 
-// Rappel jour J
+// Message jour J
 export function dayOfTemplate(data: MessageTemplateData): string {
   return `🎊 *C'est aujourd'hui !*
 
@@ -89,4 +89,24 @@ Présentez votre QR Code à l'entrée :
 À tout à l'heure ! ✨
 
 _— AlmightyService_`
+}
+
+// ── NOUVEAU : Notification RSVP au couple ────────────────────
+export function rsvpConfirmationNotification(data: {
+  groomName: string
+  brideName: string
+  guestName: string
+  guestSide: 'HOMME' | 'FEMME'
+  tableName: string | null
+}): string {
+  const recipient = data.guestSide === 'HOMME'
+    ? `*${data.groomName}*`
+    : `*${data.brideName}*`
+
+  return `🎊 Bonne nouvelle ${recipient} !
+
+*${data.guestName}* vient de confirmer sa présence à votre mariage.
+${data.tableName ? `\n📍 Table assignée : *${data.tableName}*` : ''}
+
+— AlmightyService`
 }

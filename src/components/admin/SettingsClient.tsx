@@ -10,37 +10,39 @@ import {
 } from 'lucide-react'
 
 interface ProgramItem {
-  time: string
+  time:        string
   description: string
 }
 
 interface DrinkCategory {
   categoryName: string
-  drinks: string[]
+  drinks:       string[]
 }
 
 interface Event {
-  id: string
-  groom_name: string
-  bride_name: string
-  event_date: string
-  event_time: string
-  venue_name: string
-  venue_address: string
-  venue_lat: number
-  venue_lng: number
-  background_image_url: string
-  invitation_text: string
-  hero_message: string
-  end_message: string
-  theme_name: string
-  rsvp_deadline: string
-  drink_options_json: DrinkCategory[]
-  program_json: ProgramItem[]
-  theme_color_primary: string
-  theme_color_secondary: string
-  status: 'draft' | 'active' | 'completed' | 'archived'
+  id:                       string
+  groom_name:               string
+  bride_name:               string
+  event_date:               string
+  event_time:               string
+  venue_name:               string
+  venue_address:            string
+  venue_lat:                number
+  venue_lng:                number
+  background_image_url:     string
+  invitation_text:          string
+  hero_message:             string
+  end_message:              string
+  theme_name:               string
+  rsvp_deadline:            string
+  drink_options_json:       DrinkCategory[]
+  program_json:             ProgramItem[]
+  theme_color_primary:      string
+  theme_color_secondary:    string
+  status:                   'draft' | 'active' | 'completed' | 'archived'
   whatsapp_transfer_allowed: boolean
+  groom_phone?:             string
+  bride_phone?:             string
 }
 
 interface Props {
@@ -67,24 +69,26 @@ export default function SettingsClient({ event }: Props) {
   const [error, setError]   = useState<string | null>(null)
 
   const [form, setForm] = useState({
-    groom_name:            event.groom_name,
-    bride_name:            event.bride_name,
-    event_date:            event.event_date?.split('T')[0] ?? '',
-    event_time:            event.event_time ?? event.event_date?.split('T')[1]?.slice(0, 5) ?? '19:00',
-    venue_name:            event.venue_name,
-    venue_address:         event.venue_address,
-    venue_lat:             String(event.venue_lat),
-    venue_lng:             String(event.venue_lng),
-    background_image_url:  event.background_image_url,
-    invitation_text:       event.invitation_text,
-    hero_message:          event.hero_message ?? '',
-    end_message:           event.end_message ?? '',
-    theme_name:            event.theme_name ?? '',
-    rsvp_deadline:         event.rsvp_deadline?.split('T')[0] ?? '',
-    theme_color_primary:   event.theme_color_primary,
-    theme_color_secondary: event.theme_color_secondary,
-    status:                event.status,
+    groom_name:               event.groom_name,
+    bride_name:               event.bride_name,
+    event_date:               event.event_date?.split('T')[0] ?? '',
+    event_time:               event.event_time ?? event.event_date?.split('T')[1]?.slice(0, 5) ?? '19:00',
+    venue_name:               event.venue_name,
+    venue_address:            event.venue_address,
+    venue_lat:                String(event.venue_lat),
+    venue_lng:                String(event.venue_lng),
+    background_image_url:     event.background_image_url,
+    invitation_text:          event.invitation_text,
+    hero_message:             event.hero_message ?? '',
+    end_message:              event.end_message ?? '',
+    theme_name:               event.theme_name ?? '',
+    rsvp_deadline:            event.rsvp_deadline?.split('T')[0] ?? '',
+    theme_color_primary:      event.theme_color_primary,
+    theme_color_secondary:    event.theme_color_secondary,
+    status:                   event.status,
     whatsapp_transfer_allowed: event.whatsapp_transfer_allowed,
+    groom_phone:              event.groom_phone ?? '',
+    bride_phone:              event.bride_phone ?? '',
   })
 
   const [program, setProgram] = useState<ProgramItem[]>(
@@ -115,26 +119,28 @@ export default function SettingsClient({ event }: Props) {
       const { error: updateError } = await db
         .from('events')
         .update({
-          groom_name:            form.groom_name.trim(),
-          bride_name:            form.bride_name.trim(),
-          event_date:            eventDatetime,
-          event_time:            form.event_time,
-          venue_name:            form.venue_name.trim(),
-          venue_address:         form.venue_address.trim(),
-          venue_lat:             parseFloat(form.venue_lat) || 0,
-          venue_lng:             parseFloat(form.venue_lng) || 0,
-          background_image_url:  form.background_image_url,
-          invitation_text:       form.invitation_text.trim(),
-          hero_message:          form.hero_message.trim(),
-          end_message:           form.end_message.trim(),
-          theme_name:            form.theme_name.trim(),
-          rsvp_deadline:         rsvpDeadline,
-          theme_color_primary:   form.theme_color_primary,
-          theme_color_secondary: form.theme_color_secondary,
-          status:                form.status,
+          groom_name:               form.groom_name.trim(),
+          bride_name:               form.bride_name.trim(),
+          event_date:               eventDatetime,
+          event_time:               form.event_time,
+          venue_name:               form.venue_name.trim(),
+          venue_address:            form.venue_address.trim(),
+          venue_lat:                parseFloat(form.venue_lat) || 0,
+          venue_lng:                parseFloat(form.venue_lng) || 0,
+          background_image_url:     form.background_image_url,
+          invitation_text:          form.invitation_text.trim(),
+          hero_message:             form.hero_message.trim(),
+          end_message:              form.end_message.trim(),
+          theme_name:               form.theme_name.trim(),
+          rsvp_deadline:            rsvpDeadline,
+          theme_color_primary:      form.theme_color_primary,
+          theme_color_secondary:    form.theme_color_secondary,
+          status:                   form.status,
           whatsapp_transfer_allowed: form.whatsapp_transfer_allowed,
-          program_json:          program,
-          drink_options_json:    drinks,
+          program_json:             program,
+          drink_options_json:       drinks,
+          groom_phone:              form.groom_phone.trim(),
+          bride_phone:              form.bride_phone.trim(),
         })
         .eq('id', event.id)
 
@@ -178,27 +184,29 @@ export default function SettingsClient({ event }: Props) {
     const { data: newEvent } = await db
       .from('events')
       .insert({
-        slug:                  event.groom_name + '-' + event.bride_name + '-copy-' + Date.now(),
-        groom_name:            event.groom_name + ' (Copie)',
-        bride_name:            event.bride_name,
-        event_date:            event.event_date,
-        event_time:            event.event_time,
-        venue_name:            event.venue_name,
-        venue_address:         event.venue_address,
-        venue_lat:             event.venue_lat,
-        venue_lng:             event.venue_lng,
-        background_image_url:  event.background_image_url,
-        invitation_text:       event.invitation_text,
-        hero_message:          event.hero_message,
-        end_message:           event.end_message,
-        theme_name:            event.theme_name,
-        rsvp_deadline:         event.rsvp_deadline,
-        theme_color_primary:   event.theme_color_primary,
-        theme_color_secondary: event.theme_color_secondary,
-        status:                'draft',
-        program_json:          event.program_json,
-        drink_options_json:    event.drink_options_json,
+        slug:                     event.groom_name + '-' + event.bride_name + '-copy-' + Date.now(),
+        groom_name:               event.groom_name + ' (Copie)',
+        bride_name:               event.bride_name,
+        event_date:               event.event_date,
+        event_time:               event.event_time,
+        venue_name:               event.venue_name,
+        venue_address:            event.venue_address,
+        venue_lat:                event.venue_lat,
+        venue_lng:                event.venue_lng,
+        background_image_url:     event.background_image_url,
+        invitation_text:          event.invitation_text,
+        hero_message:             event.hero_message,
+        end_message:              event.end_message,
+        theme_name:               event.theme_name,
+        rsvp_deadline:            event.rsvp_deadline,
+        theme_color_primary:      event.theme_color_primary,
+        theme_color_secondary:    event.theme_color_secondary,
+        status:                   'draft',
+        program_json:             event.program_json,
+        drink_options_json:       event.drink_options_json,
         whatsapp_transfer_allowed: event.whatsapp_transfer_allowed,
+        groom_phone:              event.groom_phone ?? '',
+        bride_phone:              event.bride_phone ?? '',
       })
       .select('id')
       .single()
@@ -208,7 +216,7 @@ export default function SettingsClient({ event }: Props) {
     }
   }
 
-  // ── Programme ────────────────────────────────────────────
+  // ── Programme ─────────────────────────────────────────────
   const addProgramItem = () => {
     setProgram(prev => [...prev, { time: '', description: '' }])
   }
@@ -223,7 +231,7 @@ export default function SettingsClient({ event }: Props) {
     setProgram(prev => prev.filter((_, i) => i !== idx))
   }
 
-  // ── Boissons ─────────────────────────────────────────────
+  // ── Boissons ──────────────────────────────────────────────
   const addCategory = () => {
     setDrinks(prev => [...prev, { categoryName: '', drinks: [] }])
   }
@@ -291,37 +299,6 @@ export default function SettingsClient({ event }: Props) {
     e.target.style.borderColor = 'rgba(255,255,255,0.1)'
   }
 
-  const SaveButton = () => (
-    <button
-      onClick={handleSave}
-      disabled={saving}
-      style={{
-        display:      'flex',
-        alignItems:   'center',
-        gap:          '8px',
-        padding:      '12px 24px',
-        borderRadius: '100px',
-        border:       'none',
-        background:   saved
-          ? 'rgba(90,138,106,0.8)'
-          : 'rgba(201,169,110,0.8)',
-        color:        'white',
-        fontSize:     '0.85rem',
-        fontWeight:   500,
-        cursor:       saving ? 'not-allowed' : 'pointer',
-        transition:   'all 0.3s ease',
-      }}
-    >
-      {saving ? (
-        <><Loader size={15} style={{ animation: 'spin 1s linear infinite' }} /> Sauvegarde...</>
-      ) : saved ? (
-        <><Check size={15} /> Sauvegardé !</>
-      ) : (
-        <><Save size={15} /> Sauvegarder</>
-      )}
-    </button>
-  )
-
   return (
     <div style={{ padding: '40px' }}>
 
@@ -380,18 +357,43 @@ export default function SettingsClient({ event }: Props) {
             <Copy size={14} /> Dupliquer
           </button>
 
-          <SaveButton />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              display:      'flex',
+              alignItems:   'center',
+              gap:          '8px',
+              padding:      '12px 24px',
+              borderRadius: '100px',
+              border:       'none',
+              background:   saved ? 'rgba(90,138,106,0.8)' : 'rgba(201,169,110,0.8)',
+              color:        'white',
+              fontSize:     '0.85rem',
+              fontWeight:   500,
+              cursor:       saving ? 'not-allowed' : 'pointer',
+              transition:   'all 0.3s ease',
+            }}
+          >
+            {saving ? (
+              <><Loader size={15} style={{ animation: 'spin 1s linear infinite' }} /> Sauvegarde...</>
+            ) : saved ? (
+              <><Check size={15} /> Sauvegardé !</>
+            ) : (
+              <><Save size={15} /> Sauvegarder</>
+            )}
+          </button>
         </div>
       </div>
 
       {/* Onglets */}
       <div style={{
-        display:      'flex',
-        gap:          '6px',
-        marginBottom: '32px',
-        flexWrap:     'wrap',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        paddingBottom:'16px',
+        display:       'flex',
+        gap:           '6px',
+        marginBottom:  '32px',
+        flexWrap:      'wrap',
+        borderBottom:  '1px solid rgba(255,255,255,0.06)',
+        paddingBottom: '16px',
       }}>
         {TABS.map(t => (
           <button
@@ -478,8 +480,7 @@ export default function SettingsClient({ event }: Props) {
               style={{ ...inputStyle, cursor: 'pointer' }}
               value={form.status}
               onChange={e => set('status', e.target.value)}
-              onFocus={focus}
-              onBlur={blur}
+              onFocus={focus} onBlur={blur}
             >
               <option value="draft">Brouillon</option>
               <option value="active">Publié (actif)</option>
@@ -744,6 +745,8 @@ export default function SettingsClient({ event }: Props) {
       {/* ── TAB: RSVP ── */}
       {tab === 'rsvp' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px' }}>
+
+          {/* Date limite */}
           <div>
             <label style={labelStyle}>Date limite RSVP</label>
             <input
@@ -769,12 +772,65 @@ export default function SettingsClient({ event }: Props) {
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>
                 Les invités verront :{' '}
                 <span style={{ color: 'var(--gold-light)' }}>
-                  Date limite : {new Date(form.rsvp_deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  Date limite : {new Date(form.rsvp_deadline).toLocaleDateString('fr-FR', {
+                    day: 'numeric', month: 'long', year: 'numeric',
+                  })}
                 </span>
               </p>
             </div>
           )}
 
+          {/* Numéros WhatsApp du couple */}
+          <div style={{
+            padding:      '20px',
+            background:   'rgba(255,255,255,0.02)',
+            border:       '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '16px',
+          }}>
+            <p style={{
+              fontSize:      '0.65rem',
+              letterSpacing: '0.25em',
+              textTransform: 'uppercase',
+              color:         'rgba(255,255,255,0.3)',
+              marginBottom:  '16px',
+            }}>
+              📱 Notifications RSVP WhatsApp
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginBottom: '16px' }}>
+              Le marié et la mariée recevront un message WhatsApp chaque fois qu&apos;un invité de leur côté confirme sa présence.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={labelStyle}>📱 WhatsApp du marié</label>
+                <input
+                  style={inputStyle}
+                  value={form.groom_phone}
+                  onChange={e => set('groom_phone', e.target.value)}
+                  placeholder="243810000001"
+                  onFocus={focus} onBlur={blur}
+                />
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '4px' }}>
+                  Notifié si invité côté Marié
+                </p>
+              </div>
+              <div>
+                <label style={labelStyle}>📱 WhatsApp de la mariée</label>
+                <input
+                  style={inputStyle}
+                  value={form.bride_phone}
+                  onChange={e => set('bride_phone', e.target.value)}
+                  placeholder="243810000002"
+                  onFocus={focus} onBlur={blur}
+                />
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '4px' }}>
+                  Notifiée si invité côté Mariée
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Transfert WhatsApp */}
           <div>
             <label style={labelStyle}>Transfert WhatsApp</label>
             <div
@@ -858,7 +914,7 @@ export default function SettingsClient({ event }: Props) {
             </div>
           </div>
 
-          {/* Aperçu couleurs */}
+          {/* Aperçu */}
           <div style={{
             padding:      '20px',
             borderRadius: '16px',
@@ -888,9 +944,7 @@ export default function SettingsClient({ event }: Props) {
             padding:      '14px 28px',
             borderRadius: '100px',
             border:       'none',
-            background:   saved
-              ? 'rgba(90,138,106,0.9)'
-              : 'rgba(201,169,110,0.9)',
+            background:   saved ? 'rgba(90,138,106,0.9)' : 'rgba(201,169,110,0.9)',
             color:        'white',
             fontSize:     '0.88rem',
             fontWeight:   500,
