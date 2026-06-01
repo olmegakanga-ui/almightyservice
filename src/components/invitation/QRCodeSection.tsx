@@ -1,15 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { QRCodeSVG } from 'qrcode.react'
-import { Download } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { QRCodeCanvas } from 'qrcode.react'
+import { Download, Shield, RefreshCw } from 'lucide-react'
 
 interface Props {
-  guestId: string
-  guestName: string
-  tableName: string | null
+  guestId:         string
+  guestName:       string
+  tableName:       string | null
   invitationToken: string
-  eventTitle: string
+  eventTitle:      string
+  eventId:         string
 }
 
 export default function QRCodeSection({
@@ -18,88 +19,62 @@ export default function QRCodeSection({
   tableName,
   invitationToken,
   eventTitle,
+  eventId,
 }: Props) {
-  const sectionRef = useRef<HTMLElement>(null)
-  const [visible, setVisible] = useState(false)
-  const qrRef = useRef<HTMLDivElement>(null)
+  const [qrValue, setQrValue]   = useState<string>(invitationToken)
+  const [secured, setSecured]   = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [visible, setVisible]   = useState(false)
+  const sectionRef              = useRef<HTMLElement>(null)
+  const canvasRef               = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const el = sectionRef.current
     if (!el) return
     const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setVisible(true)
-          obs.disconnect()
-        }
-      },
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
       { threshold: 0.1 }
     )
     obs.observe(el)
     return () => obs.disconnect()
   }, [])
 
-  // Payload QR — contient les infos de l'invité
-  const qrPayload = JSON.stringify({
-    guestId,
-    token: invitationToken,
-    name: guestName,
-    table: tableName,
-  })
-
-  const handleDownload = () => {
-    const svgEl = qrRef.current?.querySelector('svg')
-    if (!svgEl) return
-
-    // Convertit le SVG en PNG via canvas
-    const svgData = new XMLSerializer().serializeToString(svgEl)
-    const canvas = document.createElement('canvas')
-    const size = 400
-    canvas.width = size
-    canvas.height = size + 80
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    // Fond noir
-    ctx.fillStyle = '#0D0B09'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    const img = new Image()
-    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-
-    img.onload = () => {
-      // Dessine le QR
-      ctx.drawImage(img, 40, 30, size - 80, size - 80)
-
-      // Texte nom
-      ctx.fillStyle = '#C9A96E'
-      ctx.font = '500 16px Georgia, serif'
-      ctx.textAlign = 'center'
-      ctx.fillText(guestName, size / 2, size - 20)
-
-      // Texte table
-      if (tableName) {
-        ctx.fillStyle = 'rgba(255,255,255,0.4)'
-        ctx.font = '12px Arial, sans-serif'
-        ctx.fillText('Table : ' + tableName, size / 2, size)
+  // Générer le JWT sécurisé au chargement
+  useEffect(() => {
+    const generateJWT = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/qr/generate', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ guestId, eventId }),
+        })
+        const data = await res.json()
+        if (data.success && data.jwt) {
+          setQrValue(data.jwt)
+          setSecured(true)
+        }
+      } catch {
+        // Fallback sur token brut
+        setQrValue(invitationToken)
+      } finally {
+        setLoading(false)
       }
-
-      // Watermark AlmightyService
-      ctx.fillStyle = 'rgba(201,169,110,0.3)'
-      ctx.font = '10px Arial, sans-serif'
-      ctx.fillText('AlmightyService', size / 2, size + 60)
-
-      // Télécharge
-      const link = document.createElement('a')
-      link.download = 'invitation-' + guestName.replace(/\s+/g, '-').toLowerCase() + '.png'
-      link.href = canvas.toDataURL('image/png')
-      link.click()
-      URL.revokeObjectURL(url)
     }
 
-    img.src = url
+    if (guestId && eventId) {
+      generateJWT()
+    }
+  }, [guestId, eventId, invitationToken])
+
+  const handleDownload = () => {
+    const canvas = document.querySelector('#qr-canvas canvas') as HTMLCanvasElement
+    if (!canvas) return
+    const url  = canvas.toDataURL('image/png')
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `invitation-${guestName.replace(/\s+/g, '-').toLowerCase()}.png`
+    a.click()
   }
 
   return (
@@ -107,217 +82,157 @@ export default function QRCodeSection({
       ref={sectionRef}
       style={{ padding: '100px 24px', position: 'relative' }}
     >
-      <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
 
-        {/* Header */}
-        <div
+        <p
+          className="font-display"
           style={{
-            textAlign: 'center',
-            marginBottom: '56px',
-            opacity: visible ? 1 : 0,
-            transform: visible ? 'translateY(0)' : 'translateY(30px)',
-            transition: 'all 0.9s cubic-bezier(0.16,1,0.3,1)',
+            fontSize:     '6rem',
+            fontWeight:   300,
+            color:        'var(--gold)',
+            opacity:      0.06,
+            lineHeight:   1,
+            marginBottom: '-32px',
+            userSelect:   'none',
           }}
         >
-          <p
-            className="font-display"
-            style={{
-              fontSize: '6rem',
-              fontWeight: 300,
-              color: 'var(--gold)',
-              opacity: 0.06,
-              lineHeight: 1,
-              marginBottom: '-32px',
-              userSelect: 'none',
-            }}
-          >
-            04
-          </p>
-          <p
-            className="label-overline"
-            style={{ marginBottom: '12px' }}
-          >
-            Votre accès
-          </p>
-          <h2
-            className="font-display"
-            style={{
-              fontSize: 'clamp(2rem, 4vw, 3rem)',
-              fontWeight: 300,
-              color: 'white',
-              letterSpacing: '-0.01em',
-              marginBottom: '16px',
-            }}
-          >
-            QR Code
-          </h2>
-          <p
-            style={{
-              color: 'rgba(255,255,255,0.35)',
-              fontSize: '0.85rem',
-              lineHeight: 1.7,
-              maxWidth: '380px',
-              margin: '0 auto',
-            }}
-          >
-            Ce QR Code vous donnera accès à votre table, vos boissons
-            et votre invitation le jour de l&apos;événement.
-          </p>
+          04
+        </p>
+
+        <p className="label-overline" style={{ marginBottom: '12px' }}>
+          Votre pass d&apos;entrée
+        </p>
+
+        <h2
+          className="font-display"
+          style={{
+            fontSize:     'clamp(2rem, 4vw, 3rem)',
+            fontWeight:   300,
+            color:        'white',
+            marginBottom: '12px',
+            letterSpacing:'-0.01em',
+          }}
+        >
+          QR Code
+        </h2>
+
+        {/* Badge sécurisé */}
+        <div style={{
+          display:        'inline-flex',
+          alignItems:     'center',
+          gap:            '6px',
+          padding:        '5px 14px',
+          borderRadius:   '100px',
+          background:     secured ? 'rgba(90,138,106,0.1)' : 'rgba(255,255,255,0.04)',
+          border:         secured ? '1px solid rgba(90,138,106,0.3)' : '1px solid rgba(255,255,255,0.08)',
+          marginBottom:   '40px',
+        }}>
+          {loading ? (
+            <RefreshCw size={11} color="rgba(255,255,255,0.3)" style={{ animation: 'spin 1s linear infinite' }} />
+          ) : (
+            <Shield size={11} color={secured ? '#7EC89A' : 'rgba(255,255,255,0.3)'} />
+          )}
+          <span style={{
+            fontSize:  '0.72rem',
+            color:     secured ? '#7EC89A' : 'rgba(255,255,255,0.3)',
+            letterSpacing: '0.1em',
+          }}>
+            {loading ? 'Sécurisation...' : secured ? 'QR Code sécurisé JWT' : 'QR Code standard'}
+          </span>
         </div>
 
-        {/* Card QR Code */}
+        {/* QR Code */}
         <div
-          ref={qrRef}
+          id="qr-canvas"
           style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.97)',
-            transition: 'all 1s cubic-bezier(0.16,1,0.3,1) 0.15s',
+            display:        'inline-flex',
+            flexDirection:  'column',
+            alignItems:     'center',
+            padding:        '28px',
+            background:     'white',
+            borderRadius:   '20px',
+            marginBottom:   '32px',
+            opacity:        visible ? 1 : 0,
+            transform:      visible ? 'scale(1)' : 'scale(0.9)',
+            transition:     'all 0.8s cubic-bezier(0.16,1,0.3,1)',
           }}
         >
-          <div
+          <QRCodeCanvas
+            value={qrValue}
+            size={200}
+            level="H"
+            includeMargin={false}
+            imageSettings={{
+              src:    '/logo-qr.png',
+              width:  32,
+              height: 32,
+              excavate: true,
+            }}
+          />
+        </div>
+
+        {/* Infos invité */}
+        <div style={{ marginBottom: '32px' }}>
+          <p
+            className="font-script"
             style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(201,169,110,0.2)',
-              borderRadius: '28px',
-              padding: '40px 32px',
-              textAlign: 'center',
+              fontSize:     '1.8rem',
+              color:        'white',
+              marginBottom: '4px',
             }}
           >
-            {/* QR Code visuel */}
-            <div
-              style={{
-                display: 'inline-block',
-                padding: '20px',
-                background: 'white',
-                borderRadius: '16px',
-                marginBottom: '32px',
-                boxShadow: '0 0 60px rgba(201,169,110,0.08)',
-              }}
-            >
-              <QRCodeSVG
-                value={qrPayload}
-                size={180}
-                bgColor="#ffffff"
-                fgColor="#0D0B09"
-                level="H"
-                style={{ display: 'block' }}
-              />
-            </div>
-
-            {/* Infos invité */}
-            <div style={{ marginBottom: '32px' }}>
-              <p
-                className="font-script"
-                style={{
-                  fontSize: '1.8rem',
-                  color: 'white',
-                  marginBottom: '8px',
-                  lineHeight: 1.2,
-                }}
-              >
-                {guestName}
-              </p>
-
-              {tableName && (
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '6px 16px',
-                    borderRadius: '100px',
-                    background: 'rgba(201,169,110,0.1)',
-                    border: '1px solid rgba(201,169,110,0.25)',
-                    marginTop: '4px',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '0.65rem',
-                      letterSpacing: '0.25em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.35)',
-                    }}
-                  >
-                    Table
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '0.85rem',
-                      color: 'var(--gold-light)',
-                      fontFamily: 'var(--font-display)',
-                    }}
-                  >
-                    {tableName}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div
-              style={{
-                width: '60px',
-                height: '1px',
-                background: 'linear-gradient(90deg, transparent, rgba(201,169,110,0.4), transparent)',
-                margin: '0 auto 28px',
-              }}
-            />
-
-            {/* Note de sécurité */}
-            <p
-              style={{
-                color: 'rgba(255,255,255,0.2)',
-                fontSize: '0.72rem',
-                letterSpacing: '0.1em',
-                marginBottom: '32px',
-                lineHeight: 1.6,
-              }}
-            >
-              Invitation personnelle — non transférable
-              <br />
-              {eventTitle}
+            {guestName}
+          </p>
+          {tableName && (
+            <p style={{ color: 'var(--gold-light)', fontSize: '0.85rem', letterSpacing: '0.1em' }}>
+              Table : {tableName}
             </p>
-
-            {/* Bouton télécharger */}
-            <button
-              onClick={handleDownload}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '14px 32px',
-                borderRadius: '100px',
-                border: '1px solid rgba(201,169,110,0.4)',
-                background: 'rgba(201,169,110,0.08)',
-                color: 'var(--gold-light)',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.78rem',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-              }}
-              onMouseEnter={e => {
-                const btn = e.currentTarget
-                btn.style.background = 'rgba(201,169,110,0.18)'
-                btn.style.borderColor = 'rgba(201,169,110,0.7)'
-                btn.style.transform = 'translateY(-2px)'
-              }}
-              onMouseLeave={e => {
-                const btn = e.currentTarget
-                btn.style.background = 'rgba(201,169,110,0.08)'
-                btn.style.borderColor = 'rgba(201,169,110,0.4)'
-                btn.style.transform = 'translateY(0)'
-              }}
-            >
-              <Download size={14} />
-              Télécharger mon QR Code
-            </button>
-          </div>
+          )}
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem', marginTop: '4px' }}>
+            {eventTitle}
+          </p>
         </div>
 
+        {/* Bouton télécharger */}
+        <button
+          onClick={handleDownload}
+          style={{
+            display:        'inline-flex',
+            alignItems:     'center',
+            gap:            '8px',
+            padding:        '14px 28px',
+            borderRadius:   '100px',
+            border:         '1px solid rgba(201,169,110,0.3)',
+            background:     'rgba(201,169,110,0.08)',
+            color:          'var(--gold-light)',
+            fontFamily:     'var(--font-body)',
+            fontSize:       '0.82rem',
+            letterSpacing:  '0.1em',
+            cursor:         'pointer',
+            transition:     'all 0.2s ease',
+          }}
+        >
+          <Download size={14} />
+          Télécharger mon invitation
+        </button>
+
+        <p style={{
+          color:       'rgba(255,255,255,0.2)',
+          fontSize:    '0.72rem',
+          marginTop:   '16px',
+          lineHeight:  1.6,
+        }}>
+          Présentez ce QR Code à l&apos;entrée le jour du mariage.<br />
+          {secured && 'Ce code est valide 24h et cryptographiquement sécurisé.'}
+        </p>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
     </section>
   )
 }

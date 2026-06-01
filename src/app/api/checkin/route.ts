@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { verifyQRToken } from '@/lib/qr-jwt'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,9 +15,29 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient()
-    const db = supabase as any
+    const db       = supabase as any
 
-    const { data: guest, error: guestError } = await db
+    let invitationToken = token
+    let guestId: string | null = null
+
+    // Essayer de décoder comme JWT d'abord
+    const jwtPayload = await verifyQRToken(token)
+
+    if (jwtPayload) {
+      // ✅ JWT valide — utiliser les données du payload
+      if (jwtPayload.eventId !== eventId) {
+        return NextResponse.json(
+          { error: 'QR Code invalide pour cet événement' },
+          { status: 403 }
+        )
+      }
+      invitationToken = jwtPayload.token
+      guestId         = jwtPayload.guestId
+    }
+    // Sinon on utilise le token brut (compatibilité ascendante)
+
+    // Charger l'invité
+    let query = db
       .from('guests')
       .select(`
         *,
@@ -24,8 +45,14 @@ export async function POST(request: NextRequest) {
         rsvp_responses ( status ),
         drink_selections ( drink_name, drink_category )
       `)
-      .eq('invitation_token', token)
-      .single()
+
+    if (guestId) {
+      query = query.eq('id', guestId)
+    } else {
+      query = query.eq('invitation_token', invitationToken)
+    }
+
+    const { data: guest, error: guestError } = await query.single()
 
     if (guestError || !guest) {
       return NextResponse.json(
@@ -76,6 +103,7 @@ export async function POST(request: NextRequest) {
           drinks:     guest.drink_selections?.map(
             (d: { drink_name: string }) => d.drink_name
           ) ?? [],
+          isJwtVerified: !!jwtPayload, // ✅ indique si le QR est signé
         },
         event: {
           groomName: event.groom_name,

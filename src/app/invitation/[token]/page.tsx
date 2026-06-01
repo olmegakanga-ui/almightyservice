@@ -15,9 +15,9 @@ import { EventData, GuestData } from '@/types/invitation'
 const Divider = () => (
   <div
     style={{
-      height: '1px',
+      height:     '1px',
       background: 'linear-gradient(90deg, transparent, rgba(201,169,110,0.15), transparent)',
-      margin: '0 48px',
+      margin:     '0 48px',
     }}
   />
 )
@@ -29,15 +29,12 @@ export default async function InvitationPage({
 }) {
   const { token } = await params
 
-  // Charger les données réelles depuis Supabase
   const data = await getInvitationByToken(token)
 
-  // Token invalide ou invité non trouvé → 404
   if (!data) {
     notFound()
   }
 
-  // Adapter au format attendu par les composants
   const event: EventData = {
     id:                 data.eventId,
     groomName:          data.groomName,
@@ -56,16 +53,16 @@ export default async function InvitationPage({
   }
 
   const guest: GuestData = {
-    id:              data.guestId,
-    fullName:        data.guestFullName,
-    tableId:         data.guestTableId,
-    tableName:       data.guestTableName,
-    side:            data.guestSide,
-    invitationToken: data.invitationToken,
-    rsvpStatus:      data.rsvpStatus,
-    selectedDrinks:  data.selectedDrinks,
+    id:               data.guestId,
+    fullName:         data.guestFullName,
+    tableId:          data.guestTableId,
+    tableName:        data.guestTableName,
+    side:             data.guestSide,
+    invitationToken:  data.invitationToken,
+    rsvpStatus:       data.rsvpStatus,
+    selectedDrinks:   data.selectedDrinks,
     guestbookMessage: data.guestbookMessage,
-    giftChoice:      data.giftChoice,
+    giftChoice:       data.giftChoice,
   }
 
   return (
@@ -74,19 +71,19 @@ export default async function InvitationPage({
       <div
         aria-hidden
         style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 0,
-          backgroundImage: 'url(' + event.backgroundImageUrl + ')',
-          backgroundSize: 'cover',
+          position:           'fixed',
+          inset:              0,
+          zIndex:             0,
+          backgroundImage:    'url(' + event.backgroundImageUrl + ')',
+          backgroundSize:     'cover',
           backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
+          backgroundRepeat:   'no-repeat',
         }}
       >
         <div
           style={{
-            position: 'absolute',
-            inset: 0,
+            position:   'absolute',
+            inset:      0,
             background: 'linear-gradient(160deg, rgba(13,11,9,0.55) 0%, rgba(13,11,9,0.35) 50%, rgba(13,11,9,0.65) 100%)',
           }}
         />
@@ -120,6 +117,7 @@ export default async function InvitationPage({
           tableName={guest.tableName}
           invitationToken={guest.invitationToken}
           eventTitle={event.groomName + ' & ' + event.brideName}
+          eventId={event.id}
         />
         <Divider />
         <DrinksSection
