@@ -21,12 +21,11 @@ export default function QRCodeSection({
   eventTitle,
   eventId,
 }: Props) {
-  const [qrValue, setQrValue]   = useState<string>(invitationToken)
-  const [secured, setSecured]   = useState(false)
-  const [loading, setLoading]   = useState(false)
-  const [visible, setVisible]   = useState(false)
-  const sectionRef              = useRef<HTMLElement>(null)
-  const canvasRef               = useRef<HTMLCanvasElement>(null)
+  const [qrValue, setQrValue] = useState<string>(invitationToken)
+  const [secured, setSecured] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [visible, setVisible] = useState(false)
+  const sectionRef            = useRef<HTMLElement>(null)
 
   useEffect(() => {
     const el = sectionRef.current
@@ -44,7 +43,7 @@ export default function QRCodeSection({
     const generateJWT = async () => {
       setLoading(true)
       try {
-        const res = await fetch('/api/qr/generate', {
+        const res  = await fetch('/api/qr/generate', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ guestId, eventId }),
@@ -55,7 +54,6 @@ export default function QRCodeSection({
           setSecured(true)
         }
       } catch {
-        // Fallback sur token brut
         setQrValue(invitationToken)
       } finally {
         setLoading(false)
@@ -84,6 +82,7 @@ export default function QRCodeSection({
     >
       <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
 
+        {/* Numéro décoratif */}
         <p
           className="font-display"
           style={{
@@ -106,40 +105,15 @@ export default function QRCodeSection({
         <h2
           className="font-display"
           style={{
-            fontSize:     'clamp(2rem, 4vw, 3rem)',
-            fontWeight:   300,
-            color:        'white',
-            marginBottom: '12px',
-            letterSpacing:'-0.01em',
+            fontSize:      'clamp(2rem, 4vw, 3rem)',
+            fontWeight:    300,
+            color:         'white',
+            marginBottom:  '40px',
+            letterSpacing: '-0.01em',
           }}
         >
           QR Code
         </h2>
-
-        {/* Badge sécurisé */}
-        <div style={{
-          display:        'inline-flex',
-          alignItems:     'center',
-          gap:            '6px',
-          padding:        '5px 14px',
-          borderRadius:   '100px',
-          background:     secured ? 'rgba(90,138,106,0.1)' : 'rgba(255,255,255,0.04)',
-          border:         secured ? '1px solid rgba(90,138,106,0.3)' : '1px solid rgba(255,255,255,0.08)',
-          marginBottom:   '40px',
-        }}>
-          {loading ? (
-            <RefreshCw size={11} color="rgba(255,255,255,0.3)" style={{ animation: 'spin 1s linear infinite' }} />
-          ) : (
-            <Shield size={11} color={secured ? '#7EC89A' : 'rgba(255,255,255,0.3)'} />
-          )}
-          <span style={{
-            fontSize:  '0.72rem',
-            color:     secured ? '#7EC89A' : 'rgba(255,255,255,0.3)',
-            letterSpacing: '0.1em',
-          }}>
-            {loading ? 'Sécurisation...' : secured ? 'QR Code sécurisé JWT' : 'QR Code standard'}
-          </span>
-        </div>
 
         {/* QR Code */}
         <div
@@ -151,7 +125,7 @@ export default function QRCodeSection({
             padding:        '28px',
             background:     'white',
             borderRadius:   '20px',
-            marginBottom:   '32px',
+            marginBottom:   '16px',
             opacity:        visible ? 1 : 0,
             transform:      visible ? 'scale(1)' : 'scale(0.9)',
             transition:     'all 0.8s cubic-bezier(0.16,1,0.3,1)',
@@ -163,12 +137,49 @@ export default function QRCodeSection({
             level="H"
             includeMargin={false}
             imageSettings={{
-              src:    '/logo-qr.png',
-              width:  32,
-              height: 32,
+              src:      '/logo-qr.png',
+              width:    32,
+              height:   32,
               excavate: true,
             }}
           />
+        </div>
+
+        {/* Badge sécurisé — SOUS le QR */}
+        <div style={{
+          display:        'inline-flex',
+          alignItems:     'center',
+          gap:            '6px',
+          padding:        '5px 14px',
+          borderRadius:   '100px',
+          background:     secured
+            ? 'rgba(90,138,106,0.1)'
+            : 'rgba(255,255,255,0.04)',
+          border:         secured
+            ? '1px solid rgba(90,138,106,0.3)'
+            : '1px solid rgba(255,255,255,0.08)',
+          marginBottom:   '32px',
+        }}>
+          {loading ? (
+            <RefreshCw
+              size={11}
+              color="rgba(255,255,255,0.3)"
+              style={{ animation: 'spin 1s linear infinite' }}
+            />
+          ) : (
+            <Shield size={11} color={secured ? '#7EC89A' : 'rgba(255,255,255,0.3)'} />
+          )}
+          <span style={{
+            fontSize:      '0.72rem',
+            color:         secured ? '#7EC89A' : 'rgba(255,255,255,0.3)',
+            letterSpacing: '0.1em',
+          }}>
+            {loading
+              ? 'Sécurisation...'
+              : secured
+              ? 'QR Code sécurisé JWT'
+              : 'QR Code standard'}
+          </span>
         </div>
 
         {/* Infos invité */}
@@ -184,11 +195,19 @@ export default function QRCodeSection({
             {guestName}
           </p>
           {tableName && (
-            <p style={{ color: 'var(--gold-light)', fontSize: '0.85rem', letterSpacing: '0.1em' }}>
+            <p style={{
+              color:         'var(--gold-light)',
+              fontSize:      '0.85rem',
+              letterSpacing: '0.1em',
+            }}>
               Table : {tableName}
             </p>
           )}
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem', marginTop: '4px' }}>
+          <p style={{
+            color:     'rgba(255,255,255,0.3)',
+            fontSize:  '0.78rem',
+            marginTop: '4px',
+          }}>
             {eventTitle}
           </p>
         </div>
@@ -217,10 +236,10 @@ export default function QRCodeSection({
         </button>
 
         <p style={{
-          color:       'rgba(255,255,255,0.2)',
-          fontSize:    '0.72rem',
-          marginTop:   '16px',
-          lineHeight:  1.6,
+          color:      'rgba(255,255,255,0.2)',
+          fontSize:   '0.72rem',
+          marginTop:  '16px',
+          lineHeight: 1.6,
         }}>
           Présentez ce QR Code à l&apos;entrée le jour du mariage.<br />
           {secured && 'Ce code est valide 24h et cryptographiquement sécurisé.'}
