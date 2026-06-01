@@ -10,28 +10,28 @@ import {
 import ImportGuestsModal from '@/components/admin/ImportGuestsModal'
 
 interface Guest {
-  id: string
-  full_name: string
-  phone: string
-  is_couple: boolean
-  side: 'HOMME' | 'FEMME'
-  label: string
+  id:               string
+  full_name:        string
+  phone:            string
+  is_couple:        boolean
+  side:             'HOMME' | 'FEMME'
+  label:            string
   invitation_token: string
-  table_id: string | null
-  guest_tables: { name: string; category: string } | null
-  rsvp_responses: { status: string } | null
+  table_id:         string | null
+  guest_tables:     { name: string; category: string } | null
+  rsvp_responses:   { status: string } | null
 }
 
 interface Table {
-  id: string
-  name: string
-  side: 'HOMME' | 'FEMME'
+  id:       string
+  name:     string
+  side:     'HOMME' | 'FEMME'
   category: string
   capacity: number
 }
 
 interface Event {
-  id: string
+  id:         string
   groom_name: string
   bride_name: string
   event_date: string
@@ -57,20 +57,15 @@ const RSVP_LABEL: Record<string, string> = {
   pending:   'En attente',
 }
 
-// ── MODAL AJOUT / ÉDITION ─────────────────────────────────────
+// ── MODAL AJOUT / ÉDITION ─────────────────────────────────
 function GuestModal({
-  mode,
-  guest,
-  tables,
-  eventId,
-  onClose,
-  onSuccess,
+  mode, guest, tables, eventId, onClose, onSuccess,
 }: {
-  mode: ModalMode
-  guest?: Guest
-  tables: Table[]
-  eventId: string
-  onClose: () => void
+  mode:      ModalMode
+  guest?:    Guest
+  tables:    Table[]
+  eventId:   string
+  onClose:   () => void
   onSuccess: () => void
 }) {
   const [form, setForm] = useState({
@@ -84,7 +79,7 @@ function GuestModal({
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
 
-  const handleSubmit = async (sendWa = false) => {
+  const handleSubmit = async () => {
     if (!form.full_name.trim()) { setError('Le nom est requis'); return }
     setLoading(true)
     setError(null)
@@ -119,8 +114,6 @@ function GuestModal({
       setLoading(false)
       return
     }
-
-    if (sendWa) alert('WhatsApp — bientôt disponible !')
 
     setLoading(false)
     onSuccess()
@@ -171,23 +164,16 @@ function GuestModal({
         maxHeight:    '90vh',
         overflowY:    'auto',
       }}>
-
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 300, color: 'white' }}>
-            {mode === 'add' ? 'Nouvel invité' : 'Modifier l\'invité'}
+            {mode === 'add' ? 'Nouvel invité' : "Modifier l'invité"}
           </h2>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}
-          >
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
             <X size={20} />
           </button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-          {/* Nom */}
           <div>
             <label style={labelStyle}>Nom complet *</label>
             <input
@@ -200,7 +186,6 @@ function GuestModal({
             />
           </div>
 
-          {/* Téléphone */}
           <div>
             <label style={labelStyle}>Téléphone WhatsApp</label>
             <input
@@ -213,7 +198,6 @@ function GuestModal({
             />
           </div>
 
-          {/* Table */}
           <div>
             <label style={labelStyle}>Table</label>
             <select
@@ -230,7 +214,6 @@ function GuestModal({
             </select>
           </div>
 
-          {/* Côté + Couple */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={labelStyle}>Invité côté de</label>
@@ -256,7 +239,6 @@ function GuestModal({
             </div>
           </div>
 
-          {/* Étiquette */}
           <div>
             <label style={labelStyle}>Étiquette</label>
             <input
@@ -275,28 +257,27 @@ function GuestModal({
             </p>
           )}
 
-          {/* Boutons */}
           <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
             <button
-              onClick={() => handleSubmit(false)}
+              onClick={handleSubmit}
               disabled={loading}
               style={{
-                flex:          1,
-                padding:       '14px',
-                borderRadius:  '100px',
-                border:        '1px solid rgba(201,169,110,0.5)',
-                background:    'rgba(201,169,110,0.1)',
-                color:         'var(--gold-light)',
-                fontFamily:    'var(--font-body)',
-                fontSize:      '0.78rem',
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                cursor:        loading ? 'not-allowed' : 'pointer',
-                opacity:       loading ? 0.6 : 1,
-                display:       'flex',
-                alignItems:    'center',
-                justifyContent:'center',
-                gap:           '6px',
+                flex:           1,
+                padding:        '14px',
+                borderRadius:   '100px',
+                border:         '1px solid rgba(201,169,110,0.5)',
+                background:     'rgba(201,169,110,0.1)',
+                color:          'var(--gold-light)',
+                fontFamily:     'var(--font-body)',
+                fontSize:       '0.78rem',
+                letterSpacing:  '0.15em',
+                textTransform:  'uppercase',
+                cursor:         loading ? 'not-allowed' : 'pointer',
+                opacity:        loading ? 0.6 : 1,
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                gap:            '6px',
               }}
             >
               <Check size={14} />
@@ -330,27 +311,26 @@ function GuestModal({
   )
 }
 
-// ── PAGE PRINCIPALE ───────────────────────────────────────────
+// ── PAGE PRINCIPALE ───────────────────────────────────────
 export default function GuestsClient({ event, initialGuests, tables }: Props) {
-  const [guests, setGuests]             = useState<Guest[]>(initialGuests)
-  const [search, setSearch]             = useState('')
-  const [filter, setFilter]             = useState<'ALL' | 'HOMME' | 'FEMME'>('ALL')
-  const [modalMode, setModalMode]       = useState<ModalMode>(null)
-  const [editingGuest, setEditingGuest] = useState<Guest | undefined>()
+  const [guests, setGuests]               = useState<Guest[]>(initialGuests)
+  const [search, setSearch]               = useState('')
+  const [filter, setFilter]               = useState<'ALL' | 'HOMME' | 'FEMME'>('ALL')
+  const [modalMode, setModalMode]         = useState<ModalMode>(null)
+  const [editingGuest, setEditingGuest]   = useState<Guest | undefined>()
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [showImport, setShowImport]     = useState(false)
+  const [showImport, setShowImport]       = useState(false)
+  const [deleting, setDeleting]           = useState(false)
 
-  // Stats
   const total     = guests.length
   const confirmed = guests.filter(g => g.rsvp_responses?.status === 'confirmed').length
   const declined  = guests.filter(g => g.rsvp_responses?.status === 'declined').length
   const pending   = total - confirmed - declined
 
-  // Filtrage + recherche
   const filtered = useMemo(() => {
     return guests.filter(g => {
       const matchFilter = filter === 'ALL' || g.side === filter
-      const q = search.toLowerCase()
+      const q           = search.toLowerCase()
       const matchSearch = !q
         || g.full_name.toLowerCase().includes(q)
         || g.phone.includes(q)
@@ -371,20 +351,27 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   }
 
   const handleDelete = async (guestId: string) => {
-  const supabase = createClient()
-  const { error } = await (supabase as any)
-    .from('guests')
-    .delete()
-    .eq('id', guestId)
+    setDeleting(true)
+    try {
+      const supabase = createClient()
+      const { error } = await (supabase as any)
+        .from('guests')
+        .delete()
+        .eq('id', guestId)
 
-  if (error) {
-    console.error('ERREUR SUPPRESSION:', error)
-    alert('Erreur: ' + error.message)
+      if (error) {
+        alert('Erreur suppression: ' + error.message)
+        console.error('DELETE ERROR:', error)
+      } else {
+        await reload()
+      }
+    } catch (err) {
+      console.error('Erreur:', err)
+    } finally {
+      setDeleting(false)
+      setDeleteConfirm(null)
+    }
   }
-
-  setDeleteConfirm(null)
-  await reload()
-}
 
   const copyLink = (token: string) => {
     const url = window.location.origin + '/invitation/' + token
@@ -393,7 +380,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
   const exportCSV = () => {
     const headers = ['Nom','Téléphone','Table','Côté','Couple','Statut RSVP','Étiquette']
-    const rows = filtered.map(g => [
+    const rows    = filtered.map(g => [
       g.full_name,
       g.phone,
       g.guest_tables?.name ?? '',
@@ -402,7 +389,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       RSVP_LABEL[g.rsvp_responses?.status ?? 'pending'],
       g.label ?? '',
     ])
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const csv  = [headers, ...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
@@ -412,11 +399,11 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   }
 
   const cellStyle: React.CSSProperties = {
-    padding:       '14px 16px',
-    fontSize:      '0.85rem',
-    color:         'rgba(255,255,255,0.75)',
-    borderBottom:  '1px solid rgba(255,255,255,0.04)',
-    whiteSpace:    'nowrap',
+    padding:      '14px 16px',
+    fontSize:     '0.85rem',
+    color:        'rgba(255,255,255,0.75)',
+    borderBottom: '1px solid rgba(255,255,255,0.04)',
+    whiteSpace:   'nowrap',
   }
 
   const thStyle: React.CSSProperties = {
@@ -451,15 +438,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           { icon: UserX,     label: 'Déclinés',   value: declined,  color: '#E89AA6' },
           { icon: Clock,     label: 'En attente', value: pending,   color: 'rgba(201,169,110,0.8)' },
         ].map((stat, i) => (
-          <div
-            key={i}
-            style={{
-              padding:    '20px',
-              background: 'rgba(255,255,255,0.02)',
-              border:     '1px solid rgba(255,255,255,0.06)',
-              borderRadius:'16px',
-            }}
-          >
+          <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
             <stat.icon size={18} color={stat.color} style={{ marginBottom: '10px' }} />
             <p style={{ fontSize: '1.8rem', fontFamily: 'var(--font-display)', color: stat.color, lineHeight: 1 }}>
               {stat.value}
@@ -473,19 +452,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-
-        {/* Recherche */}
         <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
-          <Search
-            size={14}
-            style={{
-              position:  'absolute',
-              left:      '12px',
-              top:       '50%',
-              transform: 'translateY(-50%)',
-              color:     'rgba(255,255,255,0.3)',
-            }}
-          />
+          <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -504,7 +472,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           />
         </div>
 
-        {/* Filtres */}
         <div style={{ display: 'flex', gap: '6px' }}>
           {(['ALL', 'HOMME', 'FEMME'] as const).map(f => (
             <button
@@ -526,11 +493,9 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           ))}
         </div>
 
-        {/* Actions export */}
         <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', flexWrap: 'wrap' }}>
           <button
             onClick={() => navigator.clipboard.writeText(filtered.map(g => g.full_name).join('\n'))}
-            title="Copier les noms"
             style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
           >
             <Copy size={13} /> Copier
@@ -547,42 +512,15 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           >
             <Printer size={13} /> Print
           </button>
-
-          {/* Import CSV */}
           <button
             onClick={() => setShowImport(true)}
-            style={{
-              padding:      '8px 16px',
-              borderRadius: '8px',
-              border:       '1px solid rgba(255,255,255,0.15)',
-              background:   'rgba(255,255,255,0.05)',
-              color:        'rgba(255,255,255,0.6)',
-              cursor:       'pointer',
-              display:      'flex',
-              alignItems:   'center',
-              gap:          '6px',
-              fontSize:     '0.82rem',
-            }}
+            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
           >
             <Upload size={14} /> Importer CSV
           </button>
-
-          {/* Ajouter */}
           <button
             onClick={() => { setEditingGuest(undefined); setModalMode('add') }}
-            style={{
-              padding:      '8px 18px',
-              borderRadius: '8px',
-              border:       '1px solid rgba(201,169,110,0.5)',
-              background:   'rgba(201,169,110,0.1)',
-              color:        'var(--gold-light)',
-              cursor:       'pointer',
-              display:      'flex',
-              alignItems:   'center',
-              gap:          '6px',
-              fontSize:     '0.82rem',
-              letterSpacing:'0.05em',
-            }}
+            style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
           >
             <Plus size={15} /> Ajouter un invité
           </button>
@@ -615,10 +553,10 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
               ) : (
                 filtered.map(guest => {
                   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
+                  const isConfirm  = deleteConfirm === guest.id
                   return (
                     <tr
                       key={guest.id}
-                      style={{ transition: 'background 0.15s' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                     >
@@ -639,12 +577,12 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                       </td>
                       <td style={cellStyle}>
                         <span style={{
-                          padding:    '3px 10px',
-                          borderRadius:'6px',
-                          fontSize:   '0.72rem',
+                          padding:      '3px 10px',
+                          borderRadius: '6px',
+                          fontSize:     '0.72rem',
                           letterSpacing:'0.1em',
-                          background: guest.side === 'HOMME' ? 'rgba(100,149,237,0.1)' : 'rgba(255,182,193,0.1)',
-                          color:      guest.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1',
+                          background:   guest.side === 'HOMME' ? 'rgba(100,149,237,0.1)' : 'rgba(255,182,193,0.1)',
+                          color:        guest.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1',
                         }}>
                           {guest.side === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
                         </span>
@@ -655,20 +593,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         </span>
                       </td>
                       <td style={cellStyle}>
-                        <span style={{
-                          color:   RSVP_COLOR[rsvpStatus],
-                          fontSize:'0.82rem',
-                          display: 'flex',
-                          alignItems:'center',
-                          gap:     '6px',
-                        }}>
-                          <span style={{
-                            width:        '6px',
-                            height:       '6px',
-                            borderRadius: '50%',
-                            background:   RSVP_COLOR[rsvpStatus],
-                            flexShrink:   0,
-                          }} />
+                        <span style={{ color: RSVP_COLOR[rsvpStatus], fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: RSVP_COLOR[rsvpStatus], flexShrink: 0 }} />
                           {RSVP_LABEL[rsvpStatus]}
                         </span>
                       </td>
@@ -676,8 +602,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         {guest.label || '—'}
                       </td>
                       <td style={{ ...cellStyle, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                          {/* Copier lien */}
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
                           <button
                             onClick={() => copyLink(guest.invitation_token)}
                             title="Copier le lien d'invitation"
@@ -685,7 +610,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           >
                             <Link2 size={13} />
                           </button>
-                          {/* WhatsApp */}
                           <button
                             disabled
                             title="WhatsApp — bientôt"
@@ -693,7 +617,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           >
                             <MessageCircle size={13} />
                           </button>
-                          {/* Modifier */}
                           <button
                             onClick={() => { setEditingGuest(guest); setModalMode('edit') }}
                             title="Modifier"
@@ -701,17 +624,36 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           >
                             <Pencil size={13} />
                           </button>
-                          {/* Supprimer */}
-                          {deleteConfirm === guest.id ? (
+
+                          {/* Bouton supprimer */}
+                          {isConfirm ? (
                             <button
-                              onClick={() => handleDelete(guest.id)}
-                              style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.4)', background: 'rgba(184,80,96,0.15)', color: '#E89AA6', cursor: 'pointer', fontSize: '0.72rem' }}
+                              onClick={e => {
+                                e.stopPropagation()
+                                handleDelete(guest.id)
+                              }}
+                              disabled={deleting}
+                              style={{
+                                position:     'relative',
+                                zIndex:       20,
+                                padding:      '6px 10px',
+                                borderRadius: '6px',
+                                border:       '1px solid rgba(184,80,96,0.5)',
+                                background:   'rgba(184,80,96,0.2)',
+                                color:        '#E89AA6',
+                                cursor:       deleting ? 'not-allowed' : 'pointer',
+                                fontSize:     '0.72rem',
+                                fontWeight:   500,
+                              }}
                             >
-                              Confirmer
+                              {deleting ? '...' : 'Confirmer'}
                             </button>
                           ) : (
                             <button
-                              onClick={() => setDeleteConfirm(guest.id)}
+                              onClick={e => {
+                                e.stopPropagation()
+                                setDeleteConfirm(guest.id)
+                              }}
                               title="Supprimer"
                               style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
                             >
@@ -728,7 +670,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </table>
         </div>
 
-        {/* Footer tableau */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)' }}>
             {filtered.length} invité{filtered.length > 1 ? 's' : ''} affiché{filtered.length > 1 ? 's' : ''}
@@ -766,10 +707,10 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         />
       )}
 
-      {/* Click outside delete confirm */}
+      {/* Overlay fermeture confirmation suppression */}
       {deleteConfirm && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 5 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 1 }}
           onClick={() => setDeleteConfirm(null)}
         />
       )}
