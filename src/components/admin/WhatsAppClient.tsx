@@ -186,12 +186,12 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white', marginBottom: '8px' }}>
           WhatsApp
         </h1>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '100px', background: 'rgba(234,154,0,0.1)', border: '1px solid rgba(234,154,0,0.3)' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F5A623' }} />
-          <span style={{ fontSize: '0.72rem', color: '#F5A623' }}>
-            Mode simulation — configurez WHATSAPP_PROVIDER pour activer
-          </span>
-        </div>
+       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '100px', background: 'rgba(90,138,106,0.1)', border: '1px solid rgba(90,138,106,0.3)' }}>
+  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7EC89A' }} />
+  <span style={{ fontSize: '0.72rem', color: '#7EC89A' }}>
+    Meta WhatsApp actif — template invitation_mariage_premium approuvé ✓
+  </span>
+</div>
       </div>
 
       {/* Stats */}

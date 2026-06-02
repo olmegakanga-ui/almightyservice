@@ -1,46 +1,46 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendWhatsAppMessage } from '@/lib/whatsapp/service'
-import {
-  invitationTemplate,
-  reminderTemplate,
-  lastReminderTemplate,
-  dayOfTemplate,
-  formatDate,
-  formatTime,
-} from '@/lib/whatsapp/templates'
+import { sendWhatsAppMessage, TemplateData } from '@/lib/whatsapp/service'
+import { formatDate, formatTime } from '@/lib/whatsapp/templates'
 
 export async function POST(request: NextRequest) {
   try {
     const { eventId, messageType, onlyPending } = await request.json()
 
     if (!eventId || !messageType) {
-      return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Paramètres manquants' },
+        { status: 400 }
+      )
     }
 
     const supabase = await createClient()
-    const db = supabase as any
+    const db       = supabase as any
 
-    // Charger l'événement
+    // Charger l'événement avec la photo
     const { data: event } = await db
       .from('events')
-      .select('groom_name, bride_name, event_date, venue_name')
+      .select('groom_name, bride_name, event_date, venue_name, background_image_url')
       .eq('id', eventId)
       .single()
 
     if (!event) {
-      return NextResponse.json({ error: 'Événement introuvable' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Événement introuvable' },
+        { status: 404 }
+      )
     }
 
-    // Charger les invités
+    // Charger les invités avec téléphone
     let query = db
       .from('guests')
       .select('id, full_name, phone, invitation_token, rsvp_responses(status)')
       .eq('event_id', eventId)
-      .not('phone', 'eq', '')
+      .not('phone', 'is', null)
+      .neq('phone', '')
 
-    // Si onlyPending = true, envoyer seulement aux non-confirmés
+    // Si onlyPending = true, exclure les confirmés
     if (onlyPending) {
       const { data: confirmed } = await db
         .from('rsvp_responses')
@@ -57,22 +57,22 @@ export async function POST(request: NextRequest) {
     const { data: guests } = await query
 
     if (!guests || guests.length === 0) {
-      return NextResponse.json({ success: true, sent: 0, failed: 0 })
+      return NextResponse.json({ success: true, sent: 0, failed: 0, total: 0 })
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-      ?? process.env.VERCEL_URL
-      ?? 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://almightyservice.vercel.app'
 
     let sent   = 0
     let failed = 0
     const errors: string[] = []
 
-    // Envoi en batch avec délai entre chaque
     for (const guest of guests) {
-      const invitationUrl = `${baseUrl.startsWith('http') ? baseUrl : 'https://' + baseUrl}/invitation/${guest.invitation_token}`
+      if (!guest.phone || guest.phone.length < 8) continue
 
-      const templateData = {
+      const invitationUrl = `${baseUrl}/invitation/${guest.invitation_token}`
+
+      // TemplateData pour le template Meta approuvé
+      const templateData: TemplateData = {
         guestName:     guest.full_name,
         groomName:     event.groom_name,
         brideName:     event.bride_name,
@@ -80,16 +80,11 @@ export async function POST(request: NextRequest) {
         eventTime:     formatTime(event.event_date),
         venueName:     event.venue_name,
         invitationUrl,
+        imageUrl:      event.background_image_url || undefined,
       }
 
-      let messageText: string
-      switch (messageType) {
-        case 'INVITATION':   messageText = invitationTemplate(templateData);    break
-        case 'RELANCE':      messageText = reminderTemplate(templateData);      break
-        case 'RAPPEL_WA':    messageText = lastReminderTemplate(templateData);  break
-        case 'MERCI':        messageText = dayOfTemplate(templateData);         break
-        default:             messageText = invitationTemplate(templateData)
-      }
+      // Message texte de secours (si pas de template)
+      const fallbackMessage = `✨ ${guest.full_name} ✨\n\n${event.groom_name} & ${event.bride_name} ont l'immense joie de vous convier à leur mariage.\n\n📅 ${formatDate(event.event_date)} à ${formatTime(event.event_date)}\n📍 ${event.venue_name}\n\n👇 ${invitationUrl}\n\n— AlmightyService`
 
       // Enregistrer en DB
       const { data: waMessage } = await db
@@ -99,15 +94,20 @@ export async function POST(request: NextRequest) {
           event_id:     eventId,
           type:         messageType,
           status:       'pending',
-          message_text: messageText,
+          message_text: fallbackMessage,
           sent_at:      new Date().toISOString(),
         })
         .select('id')
         .single()
 
-      // Envoyer
-      const result = await sendWhatsAppMessage(guest.phone, messageText)
+      // Envoyer avec template Meta
+      const result = await sendWhatsAppMessage(
+        guest.phone,
+        fallbackMessage,
+        messageType === 'INVITATION' ? templateData : undefined
+      )
 
+      // Mettre à jour le statut
       await db
         .from('whatsapp_messages')
         .update({
@@ -122,9 +122,10 @@ export async function POST(request: NextRequest) {
       } else {
         failed++
         errors.push(`${guest.full_name}: ${result.error}`)
+        console.error('Erreur envoi WhatsApp:', guest.full_name, result.error)
       }
 
-      // Délai de 500ms entre chaque envoi pour respecter les rate limits
+      // 500ms entre chaque envoi — respecter rate limits Meta
       await new Promise(r => setTimeout(r, 500))
     }
 

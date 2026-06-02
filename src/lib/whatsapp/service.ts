@@ -1,15 +1,15 @@
 export interface SendMessageResult {
-  success: boolean
+  success:    boolean
   messageId?: string
-  error?: string
+  error?:     string
 }
 
 export interface WhatsAppConfig {
-  provider: 'meta' | 'twilio' | 'mock'
-  metaToken?: string
+  provider:          'meta' | 'twilio' | 'mock'
+  metaToken?:        string
   metaPhoneNumberId?: string
   twilioAccountSid?: string
-  twilioAuthToken?: string
+  twilioAuthToken?:  string
   twilioFromNumber?: string
 }
 
@@ -36,32 +36,31 @@ function getConfig(): WhatsAppConfig {
   }
 }
 
-// ── META ─────────────────────────────────────────────────────
+// ── META ──────────────────────────────────────────────────
 async function sendViaMeta(
-  to: string,
-  message: string,
-  config: WhatsAppConfig,
+  to:            string,
+  message:       string,
+  config:        WhatsAppConfig,
   templateData?: TemplateData
 ): Promise<SendMessageResult> {
   if (!config.metaToken || !config.metaPhoneNumberId) {
     return { success: false, error: 'Meta credentials manquants' }
   }
 
-  const phone = to.replace(/[^0-9]/g, '')
+  const phone        = to.replace(/[^0-9]/g, '')
+  const templateName = process.env.WHATSAPP_TEMPLATE_NAME
 
   try {
-    const templateName = process.env.WHATSAPP_TEMPLATE_NAME
-
     let body: object
 
     if (templateName && templateData) {
-      // ── Mode template approuvé Meta ──────────────────────
+      // ── Mode template approuvé ────────────────────────────
       const components: object[] = []
 
-      // En-tête image dynamique
+      // En-tête image
       if (templateData.imageUrl) {
         components.push({
-          type: 'header',
+          type:       'header',
           parameters: [
             {
               type:  'image',
@@ -71,26 +70,26 @@ async function sendViaMeta(
         })
       }
 
-      // Corps avec variables
+      // Corps avec 7 variables
       components.push({
-        type: 'body',
+        type:       'body',
         parameters: [
-          { type: 'text', text: templateData.guestName },
-          { type: 'text', text: templateData.groomName },
-          { type: 'text', text: templateData.brideName },
-          { type: 'text', text: templateData.eventDate },
-          { type: 'text', text: templateData.eventTime },
-          { type: 'text', text: templateData.venueName },
-          { type: 'text', text: templateData.invitationUrl },
+          { type: 'text', text: templateData.guestName },     // {{1}}
+          { type: 'text', text: templateData.groomName },     // {{2}}
+          { type: 'text', text: templateData.brideName },     // {{3}}
+          { type: 'text', text: templateData.eventDate },     // {{4}}
+          { type: 'text', text: templateData.eventTime },     // {{5}}
+          { type: 'text', text: templateData.venueName },     // {{6}}
+          { type: 'text', text: templateData.invitationUrl }, // {{7}}
         ],
       })
 
-      // Bouton URL dynamique (token de l'invité)
+      // Bouton URL dynamique
       const token = templateData.invitationUrl.split('/').pop() ?? ''
       components.push({
-        type:     'button',
-        sub_type: 'url',
-        index:    '0',
+        type:       'button',
+        sub_type:   'url',
+        index:      '0',
         parameters: [
           { type: 'text', text: token },
         ],
@@ -107,7 +106,7 @@ async function sendViaMeta(
         },
       }
     } else {
-      // ── Mode message texte libre ─────────────────────────
+      // ── Mode message texte libre ──────────────────────────
       body = {
         messaging_product: 'whatsapp',
         to:                phone,
@@ -117,7 +116,7 @@ async function sendViaMeta(
     }
 
     const res = await fetch(
-      `https://graph.facebook.com/v18.0/${config.metaPhoneNumberId}/messages`,
+      `https://graph.facebook.com/v25.0/${config.metaPhoneNumberId}/messages`,
       {
         method:  'POST',
         headers: {
@@ -131,6 +130,7 @@ async function sendViaMeta(
     const data = await res.json()
 
     if (!res.ok) {
+      console.error('Meta API error:', data)
       return {
         success: false,
         error:   data.error?.message ?? 'Erreur Meta API',
@@ -150,11 +150,11 @@ async function sendViaMeta(
   }
 }
 
-// ── TWILIO ────────────────────────────────────────────────────
+// ── TWILIO ────────────────────────────────────────────────
 async function sendViaTwilio(
-  to: string,
+  to:      string,
   message: string,
-  config: WhatsAppConfig
+  config:  WhatsAppConfig
 ): Promise<SendMessageResult> {
   if (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioFromNumber) {
     return { success: false, error: 'Twilio credentials manquants' }
@@ -187,11 +187,7 @@ async function sendViaTwilio(
     )
 
     const data = await res.json()
-
-    if (!res.ok) {
-      return { success: false, error: data.message ?? 'Erreur Twilio' }
-    }
-
+    if (!res.ok) return { success: false, error: data.message ?? 'Erreur Twilio' }
     return { success: true, messageId: data.sid }
 
   } catch (err) {
@@ -202,41 +198,32 @@ async function sendViaTwilio(
   }
 }
 
-// ── MOCK ──────────────────────────────────────────────────────
+// ── MOCK ──────────────────────────────────────────────────
 async function sendViaMock(
-  to: string,
+  to:      string,
   message: string
 ): Promise<SendMessageResult> {
-  console.log('═══════════════════════════════════')
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   console.log('📱 WhatsApp MOCK — Envoi simulé')
   console.log('À :', to)
-  console.log('Message :')
-  console.log(message)
-  console.log('═══════════════════════════════════')
-
+  console.log('Message :', message)
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   await new Promise(r => setTimeout(r, 500))
-
-  return {
-    success:   true,
-    messageId: 'mock_' + Date.now(),
-  }
+  return { success: true, messageId: 'mock_' + Date.now() }
 }
 
-// ── FONCTION PRINCIPALE ───────────────────────────────────────
+// ── FONCTION PRINCIPALE ───────────────────────────────────
 export async function sendWhatsAppMessage(
-  to: string,
-  message: string,
+  to:            string,
+  message:       string,
   templateData?: TemplateData
 ): Promise<SendMessageResult> {
   const config = getConfig()
 
   switch (config.provider) {
-    case 'meta':
-      return sendViaMeta(to, message, config, templateData)
-    case 'twilio':
-      return sendViaTwilio(to, message, config)
+    case 'meta':   return sendViaMeta(to, message, config, templateData)
+    case 'twilio': return sendViaTwilio(to, message, config)
     case 'mock':
-    default:
-      return sendViaMock(to, message)
+    default:       return sendViaMock(to, message)
   }
 }
