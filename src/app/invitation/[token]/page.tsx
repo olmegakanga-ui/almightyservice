@@ -14,13 +14,11 @@ import FooterSection from '@/components/invitation/FooterSection'
 import { EventData, GuestData } from '@/types/invitation'
 
 const Divider = () => (
-  <div
-    style={{
-      height:     '1px',
-      background: 'linear-gradient(90deg, transparent, rgba(201,169,110,0.2), transparent)',
-      margin:     '0 48px',
-    }}
-  />
+  <div style={{
+    height:     '1px',
+    background: 'linear-gradient(90deg, transparent, rgba(201,169,110,0.2), transparent)',
+    margin:     '0 48px',
+  }} />
 )
 
 export async function generateMetadata({
@@ -31,9 +29,7 @@ export async function generateMetadata({
   const { token } = await params
   const data      = await getInvitationByToken(token)
 
-  if (!data) {
-    return { title: 'Invitation' }
-  }
+  if (!data) return { title: 'Invitation' }
 
   const title       = `${data.groomName} & ${data.brideName} — Invitation`
   const description = `Vous êtes cordialement invité(e) au mariage de ${data.groomName} & ${data.brideName}`
@@ -45,15 +41,8 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      images: [
-        {
-          url:    image,
-          width:  1200,
-          height: 630,
-          alt:    title,
-        },
-      ],
-      type: 'website',
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
+      type:   'website',
     },
     twitter: {
       card:        'summary_large_image',
@@ -75,20 +64,21 @@ export default async function InvitationPage({
   if (!data) notFound()
 
   const event: EventData = {
-    id:                 data.eventId,
-    groomName:          data.groomName,
-    brideName:          data.brideName,
-    eventDate:          data.eventDate,
-    venueName:          data.venueName,
-    venueAddress:       data.venueAddress,
-    venueLat:           data.venueLat,
-    venueLng:           data.venueLng,
-    backgroundImageUrl: data.backgroundImageUrl,
-    invitationText:     data.invitationText,
-    programItems:       data.programItems,
-    rsvpDeadline:       data.rsvpDeadline,
-    drinkOptions:       data.drinkOptions,
-    themeColor:         data.themeColor,
+    id:                  data.eventId,
+    groomName:           data.groomName,
+    brideName:           data.brideName,
+    eventDate:           data.eventDate,
+    venueName:           data.venueName,
+    venueAddress:        data.venueAddress,
+    venueLat:            data.venueLat,
+    venueLng:            data.venueLng,
+    backgroundImageUrl:  data.backgroundImageUrl,
+    invitationText:      data.invitationText,
+    programItems:        data.programItems,
+    rsvpDeadline:        data.rsvpDeadline,
+    drinkOptions:        data.drinkOptions,
+    themeColor:          data.themeColor,
+    themeColorSecondary: data.themeColorSecondary,
   }
 
   const guest: GuestData = {
@@ -103,6 +93,12 @@ export default async function InvitationPage({
     guestbookMessage: data.guestbookMessage,
     giftChoice:       data.giftChoice,
   }
+
+  // Couleurs du thème dynamiques
+  const goldColor   = event.themeColor        || '#C9A96E'
+  const goldLight   = event.themeColorSecondary || '#D4B483'
+  const goldBorder  = goldColor + '40'
+  const goldSubtle  = goldColor + '15'
 
   return (
     <>
@@ -119,7 +115,6 @@ export default async function InvitationPage({
           backgroundRepeat:   'no-repeat',
         }}
       >
-        {/* Overlay renforcé pour meilleure lisibilité */}
         <div style={{
           position:   'absolute',
           inset:      0,
@@ -134,8 +129,18 @@ export default async function InvitationPage({
         style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
 
-      {/* Contenu */}
-      <main style={{ position: 'relative', zIndex: 2, minHeight: '100vh' }}>
+      {/* Contenu avec couleurs dynamiques */}
+      <main
+        style={{
+          position:  'relative',
+          zIndex:    2,
+          minHeight: '100vh',
+          '--gold':        goldColor,
+          '--gold-light':  goldLight,
+          '--gold-border': goldBorder,
+          '--gold-subtle': goldSubtle,
+        } as React.CSSProperties}
+      >
         <HeroSection event={event} guest={guest} />
         <Divider />
         <CountdownSection eventDate={event.eventDate} />

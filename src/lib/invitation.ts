@@ -3,38 +3,39 @@ import { createClient } from '@/lib/supabase/server'
 import { DrinkCategory, ProgramItem } from '@/types/database.types'
 
 export interface FullInvitationData {
-  eventId: string
-  groomName: string
-  brideName: string
-  eventDate: string
-  venueName: string
-  venueAddress: string
-  venueLat: number
-  venueLng: number
-  backgroundImageUrl: string
-  invitationText: string
-  programItems: ProgramItem[]
-  rsvpDeadline: string
-  drinkOptions: DrinkCategory[]
-  themeColor: string
-  guestId: string
-  guestFullName: string
-  guestSide: 'HOMME' | 'FEMME'
-  guestTableName: string | null
-  guestTableId: string | null
-  invitationToken: string
-  isCouple: boolean
-  rsvpStatus: 'pending' | 'confirmed' | 'declined'
-  selectedDrinks: string[]
-  guestbookMessage: string | null
-  giftChoice: 'envelope' | 'present' | null
+  eventId:             string
+  groomName:           string
+  brideName:           string
+  eventDate:           string
+  venueName:           string
+  venueAddress:        string
+  venueLat:            number
+  venueLng:            number
+  backgroundImageUrl:  string
+  invitationText:      string
+  programItems:        ProgramItem[]
+  rsvpDeadline:        string
+  drinkOptions:        DrinkCategory[]
+  themeColor:          string
+  themeColorSecondary: string
+  guestId:             string
+  guestFullName:       string
+  guestSide:           'HOMME' | 'FEMME'
+  guestTableName:      string | null
+  guestTableId:        string | null
+  invitationToken:     string
+  isCouple:            boolean
+  rsvpStatus:          'pending' | 'confirmed' | 'declined'
+  selectedDrinks:      string[]
+  guestbookMessage:    string | null
+  giftChoice:          'envelope' | 'present' | null
 }
 
 export async function getInvitationByToken(
   token: string
 ): Promise<FullInvitationData | null> {
   const supabase = await createClient()
-  const db = supabase as any
+  const db       = supabase as any
 
   // 1. Chercher l'invité par token
   const { data: guest, error: guestError } = await db
@@ -99,31 +100,41 @@ export async function getInvitationByToken(
     .eq('guest_id', guest.id)
     .single()
 
+  // Normaliser drink_options_json
+  const rawDrinks = event.drink_options_json
+  const drinkOptions: DrinkCategory[] = Array.isArray(rawDrinks)
+    ? rawDrinks.map((cat: any) => ({
+        categoryName: cat.categoryName ?? cat.category ?? 'Boissons',
+        drinks:       Array.isArray(cat.drinks) ? cat.drinks : [],
+      }))
+    : []
+
   return {
-    eventId:            event.id,
-    groomName:          event.groom_name,
-    brideName:          event.bride_name,
-    eventDate:          event.event_date,
-    venueName:          event.venue_name,
-    venueAddress:       event.venue_address,
-    venueLat:           Number(event.venue_lat),
-    venueLng:           Number(event.venue_lng),
-    backgroundImageUrl: event.background_image_url,
-    invitationText:     event.invitation_text,
-    programItems:       event.program_json as ProgramItem[],
-    rsvpDeadline:       event.rsvp_deadline,
-    drinkOptions:       event.drink_options_json as DrinkCategory[],
-    themeColor:         event.theme_color_primary,
-    guestId:            guest.id,
-    guestFullName:      guest.full_name,
-    guestSide:          guest.side,
-    guestTableName:     tableName,
-    guestTableId:       guest.table_id,
-    invitationToken:    guest.invitation_token,
-    isCouple:           guest.is_couple,
-    rsvpStatus:         (rsvp?.status ?? 'pending') as 'pending' | 'confirmed' | 'declined',
-    selectedDrinks:     drinks?.map((d: { drink_name: string }) => d.drink_name) ?? [],
-    guestbookMessage:   guestbook?.message ?? null,
-    giftChoice:         (gift?.gift_type ?? null) as 'envelope' | 'present' | null,
+    eventId:             event.id,
+    groomName:           event.groom_name,
+    brideName:           event.bride_name,
+    eventDate:           event.event_date,
+    venueName:           event.venue_name,
+    venueAddress:        event.venue_address,
+    venueLat:            Number(event.venue_lat),
+    venueLng:            Number(event.venue_lng),
+    backgroundImageUrl:  event.background_image_url,
+    invitationText:      event.invitation_text,
+    programItems:        event.program_json as ProgramItem[],
+    rsvpDeadline:        event.rsvp_deadline,
+    drinkOptions,
+    themeColor:          event.theme_color_primary  ?? '#C9A96E',
+    themeColorSecondary: event.theme_color_secondary ?? '#D4B483',
+    guestId:             guest.id,
+    guestFullName:       guest.full_name,
+    guestSide:           guest.side,
+    guestTableName:      tableName,
+    guestTableId:        guest.table_id,
+    invitationToken:     guest.invitation_token,
+    isCouple:            guest.is_couple,
+    rsvpStatus:          (rsvp?.status ?? 'pending') as 'pending' | 'confirmed' | 'declined',
+    selectedDrinks:      drinks?.map((d: { drink_name: string }) => d.drink_name) ?? [],
+    guestbookMessage:    guestbook?.message ?? null,
+    giftChoice:          (gift?.gift_type ?? null) as 'envelope' | 'present' | null,
   }
 }
