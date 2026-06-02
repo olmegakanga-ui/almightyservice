@@ -58,17 +58,20 @@ async function sendViaMeta(
       const components: object[] = []
 
       // En-tête image
-      if (templateData.imageUrl) {
-        components.push({
-          type:       'header',
-          parameters: [
-            {
-              type:  'image',
-              image: { link: templateData.imageUrl },
-            },
-          ],
-        })
-      }
+      // En-tête image — OBLIGATOIRE pour ce template
+components.push({
+  type:       'header',
+  parameters: [
+    {
+      type:  'image',
+      image: {
+        link: templateData.imageUrl && templateData.imageUrl.length > 10
+          ? templateData.imageUrl
+          : 'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=800&q=80',
+      },
+    },
+  ],
+})
 
       // Corps avec 7 variables
       components.push({
