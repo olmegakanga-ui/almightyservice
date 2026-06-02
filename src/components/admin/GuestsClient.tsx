@@ -6,6 +6,7 @@ import {
   Plus, Search, Download, Copy, Printer,
   Pencil, Trash2, Link2, MessageCircle, X, Check,
   Users, UserCheck, UserX, Clock, Upload,
+  ChevronUp, ChevronDown,
 } from 'lucide-react'
 import ImportGuestsModal from '@/components/admin/ImportGuestsModal'
 
@@ -43,7 +44,9 @@ interface Props {
   tables:        Table[]
 }
 
-type ModalMode = 'add' | 'edit' | null
+type ModalMode  = 'add' | 'edit' | null
+type SortField  = 'full_name' | 'table' | 'phone' | 'side' | 'is_couple' | 'rsvp'
+type SortDir    = 'asc' | 'desc'
 
 const RSVP_COLOR: Record<string, string> = {
   confirmed: '#7EC89A',
@@ -57,7 +60,7 @@ const RSVP_LABEL: Record<string, string> = {
   pending:   'En attente',
 }
 
-// ── MODAL AJOUT / ÉDITION ─────────────────────────────────
+// ── MODAL ─────────────────────────────────────────────────
 function GuestModal({
   mode, guest, tables, eventId, onClose, onSuccess,
 }: {
@@ -109,61 +112,26 @@ function GuestModal({
       }).eq('id', guest!.id)
     }
 
-    if (result.error) {
-      setError(result.error.message)
-      setLoading(false)
-      return
-    }
-
+    if (result.error) { setError(result.error.message); setLoading(false); return }
     setLoading(false)
     onSuccess()
   }
 
   const inputStyle: React.CSSProperties = {
-    width:        '100%',
-    padding:      '11px 14px',
-    background:   'rgba(255,255,255,0.04)',
-    border:       '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '10px',
-    color:        'white',
-    fontFamily:   'var(--font-body)',
-    fontSize:     '0.88rem',
-    outline:      'none',
+    width: '100%', padding: '11px 14px',
+    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)',
+    fontSize: '0.88rem', outline: 'none',
   }
-
   const labelStyle: React.CSSProperties = {
-    display:       'block',
-    fontSize:      '0.65rem',
-    letterSpacing: '0.2em',
-    textTransform: 'uppercase',
-    color:         'rgba(255,255,255,0.35)',
-    marginBottom:  '6px',
+    display: 'block', fontSize: '0.65rem', letterSpacing: '0.2em',
+    textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '6px',
   }
 
   return (
-    <div
-      style={{
-        position:       'fixed',
-        inset:          0,
-        background:     'rgba(0,0,0,0.7)',
-        zIndex:         1000,
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'center',
-        padding:        '24px',
-      }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div style={{
-        width:        '100%',
-        maxWidth:     '480px',
-        background:   '#141210',
-        border:       '1px solid rgba(201,169,110,0.2)',
-        borderRadius: '24px',
-        padding:      '32px',
-        maxHeight:    '90vh',
-        overflowY:    'auto',
-      }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(201,169,110,0.2)', borderRadius: '24px', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 300, color: 'white' }}>
             {mode === 'add' ? 'Nouvel invité' : "Modifier l'invité"}
@@ -176,133 +144,52 @@ function GuestModal({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label style={labelStyle}>Nom complet *</label>
-            <input
-              style={inputStyle}
-              value={form.full_name}
-              onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))}
-              placeholder="Ex: Benjamin Awuya"
-              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }}
-            />
+            <input style={inputStyle} value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))} placeholder="Ex: Benjamin Awuya"
+              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
           </div>
-
           <div>
             <label style={labelStyle}>Téléphone WhatsApp</label>
-            <input
-              style={inputStyle}
-              value={form.phone}
-              onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-              placeholder="243810000001"
-              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }}
-            />
+            <input style={inputStyle} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="243810000001"
+              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
           </div>
-
           <div>
             <label style={labelStyle}>Table</label>
-            <select
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              value={form.table_id}
-              onChange={e => setForm(p => ({ ...p, table_id: e.target.value }))}
-            >
+            <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.table_id} onChange={e => setForm(p => ({ ...p, table_id: e.target.value }))}>
               <option value="">— Aucune table —</option>
-              {tables.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.side}) — {t.category}
-                </option>
-              ))}
+              {tables.map(t => <option key={t.id} value={t.id}>{t.name} ({t.side}) — {t.category}</option>)}
             </select>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={labelStyle}>Invité côté de</label>
-              <select
-                style={{ ...inputStyle, cursor: 'pointer' }}
-                value={form.side}
-                onChange={e => setForm(p => ({ ...p, side: e.target.value as 'HOMME' | 'FEMME' }))}
-              >
+              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.side} onChange={e => setForm(p => ({ ...p, side: e.target.value as 'HOMME' | 'FEMME' }))}>
                 <option value="HOMME">Marié (Homme)</option>
                 <option value="FEMME">Mariée (Femme)</option>
               </select>
             </div>
             <div>
               <label style={labelStyle}>Est en couple ?</label>
-              <select
-                style={{ ...inputStyle, cursor: 'pointer' }}
-                value={form.is_couple ? 'oui' : 'non'}
-                onChange={e => setForm(p => ({ ...p, is_couple: e.target.value === 'oui' }))}
-              >
+              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.is_couple ? 'oui' : 'non'} onChange={e => setForm(p => ({ ...p, is_couple: e.target.value === 'oui' }))}>
                 <option value="non">Non (1 personne)</option>
                 <option value="oui">Oui (2 personnes)</option>
               </select>
             </div>
           </div>
-
           <div>
             <label style={labelStyle}>Étiquette</label>
-            <input
-              style={inputStyle}
-              value={form.label}
-              onChange={e => setForm(p => ({ ...p, label: e.target.value }))}
-              placeholder="Ex: Famille, Collègue, Ami..."
-              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }}
-            />
+            <input style={inputStyle} value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="Ex: Famille, Collègue, Ami..."
+              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
           </div>
 
-          {error && (
-            <p style={{ color: '#E89AA6', fontSize: '0.82rem', padding: '10px', background: 'rgba(184,80,96,0.1)', borderRadius: '8px' }}>
-              {error}
-            </p>
-          )}
+          {error && <p style={{ color: '#E89AA6', fontSize: '0.82rem', padding: '10px', background: 'rgba(184,80,96,0.1)', borderRadius: '8px' }}>{error}</p>}
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              style={{
-                flex:           1,
-                padding:        '14px',
-                borderRadius:   '100px',
-                border:         '1px solid rgba(201,169,110,0.5)',
-                background:     'rgba(201,169,110,0.1)',
-                color:          'var(--gold-light)',
-                fontFamily:     'var(--font-body)',
-                fontSize:       '0.78rem',
-                letterSpacing:  '0.15em',
-                textTransform:  'uppercase',
-                cursor:         loading ? 'not-allowed' : 'pointer',
-                opacity:        loading ? 0.6 : 1,
-                display:        'flex',
-                alignItems:     'center',
-                justifyContent: 'center',
-                gap:            '6px',
-              }}
-            >
+            <button onClick={handleSubmit} disabled={loading} style={{ flex: 1, padding: '14px', borderRadius: '100px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <Check size={14} />
               {loading ? 'Sauvegarde...' : mode === 'add' ? 'Ajouter' : 'Modifier'}
             </button>
-
-            <button
-              disabled
-              title="Bientôt disponible"
-              style={{
-                padding:      '14px 20px',
-                borderRadius: '100px',
-                border:       '1px solid rgba(255,255,255,0.08)',
-                background:   'transparent',
-                color:        'rgba(255,255,255,0.2)',
-                fontFamily:   'var(--font-body)',
-                fontSize:     '0.78rem',
-                cursor:       'not-allowed',
-                display:      'flex',
-                alignItems:   'center',
-                gap:          '6px',
-              }}
-            >
-              <MessageCircle size={14} />
-              WhatsApp
+            <button disabled title="Bientôt disponible" style={{ padding: '14px 20px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <MessageCircle size={14} /> WhatsApp
             </button>
           </div>
         </div>
@@ -321,14 +208,39 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [showImport, setShowImport]       = useState(false)
   const [deleting, setDeleting]           = useState(false)
+  const [sortField, setSortField]         = useState<SortField>('full_name')
+  const [sortDir, setSortDir]             = useState<SortDir>('asc')
 
-  const total     = guests.length
-  const confirmed = guests.filter(g => g.rsvp_responses?.status === 'confirmed').length
-  const declined  = guests.filter(g => g.rsvp_responses?.status === 'declined').length
-  const pending   = total - confirmed - declined
+  // Stats globales
+  const total       = guests.length
+  const confirmed   = guests.filter(g => g.rsvp_responses?.status === 'confirmed').length
+  const declined    = guests.filter(g => g.rsvp_responses?.status === 'declined').length
+  const pending     = total - confirmed - declined
+  const totalHomme  = guests.filter(g => g.side === 'HOMME').length
+  const totalFemme  = guests.filter(g => g.side === 'FEMME').length
+  const confHomme   = guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'confirmed').length
+  const confFemme   = guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'confirmed').length
 
+  // Tri
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDir('asc')
+    }
+  }
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ChevronUp size={11} style={{ opacity: 0.2 }} />
+    return sortDir === 'asc'
+      ? <ChevronUp size={11} style={{ color: 'var(--gold)' }} />
+      : <ChevronDown size={11} style={{ color: 'var(--gold)' }} />
+  }
+
+  // Filtrage + tri
   const filtered = useMemo(() => {
-    return guests.filter(g => {
+    let list = guests.filter(g => {
       const matchFilter = filter === 'ALL' || g.side === filter
       const q           = search.toLowerCase()
       const matchSearch = !q
@@ -338,7 +250,23 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         || (g.label ?? '').toLowerCase().includes(q)
       return matchFilter && matchSearch
     })
-  }, [guests, search, filter])
+
+    list = [...list].sort((a, b) => {
+      let va = '', vb = ''
+      switch (sortField) {
+        case 'full_name': va = a.full_name; vb = b.full_name; break
+        case 'table':     va = a.guest_tables?.name ?? ''; vb = b.guest_tables?.name ?? ''; break
+        case 'phone':     va = a.phone; vb = b.phone; break
+        case 'side':      va = a.side; vb = b.side; break
+        case 'is_couple': va = a.is_couple ? '1' : '0'; vb = b.is_couple ? '1' : '0'; break
+        case 'rsvp':      va = a.rsvp_responses?.status ?? 'pending'; vb = b.rsvp_responses?.status ?? 'pending'; break
+      }
+      const cmp = va.localeCompare(vb)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+
+    return list
+  }, [guests, search, filter, sortField, sortDir])
 
   const reload = async () => {
     const supabase = createClient()
@@ -353,69 +281,45 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const handleDelete = async (guestId: string) => {
     setDeleting(true)
     try {
-      const supabase = createClient()
-      const { error } = await (supabase as any)
-        .from('guests')
-        .delete()
-        .eq('id', guestId)
-
-      if (error) {
-        alert('Erreur suppression: ' + error.message)
-        console.error('DELETE ERROR:', error)
-      } else {
-        await reload()
-      }
-    } catch (err) {
-      console.error('Erreur:', err)
-    } finally {
-      setDeleting(false)
-      setDeleteConfirm(null)
-    }
+      const supabase  = createClient()
+      const { error } = await (supabase as any).from('guests').delete().eq('id', guestId)
+      if (error) { alert('Erreur: ' + error.message) } else { await reload() }
+    } catch (err) { console.error(err) }
+    finally { setDeleting(false); setDeleteConfirm(null) }
   }
 
   const copyLink = (token: string) => {
-    const url = window.location.origin + '/invitation/' + token
-    navigator.clipboard.writeText(url)
+    navigator.clipboard.writeText(window.location.origin + '/invitation/' + token)
   }
 
   const exportCSV = () => {
     const headers = ['Nom','Téléphone','Table','Côté','Couple','Statut RSVP','Étiquette']
     const rows    = filtered.map(g => [
-      g.full_name,
-      g.phone,
-      g.guest_tables?.name ?? '',
-      g.side,
+      g.full_name, g.phone, g.guest_tables?.name ?? '', g.side,
       g.is_couple ? 'Oui' : 'Non',
-      RSVP_LABEL[g.rsvp_responses?.status ?? 'pending'],
-      g.label ?? '',
+      RSVP_LABEL[g.rsvp_responses?.status ?? 'pending'], g.label ?? '',
     ])
     const csv  = [headers, ...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
-    a.href     = url
+    a.href     = URL.createObjectURL(blob)
     a.download = 'invites-' + event.groom_name + '-' + event.bride_name + '.csv'
     a.click()
   }
 
   const cellStyle: React.CSSProperties = {
-    padding:      '14px 16px',
-    fontSize:     '0.85rem',
-    color:        'rgba(255,255,255,0.75)',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
-    whiteSpace:   'nowrap',
+    padding: '14px 16px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)',
+    borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap',
   }
 
-  const thStyle: React.CSSProperties = {
-    padding:       '12px 16px',
-    fontSize:      '0.65rem',
-    letterSpacing: '0.2em',
-    textTransform: 'uppercase',
-    color:         'rgba(255,255,255,0.3)',
-    textAlign:     'left',
-    borderBottom:  '1px solid rgba(255,255,255,0.08)',
-    whiteSpace:    'nowrap',
-  }
+  const thBtn = (field: SortField, label: string) => (
+    <button
+      onClick={() => handleSort(field)}
+      style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: sortField === field ? 'var(--gold-light)' : 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', padding: 0, whiteSpace: 'nowrap' }}
+    >
+      {label} <SortIcon field={field} />
+    </button>
+  )
 
   return (
     <div style={{ padding: '40px' }}>
@@ -430,8 +334,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         </h1>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '32px' }}>
+      {/* Stats globales */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
         {[
           { icon: Users,     label: 'Total',      value: total,     color: 'rgba(255,255,255,0.7)' },
           { icon: UserCheck, label: 'Confirmés',  value: confirmed, color: '#7EC89A' },
@@ -440,88 +344,101 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         ].map((stat, i) => (
           <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
             <stat.icon size={18} color={stat.color} style={{ marginBottom: '10px' }} />
-            <p style={{ fontSize: '1.8rem', fontFamily: 'var(--font-display)', color: stat.color, lineHeight: 1 }}>
-              {stat.value}
-            </p>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.1em' }}>
-              {stat.label}
-            </p>
+            <p style={{ fontSize: '1.8rem', fontFamily: 'var(--font-display)', color: stat.color, lineHeight: 1 }}>{stat.value}</p>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.1em' }}>{stat.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Stats par côté */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
+        {/* Côté Marié */}
+        <div style={{ padding: '20px', background: 'rgba(100,149,237,0.05)', border: '1px solid rgba(100,149,237,0.15)', borderRadius: '16px' }}>
+          <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#9DB4F5', marginBottom: '12px' }}>
+            ♂ Côté Marié — {event.groom_name}
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {[
+              { label: 'Total',     value: totalHomme },
+              { label: 'Confirmés', value: confHomme },
+              { label: 'En attente',value: totalHomme - confHomme - guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'declined').length },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#9DB4F5', lineHeight: 1 }}>{s.value}</p>
+                <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+          {/* Barre progression */}
+          <div style={{ marginTop: '12px', height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: totalHomme > 0 ? (confHomme / totalHomme * 100) + '%' : '0%', background: '#9DB4F5', borderRadius: '2px', transition: 'width 0.5s ease' }} />
+          </div>
+          <p style={{ fontSize: '0.65rem', color: 'rgba(157,180,245,0.5)', marginTop: '4px' }}>
+            {totalHomme > 0 ? Math.round(confHomme / totalHomme * 100) : 0}% confirmés
+          </p>
+        </div>
+
+        {/* Côté Mariée */}
+        <div style={{ padding: '20px', background: 'rgba(255,182,193,0.05)', border: '1px solid rgba(255,182,193,0.15)', borderRadius: '16px' }}>
+          <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#FFB6C1', marginBottom: '12px' }}>
+            ♀ Côté Mariée — {event.bride_name}
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {[
+              { label: 'Total',     value: totalFemme },
+              { label: 'Confirmés', value: confFemme },
+              { label: 'En attente',value: totalFemme - confFemme - guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'declined').length },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#FFB6C1', lineHeight: 1 }}>{s.value}</p>
+                <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: '12px', height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: totalFemme > 0 ? (confFemme / totalFemme * 100) + '%' : '0%', background: '#FFB6C1', borderRadius: '2px', transition: 'width 0.5s ease' }} />
+          </div>
+          <p style={{ fontSize: '0.65rem', color: 'rgba(255,182,193,0.5)', marginTop: '4px' }}>
+            {totalFemme > 0 ? Math.round(confFemme / totalFemme * 100) : 0}% confirmés
+          </p>
+        </div>
       </div>
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher nom, téléphone, table..."
-            style={{
-              width:        '100%',
-              padding:      '10px 12px 10px 36px',
-              background:   'rgba(255,255,255,0.04)',
-              border:       '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '10px',
-              color:        'white',
-              fontFamily:   'var(--font-body)',
-              fontSize:     '0.85rem',
-              outline:      'none',
-            }}
-          />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher nom, téléphone, table..."
+            style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none' }} />
         </div>
 
         <div style={{ display: 'flex', gap: '6px' }}>
           {(['ALL', 'HOMME', 'FEMME'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                padding:      '8px 16px',
-                borderRadius: '8px',
-                border:       filter === f ? '1px solid rgba(201,169,110,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                background:   filter === f ? 'rgba(201,169,110,0.1)' : 'transparent',
-                color:        filter === f ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)',
-                fontSize:     '0.78rem',
-                cursor:       'pointer',
-                transition:   'all 0.2s ease',
-              }}
-            >
+            <button key={f} onClick={() => setFilter(f)} style={{ padding: '8px 16px', borderRadius: '8px', border: filter === f ? '1px solid rgba(201,169,110,0.4)' : '1px solid rgba(255,255,255,0.08)', background: filter === f ? 'rgba(201,169,110,0.1)' : 'transparent', color: filter === f ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s ease' }}>
               {f === 'ALL' ? 'Tous' : f === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
             </button>
           ))}
         </div>
 
         <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => navigator.clipboard.writeText(filtered.map(g => g.full_name).join('\n'))}
-            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
-          >
+          <button onClick={() => navigator.clipboard.writeText(filtered.map(g => g.full_name).join('\n'))}
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
             <Copy size={13} /> Copier
           </button>
-          <button
-            onClick={exportCSV}
-            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
-          >
+          <button onClick={exportCSV}
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
             <Download size={13} /> CSV
           </button>
-          <button
-            onClick={() => window.print()}
-            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
-          >
+          <button onClick={() => window.print()}
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
             <Printer size={13} /> Print
           </button>
-          <button
-            onClick={() => setShowImport(true)}
-            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
-          >
+          <button onClick={() => setShowImport(true)}
+            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
             <Upload size={14} /> Importer CSV
           </button>
-          <button
-            onClick={() => { setEditingGuest(undefined); setModalMode('add') }}
-            style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
-          >
+          <button onClick={() => { setEditingGuest(undefined); setModalMode('add') }}
+            style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
             <Plus size={15} /> Ajouter un invité
           </button>
         </div>
@@ -532,15 +449,15 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>
-                <th style={thStyle}>Nom</th>
-                <th style={thStyle}>Table</th>
-                <th style={thStyle}>Téléphone</th>
-                <th style={thStyle}>Côté</th>
-                <th style={thStyle}>Format</th>
-                <th style={thStyle}>Statut RSVP</th>
-                <th style={thStyle}>Étiquette</th>
-                <th style={{ ...thStyle, textAlign: 'center' }}>Actions</th>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <th style={{ padding: '12px 16px', textAlign: 'left' }}>{thBtn('full_name', 'Nom')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left' }}>{thBtn('table', 'Table')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left' }}>{thBtn('phone', 'Téléphone')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left' }}>{thBtn('side', 'Côté')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left' }}>{thBtn('is_couple', 'Format')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left' }}>{thBtn('rsvp', 'Statut RSVP')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>Étiquette</th>
+                <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -555,35 +472,19 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
                   const isConfirm  = deleteConfirm === guest.id
                   return (
-                    <tr
-                      key={guest.id}
+                    <tr key={guest.id}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                     >
+                      <td style={cellStyle}><span style={{ color: 'white', fontWeight: 500 }}>{guest.full_name}</span></td>
                       <td style={cellStyle}>
-                        <span style={{ color: 'white', fontWeight: 500 }}>{guest.full_name}</span>
+                        {guest.guest_tables?.name
+                          ? <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontSize: '0.78rem' }}>{guest.guest_tables.name}</span>
+                          : <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem' }}>—</span>}
                       </td>
+                      <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.5)' }}>{guest.phone || '—'}</td>
                       <td style={cellStyle}>
-                        {guest.guest_tables?.name ? (
-                          <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontSize: '0.78rem' }}>
-                            {guest.guest_tables.name}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem' }}>—</span>
-                        )}
-                      </td>
-                      <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.5)' }}>
-                        {guest.phone || '—'}
-                      </td>
-                      <td style={cellStyle}>
-                        <span style={{
-                          padding:      '3px 10px',
-                          borderRadius: '6px',
-                          fontSize:     '0.72rem',
-                          letterSpacing:'0.1em',
-                          background:   guest.side === 'HOMME' ? 'rgba(100,149,237,0.1)' : 'rgba(255,182,193,0.1)',
-                          color:        guest.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1',
-                        }}>
+                        <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', letterSpacing: '0.1em', background: guest.side === 'HOMME' ? 'rgba(100,149,237,0.1)' : 'rgba(255,182,193,0.1)', color: guest.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1' }}>
                           {guest.side === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
                         </span>
                       </td>
@@ -598,65 +499,29 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           {RSVP_LABEL[rsvpStatus]}
                         </span>
                       </td>
-                      <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>
-                        {guest.label || '—'}
-                      </td>
+                      <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
                       <td style={{ ...cellStyle, textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
-                          <button
-                            onClick={() => copyLink(guest.invitation_token)}
-                            title="Copier le lien d'invitation"
-                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
-                          >
+                          <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
+                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Link2 size={13} />
                           </button>
-                          <button
-                            disabled
-                            title="WhatsApp — bientôt"
-                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', background: 'transparent', color: 'rgba(255,255,255,0.15)', cursor: 'not-allowed' }}
-                          >
+                          <button disabled title="WhatsApp — bientôt"
+                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', background: 'transparent', color: 'rgba(255,255,255,0.15)', cursor: 'not-allowed' }}>
                             <MessageCircle size={13} />
                           </button>
-                          <button
-                            onClick={() => { setEditingGuest(guest); setModalMode('edit') }}
-                            title="Modifier"
-                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
-                          >
+                          <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
+                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Pencil size={13} />
                           </button>
-
-                          {/* Bouton supprimer */}
                           {isConfirm ? (
-                            <button
-                              onClick={e => {
-                                e.stopPropagation()
-                                handleDelete(guest.id)
-                              }}
-                              disabled={deleting}
-                              style={{
-                                position:     'relative',
-                                zIndex:       20,
-                                padding:      '6px 10px',
-                                borderRadius: '6px',
-                                border:       '1px solid rgba(184,80,96,0.5)',
-                                background:   'rgba(184,80,96,0.2)',
-                                color:        '#E89AA6',
-                                cursor:       deleting ? 'not-allowed' : 'pointer',
-                                fontSize:     '0.72rem',
-                                fontWeight:   500,
-                              }}
-                            >
+                            <button onClick={e => { e.stopPropagation(); handleDelete(guest.id) }} disabled={deleting}
+                              style={{ position: 'relative', zIndex: 20, padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.5)', background: 'rgba(184,80,96,0.2)', color: '#E89AA6', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 500 }}>
                               {deleting ? '...' : 'Confirmer'}
                             </button>
                           ) : (
-                            <button
-                              onClick={e => {
-                                e.stopPropagation()
-                                setDeleteConfirm(guest.id)
-                              }}
-                              title="Supprimer"
-                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
-                            >
+                            <button onClick={e => { e.stopPropagation(); setDeleteConfirm(guest.id) }} title="Supprimer"
+                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                               <Trash2 size={13} />
                             </button>
                           )}
@@ -675,44 +540,26 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
             {filtered.length} invité{filtered.length > 1 ? 's' : ''} affiché{filtered.length > 1 ? 's' : ''}
             {filtered.length !== total && ' sur ' + total}
           </p>
+          <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)' }}>
+            Trié par {sortField === 'full_name' ? 'nom' : sortField === 'table' ? 'table' : sortField === 'phone' ? 'téléphone' : sortField === 'side' ? 'côté' : sortField === 'is_couple' ? 'format' : 'statut'} {sortDir === 'asc' ? '↑' : '↓'}
+          </p>
         </div>
       </div>
 
-      {/* Modal ajout/édition */}
       {modalMode && (
-        <GuestModal
-          mode={modalMode}
-          guest={editingGuest}
-          tables={tables}
-          eventId={event.id}
+        <GuestModal mode={modalMode} guest={editingGuest} tables={tables} eventId={event.id}
           onClose={() => { setModalMode(null); setEditingGuest(undefined) }}
-          onSuccess={async () => {
-            setModalMode(null)
-            setEditingGuest(undefined)
-            await reload()
-          }}
-        />
+          onSuccess={async () => { setModalMode(null); setEditingGuest(undefined); await reload() }} />
       )}
 
-      {/* Modal import CSV */}
       {showImport && (
-        <ImportGuestsModal
-          eventId={event.id}
-          tables={tables}
+        <ImportGuestsModal eventId={event.id} tables={tables}
           onClose={() => setShowImport(false)}
-          onSuccess={async () => {
-            setShowImport(false)
-            await reload()
-          }}
-        />
+          onSuccess={async () => { setShowImport(false); await reload() }} />
       )}
 
-      {/* Overlay fermeture confirmation suppression */}
       {deleteConfirm && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 1 }}
-          onClick={() => setDeleteConfirm(null)}
-        />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1 }} onClick={() => setDeleteConfirm(null)} />
       )}
     </div>
   )
