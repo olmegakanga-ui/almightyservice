@@ -44,9 +44,9 @@ interface Props {
   tables:        Table[]
 }
 
-type ModalMode  = 'add' | 'edit' | null
-type SortField  = 'full_name' | 'table' | 'phone' | 'side' | 'is_couple' | 'rsvp'
-type SortDir    = 'asc' | 'desc'
+type ModalMode = 'add' | 'edit' | null
+type SortField = 'full_name' | 'table' | 'phone' | 'side' | 'is_couple' | 'rsvp'
+type SortDir   = 'asc' | 'desc'
 
 const RSVP_COLOR: Record<string, string> = {
   confirmed: '#7EC89A',
@@ -59,6 +59,10 @@ const RSVP_LABEL: Record<string, string> = {
   declined:  'Décliné',
   pending:   'En attente',
 }
+
+// Compte 2 pour un couple, 1 pour un solo
+const countPersons = (list: Guest[]) =>
+  list.reduce((acc, g) => acc + (g.is_couple ? 2 : 1), 0)
 
 // ── MODAL ─────────────────────────────────────────────────
 function GuestModal({
@@ -144,32 +148,43 @@ function GuestModal({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label style={labelStyle}>Nom complet *</label>
-            <input style={inputStyle} value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))} placeholder="Ex: Benjamin Awuya"
-              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
+            <input style={inputStyle} value={form.full_name}
+              onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))}
+              placeholder="Ex: Benjamin Awuya"
+              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
+              onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
           </div>
           <div>
             <label style={labelStyle}>Téléphone WhatsApp</label>
-            <input style={inputStyle} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="243810000001"
-              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
+            <input style={inputStyle} value={form.phone}
+              onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+              placeholder="243810000001"
+              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
+              onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
           </div>
           <div>
             <label style={labelStyle}>Table</label>
-            <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.table_id} onChange={e => setForm(p => ({ ...p, table_id: e.target.value }))}>
+            <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.table_id}
+              onChange={e => setForm(p => ({ ...p, table_id: e.target.value }))}>
               <option value="">— Aucune table —</option>
-              {tables.map(t => <option key={t.id} value={t.id}>{t.name} ({t.side}) — {t.category}</option>)}
+              {tables.map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({t.side}) — {t.category}</option>
+              ))}
             </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={labelStyle}>Invité côté de</label>
-              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.side} onChange={e => setForm(p => ({ ...p, side: e.target.value as 'HOMME' | 'FEMME' }))}>
+              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.side}
+                onChange={e => setForm(p => ({ ...p, side: e.target.value as 'HOMME' | 'FEMME' }))}>
                 <option value="HOMME">Marié (Homme)</option>
                 <option value="FEMME">Mariée (Femme)</option>
               </select>
             </div>
             <div>
               <label style={labelStyle}>Est en couple ?</label>
-              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.is_couple ? 'oui' : 'non'} onChange={e => setForm(p => ({ ...p, is_couple: e.target.value === 'oui' }))}>
+              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.is_couple ? 'oui' : 'non'}
+                onChange={e => setForm(p => ({ ...p, is_couple: e.target.value === 'oui' }))}>
                 <option value="non">Non (1 personne)</option>
                 <option value="oui">Oui (2 personnes)</option>
               </select>
@@ -177,11 +192,18 @@ function GuestModal({
           </div>
           <div>
             <label style={labelStyle}>Étiquette</label>
-            <input style={inputStyle} value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="Ex: Famille, Collègue, Ami..."
-              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }} onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
+            <input style={inputStyle} value={form.label}
+              onChange={e => setForm(p => ({ ...p, label: e.target.value }))}
+              placeholder="Ex: Famille, Collègue, Ami..."
+              onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
+              onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
           </div>
 
-          {error && <p style={{ color: '#E89AA6', fontSize: '0.82rem', padding: '10px', background: 'rgba(184,80,96,0.1)', borderRadius: '8px' }}>{error}</p>}
+          {error && (
+            <p style={{ color: '#E89AA6', fontSize: '0.82rem', padding: '10px', background: 'rgba(184,80,96,0.1)', borderRadius: '8px' }}>
+              {error}
+            </p>
+          )}
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
             <button onClick={handleSubmit} disabled={loading} style={{ flex: 1, padding: '14px', borderRadius: '100px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
@@ -211,24 +233,23 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [sortField, setSortField]         = useState<SortField>('full_name')
   const [sortDir, setSortDir]             = useState<SortDir>('asc')
 
-  // Stats globales
-  const total       = guests.length
-  const confirmed   = guests.filter(g => g.rsvp_responses?.status === 'confirmed').length
-  const declined    = guests.filter(g => g.rsvp_responses?.status === 'declined').length
-  const pending     = total - confirmed - declined
-  const totalHomme  = guests.filter(g => g.side === 'HOMME').length
-  const totalFemme  = guests.filter(g => g.side === 'FEMME').length
-  const confHomme   = guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'confirmed').length
-  const confFemme   = guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'confirmed').length
+  // ── Stats — couple compte pour 2 ─────────────────────────
+  const total      = countPersons(guests)
+  const confirmed  = countPersons(guests.filter(g => g.rsvp_responses?.status === 'confirmed'))
+  const declined   = countPersons(guests.filter(g => g.rsvp_responses?.status === 'declined'))
+  const pending    = total - confirmed - declined
+
+  const totalHomme  = countPersons(guests.filter(g => g.side === 'HOMME'))
+  const totalFemme  = countPersons(guests.filter(g => g.side === 'FEMME'))
+  const confHomme   = countPersons(guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'confirmed'))
+  const confFemme   = countPersons(guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'confirmed'))
+  const declHomme   = countPersons(guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'declined'))
+  const declFemme   = countPersons(guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'declined'))
 
   // Tri
   const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDir('asc')
-    }
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
   }
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -254,11 +275,11 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     list = [...list].sort((a, b) => {
       let va = '', vb = ''
       switch (sortField) {
-        case 'full_name': va = a.full_name; vb = b.full_name; break
-        case 'table':     va = a.guest_tables?.name ?? ''; vb = b.guest_tables?.name ?? ''; break
-        case 'phone':     va = a.phone; vb = b.phone; break
-        case 'side':      va = a.side; vb = b.side; break
-        case 'is_couple': va = a.is_couple ? '1' : '0'; vb = b.is_couple ? '1' : '0'; break
+        case 'full_name': va = a.full_name;                            vb = b.full_name; break
+        case 'table':     va = a.guest_tables?.name ?? '';             vb = b.guest_tables?.name ?? ''; break
+        case 'phone':     va = a.phone;                                vb = b.phone; break
+        case 'side':      va = a.side;                                 vb = b.side; break
+        case 'is_couple': va = a.is_couple ? '1' : '0';               vb = b.is_couple ? '1' : '0'; break
         case 'rsvp':      va = a.rsvp_responses?.status ?? 'pending'; vb = b.rsvp_responses?.status ?? 'pending'; break
       }
       const cmp = va.localeCompare(vb)
@@ -267,6 +288,9 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
     return list
   }, [guests, search, filter, sortField, sortDir])
+
+  // Nombre de personnes affichées (couple = 2)
+  const filteredPersons = countPersons(filtered)
 
   const reload = async () => {
     const supabase = createClient()
@@ -293,11 +317,13 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   }
 
   const exportCSV = () => {
-    const headers = ['Nom','Téléphone','Table','Côté','Couple','Statut RSVP','Étiquette']
+    const headers = ['Nom','Téléphone','Table','Côté','Couple','Personnes','Statut RSVP','Étiquette']
     const rows    = filtered.map(g => [
       g.full_name, g.phone, g.guest_tables?.name ?? '', g.side,
       g.is_couple ? 'Oui' : 'Non',
-      RSVP_LABEL[g.rsvp_responses?.status ?? 'pending'], g.label ?? '',
+      g.is_couple ? '2' : '1',
+      RSVP_LABEL[g.rsvp_responses?.status ?? 'pending'],
+      g.label ?? '',
     ])
     const csv  = [headers, ...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -332,15 +358,18 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white' }}>
           Gestion des invités
         </h1>
+        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem', marginTop: '4px' }}>
+          {guests.length} entrée{guests.length > 1 ? 's' : ''} · <span style={{ color: 'var(--gold-light)' }}>{total} personne{total > 1 ? 's' : ''}</span> au total (couples comptés × 2)
+        </p>
       </div>
 
       {/* Stats globales */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
         {[
-          { icon: Users,     label: 'Total',      value: total,     color: 'rgba(255,255,255,0.7)' },
-          { icon: UserCheck, label: 'Confirmés',  value: confirmed, color: '#7EC89A' },
-          { icon: UserX,     label: 'Déclinés',   value: declined,  color: '#E89AA6' },
-          { icon: Clock,     label: 'En attente', value: pending,   color: 'rgba(201,169,110,0.8)' },
+          { icon: Users,     label: 'Personnes',   value: total,     color: 'rgba(255,255,255,0.7)' },
+          { icon: UserCheck, label: 'Confirmées',  value: confirmed, color: '#7EC89A' },
+          { icon: UserX,     label: 'Déclinées',   value: declined,  color: '#E89AA6' },
+          { icon: Clock,     label: 'En attente',  value: pending,   color: 'rgba(201,169,110,0.8)' },
         ].map((stat, i) => (
           <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
             <stat.icon size={18} color={stat.color} style={{ marginBottom: '10px' }} />
@@ -352,6 +381,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
       {/* Stats par côté */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
+
         {/* Côté Marié */}
         <div style={{ padding: '20px', background: 'rgba(100,149,237,0.05)', border: '1px solid rgba(100,149,237,0.15)', borderRadius: '16px' }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#9DB4F5', marginBottom: '12px' }}>
@@ -359,9 +389,9 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             {[
-              { label: 'Total',     value: totalHomme },
-              { label: 'Confirmés', value: confHomme },
-              { label: 'En attente',value: totalHomme - confHomme - guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'declined').length },
+              { label: 'Personnes',  value: totalHomme },
+              { label: 'Confirmées', value: confHomme },
+              { label: 'En attente', value: totalHomme - confHomme - declHomme },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#9DB4F5', lineHeight: 1 }}>{s.value}</p>
@@ -369,7 +399,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
               </div>
             ))}
           </div>
-          {/* Barre progression */}
           <div style={{ marginTop: '12px', height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: totalHomme > 0 ? (confHomme / totalHomme * 100) + '%' : '0%', background: '#9DB4F5', borderRadius: '2px', transition: 'width 0.5s ease' }} />
           </div>
@@ -385,9 +414,9 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             {[
-              { label: 'Total',     value: totalFemme },
-              { label: 'Confirmés', value: confFemme },
-              { label: 'En attente',value: totalFemme - confFemme - guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'declined').length },
+              { label: 'Personnes',  value: totalFemme },
+              { label: 'Confirmées', value: confFemme },
+              { label: 'En attente', value: totalFemme - confFemme - declFemme },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#FFB6C1', lineHeight: 1 }}>{s.value}</p>
@@ -408,7 +437,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher nom, téléphone, table..."
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher nom, téléphone, table..."
             style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none' }} />
         </div>
 
@@ -476,7 +506,16 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                     >
-                      <td style={cellStyle}><span style={{ color: 'white', fontWeight: 500 }}>{guest.full_name}</span></td>
+                      <td style={cellStyle}>
+                        <div>
+                          <span style={{ color: 'white', fontWeight: 500 }}>{guest.full_name}</span>
+                          {guest.is_couple && (
+                            <span style={{ display: 'block', fontSize: '0.68rem', color: 'rgba(201,169,110,0.6)', marginTop: '1px' }}>
+                              × 2 personnes
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td style={cellStyle}>
                         {guest.guest_tables?.name
                           ? <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontSize: '0.78rem' }}>{guest.guest_tables.name}</span>
@@ -489,8 +528,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         </span>
                       </td>
                       <td style={cellStyle}>
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
-                          {guest.is_couple ? '👫 Couple' : '👤 Solo'}
+                        <span style={{ color: guest.is_couple ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
+                          {guest.is_couple ? '👫 Couple (2)' : '👤 Solo (1)'}
                         </span>
                       </td>
                       <td style={cellStyle}>
@@ -537,8 +576,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
         <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)' }}>
-            {filtered.length} invité{filtered.length > 1 ? 's' : ''} affiché{filtered.length > 1 ? 's' : ''}
-            {filtered.length !== total && ' sur ' + total}
+            {filtered.length} entrée{filtered.length > 1 ? 's' : ''} · <span style={{ color: 'rgba(255,255,255,0.4)' }}>{filteredPersons} personne{filteredPersons > 1 ? 's' : ''}</span>
+            {filtered.length !== guests.length && ' (filtrées sur ' + guests.length + ')'}
           </p>
           <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)' }}>
             Trié par {sortField === 'full_name' ? 'nom' : sortField === 'table' ? 'table' : sortField === 'phone' ? 'téléphone' : sortField === 'side' ? 'côté' : sortField === 'is_couple' ? 'format' : 'statut'} {sortDir === 'asc' ? '↑' : '↓'}
