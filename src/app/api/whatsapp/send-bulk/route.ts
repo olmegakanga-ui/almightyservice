@@ -6,7 +6,7 @@ import { formatDate, formatTime } from '@/lib/whatsapp/templates'
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, messageType, onlyPending } = await request.json()
+    const { eventId, messageType, onlyPending, guestIds } = await request.json()
 
     if (!eventId || !messageType) {
       return NextResponse.json(
@@ -40,8 +40,11 @@ export async function POST(request: NextRequest) {
       .not('phone', 'is', null)
       .neq('phone', '')
 
-    // Si onlyPending = true, exclure les confirmés
-    if (onlyPending) {
+    // Si guestIds spécifiés — envoi à un ou plusieurs invités précis
+    if (guestIds && Array.isArray(guestIds) && guestIds.length > 0) {
+      query = query.in('id', guestIds)
+    } else if (onlyPending) {
+      // Si onlyPending = true, exclure les confirmés
       const { data: confirmed } = await db
         .from('rsvp_responses')
         .select('guest_id')
@@ -71,20 +74,26 @@ export async function POST(request: NextRequest) {
 
       const invitationUrl = `${baseUrl}/invitation/${guest.invitation_token}`
 
+      // Extraire l'heure directement depuis la chaîne ISO (pas de conversion UTC)
+      const eventDateStr = formatDate(event.event_date)
+      const eventTimeStr = event.event_date.includes('T')
+        ? event.event_date.split('T')[1].slice(0, 5).replace(':', 'h')
+        : formatTime(event.event_date)
+
       // TemplateData pour le template Meta approuvé
       const templateData: TemplateData = {
         guestName:     guest.full_name,
         groomName:     event.groom_name,
         brideName:     event.bride_name,
-        eventDate:     formatDate(event.event_date),
-        eventTime:     formatTime(event.event_date),
+        eventDate:     eventDateStr,
+        eventTime:     eventTimeStr,
         venueName:     event.venue_name,
         invitationUrl,
         imageUrl:      event.background_image_url || undefined,
       }
 
-      // Message texte de secours (si pas de template)
-      const fallbackMessage = `✨ ${guest.full_name} ✨\n\n${event.groom_name} & ${event.bride_name} ont l'immense joie de vous convier à leur mariage.\n\n📅 ${formatDate(event.event_date)} à ${formatTime(event.event_date)}\n📍 ${event.venue_name}\n\n👇 ${invitationUrl}\n\n— AlmightyService`
+      // Message texte de secours
+      const fallbackMessage = `✨ ${guest.full_name} ✨\n\n${event.groom_name} & ${event.bride_name} ont l'immense joie de vous convier à leur mariage.\n\n📅 ${eventDateStr} à ${eventTimeStr}\n📍 ${event.venue_name}\n\n👇 ${invitationUrl}\n\n— AlmightyService`
 
       // Enregistrer en DB
       const { data: waMessage } = await db

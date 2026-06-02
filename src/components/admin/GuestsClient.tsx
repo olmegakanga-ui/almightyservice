@@ -6,7 +6,7 @@ import {
   Plus, Search, Download, Copy, Printer,
   Pencil, Trash2, Link2, MessageCircle, X, Check,
   Users, UserCheck, UserX, Clock, Upload,
-  ChevronUp, ChevronDown,
+  ChevronUp, ChevronDown, Loader,
 } from 'lucide-react'
 import ImportGuestsModal from '@/components/admin/ImportGuestsModal'
 
@@ -60,7 +60,6 @@ const RSVP_LABEL: Record<string, string> = {
   pending:   'En attente',
 }
 
-// Compte 2 pour un couple, 1 pour un solo
 const countPersons = (list: Guest[]) =>
   list.reduce((acc, g) => acc + (g.is_couple ? 2 : 1), 0)
 
@@ -83,8 +82,10 @@ function GuestModal({
     side:      guest?.side ?? 'HOMME' as 'HOMME' | 'FEMME',
     label:     guest?.label ?? '',
   })
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState<string | null>(null)
+  const [loading, setLoading]   = useState(false)
+  const [sending, setSending]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+  const [waSent, setWaSent]     = useState(false)
 
   const handleSubmit = async () => {
     if (!form.full_name.trim()) { setError('Le nom est requis'); return }
@@ -119,6 +120,36 @@ function GuestModal({
     if (result.error) { setError(result.error.message); setLoading(false); return }
     setLoading(false)
     onSuccess()
+  }
+
+  const handleSendWhatsApp = async () => {
+    if (!guest?.phone || !guest?.invitation_token) {
+      setError('Numéro de téléphone requis')
+      return
+    }
+    setSending(true)
+    setError(null)
+    try {
+      const res  = await fetch('/api/whatsapp/send-bulk', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          eventId,
+          messageType: 'INVITATION',
+          guestIds:    [guest.id],
+        }),
+      })
+      const data = await res.json()
+      if (data.sent > 0) {
+        setWaSent(true)
+      } else {
+        setError('Échec envoi: ' + (data.errors?.[0] ?? 'Erreur inconnue'))
+      }
+    } catch {
+      setError('Erreur réseau')
+    } finally {
+      setSending(false)
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -205,14 +236,45 @@ function GuestModal({
             </p>
           )}
 
+          {waSent && (
+            <p style={{ color: '#7EC89A', fontSize: '0.82rem', padding: '10px', background: 'rgba(90,138,106,0.1)', borderRadius: '8px' }}>
+              ✓ Invitation WhatsApp envoyée !
+            </p>
+          )}
+
           <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
             <button onClick={handleSubmit} disabled={loading} style={{ flex: 1, padding: '14px', borderRadius: '100px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <Check size={14} />
               {loading ? 'Sauvegarde...' : mode === 'add' ? 'Ajouter' : 'Modifier'}
             </button>
-            <button disabled title="Bientôt disponible" style={{ padding: '14px 20px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <MessageCircle size={14} /> WhatsApp
-            </button>
+
+            {mode === 'edit' && guest?.phone && (
+              <button
+                onClick={handleSendWhatsApp}
+                disabled={sending || waSent}
+                title="Envoyer l'invitation WhatsApp"
+                style={{
+                  padding:        '14px 18px',
+                  borderRadius:   '100px',
+                  border:         waSent ? '1px solid rgba(90,138,106,0.4)' : '1px solid rgba(37,211,102,0.4)',
+                  background:     waSent ? 'rgba(90,138,106,0.1)' : 'rgba(37,211,102,0.1)',
+                  color:          waSent ? '#7EC89A' : '#25D366',
+                  fontFamily:     'var(--font-body)',
+                  fontSize:       '0.78rem',
+                  cursor:         sending || waSent ? 'not-allowed' : 'pointer',
+                  display:        'flex',
+                  alignItems:     'center',
+                  gap:            '6px',
+                  opacity:        sending ? 0.6 : 1,
+                }}
+              >
+                {sending
+                  ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                  : <MessageCircle size={14} />
+                }
+                {waSent ? '✓' : 'WA'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -232,21 +294,19 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [deleting, setDeleting]           = useState(false)
   const [sortField, setSortField]         = useState<SortField>('full_name')
   const [sortDir, setSortDir]             = useState<SortDir>('asc')
+  const [sendingWa, setSendingWa]         = useState<string | null>(null)
 
-  // ── Stats — couple compte pour 2 ─────────────────────────
   const total      = countPersons(guests)
   const confirmed  = countPersons(guests.filter(g => g.rsvp_responses?.status === 'confirmed'))
   const declined   = countPersons(guests.filter(g => g.rsvp_responses?.status === 'declined'))
   const pending    = total - confirmed - declined
+  const totalHomme = countPersons(guests.filter(g => g.side === 'HOMME'))
+  const totalFemme = countPersons(guests.filter(g => g.side === 'FEMME'))
+  const confHomme  = countPersons(guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'confirmed'))
+  const confFemme  = countPersons(guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'confirmed'))
+  const declHomme  = countPersons(guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'declined'))
+  const declFemme  = countPersons(guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'declined'))
 
-  const totalHomme  = countPersons(guests.filter(g => g.side === 'HOMME'))
-  const totalFemme  = countPersons(guests.filter(g => g.side === 'FEMME'))
-  const confHomme   = countPersons(guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'confirmed'))
-  const confFemme   = countPersons(guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'confirmed'))
-  const declHomme   = countPersons(guests.filter(g => g.side === 'HOMME' && g.rsvp_responses?.status === 'declined'))
-  const declFemme   = countPersons(guests.filter(g => g.side === 'FEMME' && g.rsvp_responses?.status === 'declined'))
-
-  // Tri
   const handleSort = (field: SortField) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortField(field); setSortDir('asc') }
@@ -259,7 +319,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       : <ChevronDown size={11} style={{ color: 'var(--gold)' }} />
   }
 
-  // Filtrage + tri
   const filtered = useMemo(() => {
     let list = guests.filter(g => {
       const matchFilter = filter === 'ALL' || g.side === filter
@@ -285,11 +344,9 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       const cmp = va.localeCompare(vb)
       return sortDir === 'asc' ? cmp : -cmp
     })
-
     return list
   }, [guests, search, filter, sortField, sortDir])
 
-  // Nombre de personnes affichées (couple = 2)
   const filteredPersons = countPersons(filtered)
 
   const reload = async () => {
@@ -312,6 +369,36 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     finally { setDeleting(false); setDeleteConfirm(null) }
   }
 
+  // Envoyer WhatsApp à un invité depuis le tableau
+  const handleSendWa = async (guest: Guest) => {
+    if (!guest.phone || guest.phone.length < 8) {
+      alert('Numéro de téléphone manquant pour ' + guest.full_name)
+      return
+    }
+    setSendingWa(guest.id)
+    try {
+      const res  = await fetch('/api/whatsapp/send-bulk', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          eventId:     event.id,
+          messageType: 'INVITATION',
+          guestIds:    [guest.id],
+        }),
+      })
+      const data = await res.json()
+      if (data.sent > 0) {
+        alert('✓ Invitation envoyée à ' + guest.full_name)
+      } else {
+        alert('Échec: ' + (data.errors?.[0] ?? 'Erreur inconnue'))
+      }
+    } catch {
+      alert('Erreur réseau')
+    } finally {
+      setSendingWa(null)
+    }
+  }
+
   const copyLink = (token: string) => {
     navigator.clipboard.writeText(window.location.origin + '/invitation/' + token)
   }
@@ -320,10 +407,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     const headers = ['Nom','Téléphone','Table','Côté','Couple','Personnes','Statut RSVP','Étiquette']
     const rows    = filtered.map(g => [
       g.full_name, g.phone, g.guest_tables?.name ?? '', g.side,
-      g.is_couple ? 'Oui' : 'Non',
-      g.is_couple ? '2' : '1',
-      RSVP_LABEL[g.rsvp_responses?.status ?? 'pending'],
-      g.label ?? '',
+      g.is_couple ? 'Oui' : 'Non', g.is_couple ? '2' : '1',
+      RSVP_LABEL[g.rsvp_responses?.status ?? 'pending'], g.label ?? '',
     ])
     const csv  = [headers, ...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -339,10 +424,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   }
 
   const thBtn = (field: SortField, label: string) => (
-    <button
-      onClick={() => handleSort(field)}
-      style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: sortField === field ? 'var(--gold-light)' : 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', padding: 0, whiteSpace: 'nowrap' }}
-    >
+    <button onClick={() => handleSort(field)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: sortField === field ? 'var(--gold-light)' : 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', padding: 0, whiteSpace: 'nowrap' }}>
       {label} <SortIcon field={field} />
     </button>
   )
@@ -366,10 +448,10 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       {/* Stats globales */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
         {[
-          { icon: Users,     label: 'Personnes',   value: total,     color: 'rgba(255,255,255,0.7)' },
-          { icon: UserCheck, label: 'Confirmées',  value: confirmed, color: '#7EC89A' },
-          { icon: UserX,     label: 'Déclinées',   value: declined,  color: '#E89AA6' },
-          { icon: Clock,     label: 'En attente',  value: pending,   color: 'rgba(201,169,110,0.8)' },
+          { icon: Users,     label: 'Personnes',  value: total,     color: 'rgba(255,255,255,0.7)' },
+          { icon: UserCheck, label: 'Confirmées', value: confirmed, color: '#7EC89A' },
+          { icon: UserX,     label: 'Déclinées',  value: declined,  color: '#E89AA6' },
+          { icon: Clock,     label: 'En attente', value: pending,   color: 'rgba(201,169,110,0.8)' },
         ].map((stat, i) => (
           <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
             <stat.icon size={18} color={stat.color} style={{ marginBottom: '10px' }} />
@@ -381,8 +463,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
       {/* Stats par côté */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
-
-        {/* Côté Marié */}
         <div style={{ padding: '20px', background: 'rgba(100,149,237,0.05)', border: '1px solid rgba(100,149,237,0.15)', borderRadius: '16px' }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#9DB4F5', marginBottom: '12px' }}>
             ♂ Côté Marié — {event.groom_name}
@@ -407,7 +487,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </p>
         </div>
 
-        {/* Côté Mariée */}
         <div style={{ padding: '20px', background: 'rgba(255,182,193,0.05)', border: '1px solid rgba(255,182,193,0.15)', borderRadius: '16px' }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#FFB6C1', marginBottom: '12px' }}>
             ♀ Côté Mariée — {event.bride_name}
@@ -437,8 +516,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher nom, téléphone, table..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher nom, téléphone, table..."
             style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none' }} />
         </div>
 
@@ -501,6 +579,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                 filtered.map(guest => {
                   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
                   const isConfirm  = deleteConfirm === guest.id
+                  const hasPhone   = guest.phone && guest.phone.length >= 8
+                  const isWaSending = sendingWa === guest.id
                   return (
                     <tr key={guest.id}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)' }}
@@ -510,9 +590,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         <div>
                           <span style={{ color: 'white', fontWeight: 500 }}>{guest.full_name}</span>
                           {guest.is_couple && (
-                            <span style={{ display: 'block', fontSize: '0.68rem', color: 'rgba(201,169,110,0.6)', marginTop: '1px' }}>
-                              × 2 personnes
-                            </span>
+                            <span style={{ display: 'block', fontSize: '0.68rem', color: 'rgba(201,169,110,0.6)', marginTop: '1px' }}>× 2 personnes</span>
                           )}
                         </div>
                       </td>
@@ -541,18 +619,40 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
                       <td style={{ ...cellStyle, textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
+                          {/* Copier lien */}
                           <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Link2 size={13} />
                           </button>
-                          <button disabled title="WhatsApp — bientôt"
-                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', background: 'transparent', color: 'rgba(255,255,255,0.15)', cursor: 'not-allowed' }}>
-                            <MessageCircle size={13} />
+
+                          {/* WhatsApp — actif si numéro disponible */}
+                          <button
+                            onClick={() => hasPhone && handleSendWa(guest)}
+                            disabled={!hasPhone || isWaSending}
+                            title={hasPhone ? 'Envoyer invitation WhatsApp' : 'Numéro manquant'}
+                            style={{
+                              padding:      '6px',
+                              borderRadius: '6px',
+                              border:       hasPhone ? '1px solid rgba(37,211,102,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                              background:   'transparent',
+                              color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
+                              cursor:       hasPhone && !isWaSending ? 'pointer' : 'not-allowed',
+                              opacity:      isWaSending ? 0.6 : 1,
+                            }}
+                          >
+                            {isWaSending
+                              ? <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                              : <MessageCircle size={13} />
+                            }
                           </button>
+
+                          {/* Modifier */}
                           <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Pencil size={13} />
                           </button>
+
+                          {/* Supprimer */}
                           {isConfirm ? (
                             <button onClick={e => { e.stopPropagation(); handleDelete(guest.id) }} disabled={deleting}
                               style={{ position: 'relative', zIndex: 20, padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.5)', background: 'rgba(184,80,96,0.2)', color: '#E89AA6', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 500 }}>
@@ -600,6 +700,13 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       {deleteConfirm && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1 }} onClick={() => setDeleteConfirm(null)} />
       )}
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }
