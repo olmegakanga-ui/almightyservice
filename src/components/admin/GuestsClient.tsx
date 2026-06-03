@@ -6,7 +6,7 @@ import {
   Plus, Search, Download, Copy, Printer,
   Pencil, Trash2, Link2, MessageCircle, X, Check,
   Users, UserCheck, UserX, Clock, Upload,
-  ChevronUp, ChevronDown, Loader,
+  ChevronUp, ChevronDown,
 } from 'lucide-react'
 import ImportGuestsModal from '@/components/admin/ImportGuestsModal'
 
@@ -82,10 +82,8 @@ function GuestModal({
     side:      guest?.side ?? 'HOMME' as 'HOMME' | 'FEMME',
     label:     guest?.label ?? '',
   })
-  const [loading, setLoading]   = useState(false)
-  const [sending, setSending]   = useState(false)
-  const [error, setError]       = useState<string | null>(null)
-  const [waSent, setWaSent]     = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState<string | null>(null)
 
   const handleSubmit = async () => {
     if (!form.full_name.trim()) { setError('Le nom est requis'); return }
@@ -120,36 +118,6 @@ function GuestModal({
     if (result.error) { setError(result.error.message); setLoading(false); return }
     setLoading(false)
     onSuccess()
-  }
-
-  const handleSendWhatsApp = async () => {
-    if (!guest?.phone || !guest?.invitation_token) {
-      setError('Numéro de téléphone requis')
-      return
-    }
-    setSending(true)
-    setError(null)
-    try {
-      const res  = await fetch('/api/whatsapp/send-bulk', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          eventId,
-          messageType: 'INVITATION',
-          guestIds:    [guest.id],
-        }),
-      })
-      const data = await res.json()
-      if (data.sent > 0) {
-        setWaSent(true)
-      } else {
-        setError('Échec envoi: ' + (data.errors?.[0] ?? 'Erreur inconnue'))
-      }
-    } catch {
-      setError('Erreur réseau')
-    } finally {
-      setSending(false)
-    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -236,43 +204,40 @@ function GuestModal({
             </p>
           )}
 
-          {waSent && (
-            <p style={{ color: '#7EC89A', fontSize: '0.82rem', padding: '10px', background: 'rgba(90,138,106,0.1)', borderRadius: '8px' }}>
-              ✓ Invitation WhatsApp envoyée !
-            </p>
-          )}
-
           <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
             <button onClick={handleSubmit} disabled={loading} style={{ flex: 1, padding: '14px', borderRadius: '100px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <Check size={14} />
               {loading ? 'Sauvegarde...' : mode === 'add' ? 'Ajouter' : 'Modifier'}
             </button>
 
+            {/* Bouton WhatsApp Web dans la modal */}
             {mode === 'edit' && guest?.phone && (
               <button
-                onClick={handleSendWhatsApp}
-                disabled={sending || waSent}
-                title="Envoyer l'invitation WhatsApp"
+                onClick={() => {
+                  const text = encodeURIComponent(
+                    `✨ *${guest.full_name}* ✨\n\n` +
+                    `Votre invitation personnalisée :\n` +
+                    `👇 ${window.location.origin}/invitation/${guest.invitation_token}`
+                  )
+                  const phone = guest.phone.replace(/[^0-9]/g, '')
+                  window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+                }}
+                title="Ouvrir WhatsApp Web"
                 style={{
-                  padding:        '14px 18px',
-                  borderRadius:   '100px',
-                  border:         waSent ? '1px solid rgba(90,138,106,0.4)' : '1px solid rgba(37,211,102,0.4)',
-                  background:     waSent ? 'rgba(90,138,106,0.1)' : 'rgba(37,211,102,0.1)',
-                  color:          waSent ? '#7EC89A' : '#25D366',
-                  fontFamily:     'var(--font-body)',
-                  fontSize:       '0.78rem',
-                  cursor:         sending || waSent ? 'not-allowed' : 'pointer',
-                  display:        'flex',
-                  alignItems:     'center',
-                  gap:            '6px',
-                  opacity:        sending ? 0.6 : 1,
+                  padding:      '14px 18px',
+                  borderRadius: '100px',
+                  border:       '1px solid rgba(37,211,102,0.4)',
+                  background:   'rgba(37,211,102,0.1)',
+                  color:        '#25D366',
+                  fontFamily:   'var(--font-body)',
+                  fontSize:     '0.78rem',
+                  cursor:       'pointer',
+                  display:      'flex',
+                  alignItems:   'center',
+                  gap:          '6px',
                 }}
               >
-                {sending
-                  ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                  : <MessageCircle size={14} />
-                }
-                {waSent ? '✓' : 'WA'}
+                <MessageCircle size={14} /> WA
               </button>
             )}
           </div>
@@ -294,7 +259,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [deleting, setDeleting]           = useState(false)
   const [sortField, setSortField]         = useState<SortField>('full_name')
   const [sortDir, setSortDir]             = useState<SortDir>('asc')
-  const [sendingWa, setSendingWa]         = useState<string | null>(null)
 
   const total      = countPersons(guests)
   const confirmed  = countPersons(guests.filter(g => g.rsvp_responses?.status === 'confirmed'))
@@ -369,34 +333,18 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     finally { setDeleting(false); setDeleteConfirm(null) }
   }
 
-  // Envoyer WhatsApp à un invité depuis le tableau
-  const handleSendWa = async (guest: Guest) => {
-    if (!guest.phone || guest.phone.length < 8) {
-      alert('Numéro de téléphone manquant pour ' + guest.full_name)
-      return
-    }
-    setSendingWa(guest.id)
-    try {
-      const res  = await fetch('/api/whatsapp/send-bulk', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          eventId:     event.id,
-          messageType: 'INVITATION',
-          guestIds:    [guest.id],
-        }),
-      })
-      const data = await res.json()
-      if (data.sent > 0) {
-        alert('✓ Invitation envoyée à ' + guest.full_name)
-      } else {
-        alert('Échec: ' + (data.errors?.[0] ?? 'Erreur inconnue'))
-      }
-    } catch {
-      alert('Erreur réseau')
-    } finally {
-      setSendingWa(null)
-    }
+  // Ouvrir WhatsApp Web avec le message pré-rempli
+  const handleWhatsAppWeb = (guest: Guest) => {
+    const invitationUrl = window.location.origin + '/invitation/' + guest.invitation_token
+    const text = encodeURIComponent(
+      `✨ *${guest.full_name}* ✨\n\n` +
+      `*${event.groom_name} & ${event.bride_name}* ont l'immense joie et l'honneur de vous convier aux festivités de leur mariage.\n\n` +
+      `📅 Consultez votre invitation personnalisée et confirmez votre présence :\n\n` +
+      `👇 ${invitationUrl}\n\n` +
+      `— AlmightyService`
+    )
+    const phone = guest.phone.replace(/[^0-9]/g, '')
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
   }
 
   const copyLink = (token: string) => {
@@ -580,7 +528,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
                   const isConfirm  = deleteConfirm === guest.id
                   const hasPhone   = guest.phone && guest.phone.length >= 8
-                  const isWaSending = sendingWa === guest.id
                   return (
                     <tr key={guest.id}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)' }}
@@ -619,31 +566,28 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
                       <td style={{ ...cellStyle, textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
+
                           {/* Copier lien */}
-                          <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
+                          <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien d'invitation"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Link2 size={13} />
                           </button>
 
-                          {/* WhatsApp — actif si numéro disponible */}
+                          {/* WhatsApp Web */}
                           <button
-                            onClick={() => hasPhone && handleSendWa(guest)}
-                            disabled={!hasPhone || isWaSending}
-                            title={hasPhone ? 'Envoyer invitation WhatsApp' : 'Numéro manquant'}
+                            onClick={() => hasPhone && handleWhatsAppWeb(guest)}
+                            disabled={!hasPhone}
+                            title={hasPhone ? 'Envoyer via WhatsApp Web' : 'Numéro de téléphone manquant'}
                             style={{
                               padding:      '6px',
                               borderRadius: '6px',
-                              border:       hasPhone ? '1px solid rgba(37,211,102,0.3)' : '1px solid rgba(255,255,255,0.05)',
-                              background:   'transparent',
+                              border:       hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
+                              background:   hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
                               color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
-                              cursor:       hasPhone && !isWaSending ? 'pointer' : 'not-allowed',
-                              opacity:      isWaSending ? 0.6 : 1,
+                              cursor:       hasPhone ? 'pointer' : 'not-allowed',
                             }}
                           >
-                            {isWaSending
-                              ? <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                              : <MessageCircle size={13} />
-                            }
+                            <MessageCircle size={13} />
                           </button>
 
                           {/* Modifier */}
@@ -700,13 +644,6 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       {deleteConfirm && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1 }} onClick={() => setDeleteConfirm(null)} />
       )}
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   )
 }
