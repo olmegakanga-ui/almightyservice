@@ -109,9 +109,9 @@ export default function AccessClient({ event, initialUsers }: Props) {
       const { error: authError } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
-          emailRedirectTo: `${window.location.origin}/admin/events/${event.id}/${
-            role === 'protocole' ? 'scan' : 'guests'
-          }`,
+          emailRedirectTo: `${window.location.origin}/admin/auth/callback?next=/admin/events/${event.id}/${
+  role === 'protocole' ? 'scan' : 'guests'
+}`,
           data: {
             event_id:  event.id,
             role,
