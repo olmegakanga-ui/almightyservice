@@ -14,20 +14,19 @@ export async function GET(
   const supabase = createAdminClient()
   const db       = supabase as any
 
-  // Chercher l'utilisateur par access_token
-  const { data: eventUser } = await db
+  // Chercher l'utilisateur par access_token — sans join
+  const { data: eventUser, error: fetchError } = await db
     .from('event_users')
-    .select('*, events(status)')
+    .select('*')
     .eq('access_token', token)
     .single()
 
+  console.log('TOKEN:', token)
+  console.log('EVENT USER:', eventUser)
+  console.log('FETCH ERROR:', fetchError)
+
   if (!eventUser) {
     return NextResponse.redirect(new URL('/admin/login?reason=invalid', request.url))
-  }
-
-  // Vérifier que le mariage est encore actif
-  if (eventUser.events?.status !== 'active') {
-    return NextResponse.redirect(new URL('/admin/login?reason=expired', request.url))
   }
 
   const redirectTo = `${request.nextUrl.origin}/admin/auth/callback?next=/admin/events/${eventUser.event_id}/${
@@ -41,9 +40,11 @@ export async function GET(
     options: { redirectTo },
   })
 
+  console.log('MAGIC LINK DATA:', data)
+  console.log('MAGIC LINK ERROR:', error)
+
   if (error || !data?.properties?.action_link) {
-    console.error('Erreur génération lien:', error)
-    return NextResponse.redirect(new URL('/admin/login', request.url))
+    return NextResponse.redirect(new URL('/admin/login?reason=invalid', request.url))
   }
 
   // Mettre à jour last_login_at
