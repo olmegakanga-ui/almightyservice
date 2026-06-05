@@ -7,8 +7,11 @@ export async function GET(request: NextRequest) {
 
   const code      = searchParams.get('code')
   const tokenHash = searchParams.get('token_hash')
-  const type      = searchParams.get('type') ?? 'magiclink'
+  const token     = searchParams.get('token')
+  const type      = (searchParams.get('type') ?? 'magiclink') as any
   const next      = searchParams.get('next') ?? '/admin/events'
+
+  console.log('CALLBACK PARAMS:', { code, tokenHash, token, type, next })
 
   const cookieStore = await cookies()
 
@@ -17,8 +20,8 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll:    () => cookieStore.getAll(),
-        setAll:    (cookiesToSet) => {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options)
           })
@@ -36,17 +39,30 @@ export async function GET(request: NextRequest) {
     console.error('exchangeCodeForSession error:', error)
   }
 
-  // Méthode 2 — token_hash Magic Link
+  // Méthode 2 — token_hash
   if (tokenHash) {
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
-      type:       type as any,
+      type,
     })
     if (!error) {
       return NextResponse.redirect(new URL(next, origin))
     }
-    console.error('verifyOtp error:', error)
+    console.error('verifyOtp token_hash error:', error)
   }
 
+  // Méthode 3 — token direct (ancien format Supabase)
+  if (token) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: token,
+      type,
+    })
+    if (!error) {
+      return NextResponse.redirect(new URL(next, origin))
+    }
+    console.error('verifyOtp token error:', error)
+  }
+
+  console.error('CALLBACK: aucune méthode valide')
   return NextResponse.redirect(new URL('/admin/login', origin))
 }
