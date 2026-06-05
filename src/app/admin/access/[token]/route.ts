@@ -17,12 +17,17 @@ export async function GET(
   // Chercher l'utilisateur par access_token
   const { data: eventUser } = await db
     .from('event_users')
-    .select('*')
+    .select('*, events(status)')
     .eq('access_token', token)
     .single()
 
   if (!eventUser) {
-    return NextResponse.redirect(new URL('/admin/login', request.url))
+    return NextResponse.redirect(new URL('/admin/login?reason=invalid', request.url))
+  }
+
+  // Vérifier que le mariage est encore actif
+  if (eventUser.events?.status !== 'active') {
+    return NextResponse.redirect(new URL('/admin/login?reason=expired', request.url))
   }
 
   const redirectTo = `${request.nextUrl.origin}/admin/auth/callback?next=/admin/events/${eventUser.event_id}/${
