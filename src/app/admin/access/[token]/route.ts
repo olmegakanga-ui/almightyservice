@@ -14,38 +14,48 @@ export async function GET(
   const supabase = createAdminClient()
   const db       = supabase as any
 
-  // Chercher l'utilisateur par access_token — sans join
   const { data: eventUser, error: fetchError } = await db
     .from('event_users')
     .select('*')
     .eq('access_token', token)
     .single()
 
-  console.log('TOKEN:', token)
-  console.log('EVENT USER:', eventUser)
-  console.log('FETCH ERROR:', fetchError)
-
-  if (!eventUser) {
+  if (fetchError || !eventUser) {
     return NextResponse.redirect(new URL('/admin/login?reason=invalid', request.url))
   }
 
-  const redirectTo = `${request.nextUrl.origin}/admin/auth/callback?next=/admin/events/${eventUser.event_id}/${
+  const next = `/admin/events/${eventUser.event_id}/${
     eventUser.role === 'protocole' ? 'scan' : 'guests'
   }`
 
-  // Générer un Magic Link via admin API
+  // Générer OTP et le vérifier directement côté serveur
   const { data, error } = await supabase.auth.admin.generateLink({
     type:  'magiclink',
     email: eventUser.email,
-    options: { redirectTo },
+    options: {
+      redirectTo: `${request.nextUrl.origin}/admin/auth/callback?next=${encodeURIComponent(next)}`,
+    },
   })
 
-  console.log('MAGIC LINK DATA:', data)
-  console.log('MAGIC LINK ERROR:', error)
-
   if (error || !data?.properties?.action_link) {
+    console.error('Erreur génération lien:', error)
     return NextResponse.redirect(new URL('/admin/login?reason=invalid', request.url))
   }
+
+  // Extraire le hashed_token depuis action_link
+  const actionUrl   = new URL(data.properties.action_link)
+  const hashedToken = actionUrl.searchParams.get('token')
+  const type        = actionUrl.searchParams.get('type') ?? 'magiclink'
+
+  if (!hashedToken) {
+    return NextResponse.redirect(new URL('/admin/login?reason=invalid', request.url))
+  }
+
+  // Rediriger directement vers notre callback avec le token
+  const callbackUrl = new URL('/admin/auth/callback', request.nextUrl.origin)
+  callbackUrl.searchParams.set('token_hash', hashedToken)
+  callbackUrl.searchParams.set('type', type)
+  callbackUrl.searchParams.set('next', next)
 
   // Mettre à jour last_login_at
   await db
@@ -53,5 +63,5 @@ export async function GET(
     .update({ last_login_at: new Date().toISOString() })
     .eq('id', eventUser.id)
 
-  return NextResponse.redirect(data.properties.action_link)
+  return NextResponse.redirect(callbackUrl)
 }
