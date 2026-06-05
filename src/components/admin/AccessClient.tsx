@@ -2,16 +2,17 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Send, Trash2, Plus, Users, Shield, Crown } from 'lucide-react'
+import { Send, Trash2, Users, Shield, Crown, Link, Copy, Check } from 'lucide-react'
 
 interface EventUser {
-  id:           string
-  event_id:     string
-  email:        string
-  role:         'superadmin' | 'couple' | 'protocole'
-  full_name:    string
-  invited_at:   string
+  id:            string
+  event_id:      string
+  email:         string
+  role:          'superadmin' | 'couple' | 'protocole'
+  full_name:     string
+  invited_at:    string
   last_login_at: string | null
+  access_token:  string
 }
 
 interface Event {
@@ -40,7 +41,7 @@ const ROLE_CONFIG = {
     bg:     'rgba(157,180,245,0.1)',
     border: 'rgba(157,180,245,0.3)',
     icon:   Users,
-    desc:   'Invités, Tables, Boissons, Livre d\'or, Réactions, Check-in, Plan de salle',
+    desc:   "Invités, Tables, Boissons, Livre d'or, Réactions, Check-in, Plan de salle",
   },
   protocole: {
     label:  'Protocole',
@@ -61,14 +62,14 @@ function formatDate(iso: string) {
 }
 
 export default function AccessClient({ event, initialUsers }: Props) {
-  const [users, setUsers]       = useState<EventUser[]>(initialUsers)
-  const [email, setEmail]       = useState('')
-  const [fullName, setFullName] = useState('')
-  const [role, setRole]         = useState<'couple' | 'protocole'>('couple')
-  const [loading, setLoading]   = useState(false)
-  const [sending, setSending]   = useState<string | null>(null)
-  const [error, setError]       = useState<string | null>(null)
-  const [success, setSuccess]   = useState<string | null>(null)
+  const [users, setUsers]         = useState<EventUser[]>(initialUsers)
+  const [email, setEmail]         = useState('')
+  const [fullName, setFullName]   = useState('')
+  const [role, setRole]           = useState<'couple' | 'protocole'>('couple')
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState<string | null>(null)
+  const [success, setSuccess]     = useState<string | null>(null)
+  const [copied, setCopied]       = useState<string | null>(null)
 
   const reload = async () => {
     const supabase = createClient()
@@ -91,7 +92,7 @@ export default function AccessClient({ event, initialUsers }: Props) {
       const db       = supabase as any
 
       // Ajouter l'utilisateur dans event_users
-      const { error: insertError } = await db
+      const { data: newUser, error: insertError } = await db
         .from('event_users')
         .upsert({
           event_id:  event.id,
@@ -99,33 +100,23 @@ export default function AccessClient({ event, initialUsers }: Props) {
           role,
           full_name: fullName.trim(),
         }, { onConflict: 'event_id,email' })
+        .select('*')
+        .single()
 
       if (insertError) {
         setError(insertError.message)
         return
       }
 
-      // Envoyer le magic link
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/admin/auth/callback?next=/admin/events/${event.id}/${
-  role === 'protocole' ? 'scan' : 'guests'
-}`,
-          data: {
-            event_id:  event.id,
-            role,
-            full_name: fullName.trim(),
-          },
-        },
-      })
-
-      if (authError) {
-        setError(authError.message)
-        return
+      // Copier le lien direct dans le presse-papier
+      if (newUser?.access_token) {
+        const link = `${window.location.origin}/admin/access/${newUser.access_token}`
+        await navigator.clipboard.writeText(link)
+        setSuccess(`Utilisateur ajouté ! Lien direct copié :\n${link}`)
+      } else {
+        setSuccess('Utilisateur ajouté avec succès !')
       }
 
-      setSuccess(`Lien d'accès envoyé à ${email}`)
       setEmail('')
       setFullName('')
       await reload()
@@ -137,24 +128,11 @@ export default function AccessClient({ event, initialUsers }: Props) {
     }
   }
 
-  const handleResend = async (userEmail: string, userRole: string) => {
-    setSending(userEmail)
-    try {
-      const supabase = createClient()
-      await supabase.auth.signInWithOtp({
-        email: userEmail,
-        options: {
-          emailRedirectTo: `${window.location.origin}/admin/events/${event.id}/${
-            userRole === 'protocole' ? 'scan' : 'guests'
-          }`,
-        },
-      })
-      setSuccess(`Lien renvoyé à ${userEmail}`)
-    } catch {
-      setError('Erreur envoi')
-    } finally {
-      setSending(null)
-    }
+  const handleCopyLink = async (u: EventUser) => {
+    const link = `${window.location.origin}/admin/access/${u.access_token}`
+    await navigator.clipboard.writeText(link)
+    setCopied(u.id)
+    setTimeout(() => setCopied(null), 2000)
   }
 
   const handleDelete = async (userId: string) => {
@@ -190,42 +168,40 @@ export default function AccessClient({ event, initialUsers }: Props) {
           Gestion des accès
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', marginTop: '6px' }}>
-          Invitez les mariés et l&apos;équipe protocole à accéder au dashboard
+          Créez des liens directs permanents pour les mariés et l&apos;équipe protocole
         </p>
+      </div>
+
+      {/* Info lien direct */}
+      <div style={{ padding: '16px 20px', background: 'rgba(201,169,110,0.05)', border: '1px solid rgba(201,169,110,0.15)', borderRadius: '14px', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <Link size={18} color="var(--gold)" style={{ flexShrink: 0 }} />
+        <div>
+          <p style={{ color: 'var(--gold-light)', fontSize: '0.85rem', fontWeight: 500, marginBottom: '2px' }}>
+            Lien direct permanent
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem', lineHeight: 1.5 }}>
+            Chaque utilisateur reçoit un lien unique. Un clic suffit pour se connecter — pas besoin d&apos;email ni de mot de passe.
+          </p>
+        </div>
       </div>
 
       {/* Rôles expliqués */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '32px' }}>
         {(Object.entries(ROLE_CONFIG) as [keyof typeof ROLE_CONFIG, typeof ROLE_CONFIG[keyof typeof ROLE_CONFIG]][]).map(([key, conf]) => (
-          <div key={key} style={{
-            padding:      '16px',
-            background:   conf.bg,
-            border:       '1px solid ' + conf.border,
-            borderRadius: '14px',
-          }}>
+          <div key={key} style={{ padding: '16px', background: conf.bg, border: '1px solid ' + conf.border, borderRadius: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <conf.icon size={16} color={conf.color} />
-              <p style={{ color: conf.color, fontSize: '0.85rem', fontWeight: 500 }}>
-                {conf.label}
-              </p>
+              <p style={{ color: conf.color, fontSize: '0.85rem', fontWeight: 500 }}>{conf.label}</p>
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', lineHeight: 1.5 }}>
-              {conf.desc}
-            </p>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', lineHeight: 1.5 }}>{conf.desc}</p>
           </div>
         ))}
       </div>
 
-      {/* Formulaire invitation */}
-      <div style={{
-        padding:      '24px',
-        background:   'rgba(255,255,255,0.02)',
-        border:       '1px solid rgba(255,255,255,0.07)',
-        borderRadius: '16px',
-        marginBottom: '32px',
-      }}>
+      {/* Formulaire */}
+      <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', marginBottom: '32px' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
-          Inviter un utilisateur
+          Ajouter un utilisateur
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -234,28 +210,19 @@ export default function AccessClient({ event, initialUsers }: Props) {
               <p style={{ fontSize: '0.65rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
                 Nom complet
               </p>
-              <input
-                style={inputStyle}
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
+              <input style={inputStyle} value={fullName} onChange={e => setFullName(e.target.value)}
                 placeholder="Ex: Jonathan Banza"
                 onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }}
-              />
+                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
             </div>
             <div>
               <p style={{ fontSize: '0.65rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
                 Email
               </p>
-              <input
-                style={inputStyle}
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+              <input style={inputStyle} type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="email@exemple.com"
                 onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }}
-              />
+                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }} />
             </div>
           </div>
 
@@ -268,25 +235,7 @@ export default function AccessClient({ event, initialUsers }: Props) {
               {(['couple', 'protocole'] as const).map(r => {
                 const conf = ROLE_CONFIG[r]
                 return (
-                  <button
-                    key={r}
-                    onClick={() => setRole(r)}
-                    style={{
-                      flex:         1,
-                      padding:      '12px',
-                      borderRadius: '10px',
-                      border:       role === r ? '1px solid ' + conf.border : '1px solid rgba(255,255,255,0.08)',
-                      background:   role === r ? conf.bg : 'transparent',
-                      color:        role === r ? conf.color : 'rgba(255,255,255,0.4)',
-                      cursor:       'pointer',
-                      fontSize:     '0.82rem',
-                      transition:   'all 0.2s ease',
-                      display:      'flex',
-                      alignItems:   'center',
-                      justifyContent: 'center',
-                      gap:          '8px',
-                    }}
-                  >
+                  <button key={r} onClick={() => setRole(r)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: role === r ? '1px solid ' + conf.border : '1px solid rgba(255,255,255,0.08)', background: role === r ? conf.bg : 'transparent', color: role === r ? conf.color : 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.82rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <conf.icon size={14} />
                     {conf.label}
                   </button>
@@ -302,32 +251,14 @@ export default function AccessClient({ event, initialUsers }: Props) {
           )}
 
           {success && (
-            <p style={{ color: '#7EC89A', fontSize: '0.82rem', padding: '10px', background: 'rgba(90,138,106,0.1)', borderRadius: '8px' }}>
+            <div style={{ color: '#7EC89A', fontSize: '0.82rem', padding: '12px 14px', background: 'rgba(90,138,106,0.1)', borderRadius: '8px', border: '1px solid rgba(90,138,106,0.2)', whiteSpace: 'pre-line', lineHeight: 1.6 }}>
               ✓ {success}
-            </p>
+            </div>
           )}
 
-          <button
-            onClick={handleInvite}
-            disabled={loading}
-            style={{
-              padding:       '14px',
-              borderRadius:  '100px',
-              border:        '1px solid rgba(201,169,110,0.4)',
-              background:    'rgba(201,169,110,0.1)',
-              color:         'var(--gold-light)',
-              fontFamily:    'var(--font-body)',
-              fontSize:      '0.85rem',
-              cursor:        loading ? 'not-allowed' : 'pointer',
-              display:       'flex',
-              alignItems:    'center',
-              justifyContent:'center',
-              gap:           '8px',
-              opacity:       loading ? 0.6 : 1,
-            }}
-          >
-            <Send size={14} />
-            {loading ? 'Envoi en cours...' : 'Envoyer le lien d\'accès'}
+          <button onClick={handleInvite} disabled={loading} style={{ padding: '14px', borderRadius: '100px', border: '1px solid rgba(201,169,110,0.4)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontFamily: 'var(--font-body)', fontSize: '0.85rem', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.6 : 1 }}>
+            <Link size={14} />
+            {loading ? 'Création...' : 'Créer et copier le lien direct'}
           </button>
         </div>
       </div>
@@ -340,107 +271,80 @@ export default function AccessClient({ event, initialUsers }: Props) {
 
         {users.length === 0 ? (
           <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.85rem', textAlign: 'center', padding: '32px 0' }}>
-            Aucun utilisateur invité
+            Aucun utilisateur — ajoutez les mariés et l&apos;équipe protocole
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {users.map(u => {
-              const conf = ROLE_CONFIG[u.role]
+              const conf      = ROLE_CONFIG[u.role]
+              const isCopied  = copied === u.id
+              const directLink = `${typeof window !== 'undefined' ? window.location.origin : 'https://almightyservice.vercel.app'}/admin/access/${u.access_token}`
               return (
-                <div
-                  key={u.id}
-                  style={{
-                    display:      'flex',
-                    alignItems:   'center',
-                    gap:          '16px',
-                    padding:      '16px 20px',
-                    background:   'rgba(255,255,255,0.02)',
-                    border:       '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '14px',
-                  }}
-                >
-                  {/* Avatar */}
-                  <div style={{
-                    width:          '40px',
-                    height:         '40px',
-                    borderRadius:   '50%',
-                    background:     conf.bg,
-                    border:         '1px solid ' + conf.border,
-                    display:        'flex',
-                    alignItems:     'center',
-                    justifyContent: 'center',
-                    flexShrink:     0,
-                  }}>
-                    <conf.icon size={16} color={conf.color} />
-                  </div>
+                <div key={u.id} style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
 
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ color: 'white', fontSize: '0.88rem', fontWeight: 500 }}>
-                      {u.full_name || u.email}
+                    {/* Avatar */}
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: conf.bg, border: '1px solid ' + conf.border, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <conf.icon size={16} color={conf.color} />
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: 'white', fontSize: '0.88rem', fontWeight: 500 }}>
+                        {u.full_name || u.email}
+                      </p>
+                      <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem' }}>
+                        {u.email}
+                      </p>
+                    </div>
+
+                    {/* Rôle */}
+                    <span style={{ padding: '4px 12px', borderRadius: '100px', background: conf.bg, border: '1px solid ' + conf.border, color: conf.color, fontSize: '0.72rem', letterSpacing: '0.1em', flexShrink: 0 }}>
+                      {conf.label}
+                    </span>
+
+                    {/* Dernière connexion */}
+                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', flexShrink: 0, minWidth: '90px', textAlign: 'right' }}>
+                      {u.last_login_at ? 'Connecté ' + formatDate(u.last_login_at) : 'Jamais connecté'}
                     </p>
-                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem' }}>
-                      {u.email}
-                    </p>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      {u.role !== 'superadmin' && (
+                        <button
+                          onClick={() => handleCopyLink(u)}
+                          title="Copier le lien direct"
+                          style={{ padding: '7px 12px', borderRadius: '8px', border: isCopied ? '1px solid rgba(90,138,106,0.4)' : '1px solid rgba(201,169,110,0.3)', background: isCopied ? 'rgba(90,138,106,0.1)' : 'rgba(201,169,110,0.08)', color: isCopied ? '#7EC89A' : 'var(--gold-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.72rem', transition: 'all 0.2s ease' }}
+                        >
+                          {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                          {isCopied ? 'Copié !' : 'Lien'}
+                        </button>
+                      )}
+                      {u.role !== 'superadmin' && (
+                        <button onClick={() => handleDelete(u.id)} title="Supprimer l'accès"
+                          style={{ padding: '7px', borderRadius: '8px', border: '1px solid rgba(184,80,96,0.2)', background: 'transparent', color: '#E89AA6', cursor: 'pointer' }}>
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Rôle */}
-                  <span style={{
-                    padding:      '4px 12px',
-                    borderRadius: '100px',
-                    background:   conf.bg,
-                    border:       '1px solid ' + conf.border,
-                    color:        conf.color,
-                    fontSize:     '0.72rem',
-                    letterSpacing:'0.1em',
-                    flexShrink:   0,
-                  }}>
-                    {conf.label}
-                  </span>
-
-                  {/* Dernière connexion */}
-                  <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', flexShrink: 0, minWidth: '80px', textAlign: 'right' }}>
-                    {u.last_login_at
-                      ? 'Connecté ' + formatDate(u.last_login_at)
-                      : 'Jamais connecté'}
-                  </p>
-
-                  {/* Actions */}
-                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                    {u.role !== 'superadmin' && (
+                  {/* Lien direct affiché */}
+                  {u.role !== 'superadmin' && u.access_token && (
+                    <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Link size={11} color="rgba(255,255,255,0.2)" style={{ flexShrink: 0 }} />
+                      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.72rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                        {directLink}
+                      </p>
                       <button
-                        onClick={() => handleResend(u.email, u.role)}
-                        disabled={sending === u.email}
-                        title="Renvoyer le lien"
-                        style={{
-                          padding:      '7px',
-                          borderRadius: '8px',
-                          border:       '1px solid rgba(255,255,255,0.08)',
-                          background:   'transparent',
-                          color:        'rgba(255,255,255,0.4)',
-                          cursor:       'pointer',
-                        }}
+                        onClick={() => handleCopyLink(u)}
+                        style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.68rem', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
-                        <Send size={13} />
+                        {isCopied ? <Check size={10} /> : <Copy size={10} />}
+                        {isCopied ? 'Copié' : 'Copier'}
                       </button>
-                    )}
-                    {u.role !== 'superadmin' && (
-                      <button
-                        onClick={() => handleDelete(u.id)}
-                        title="Supprimer l'accès"
-                        style={{
-                          padding:      '7px',
-                          borderRadius: '8px',
-                          border:       '1px solid rgba(184,80,96,0.2)',
-                          background:   'transparent',
-                          color:        '#E89AA6',
-                          cursor:       'pointer',
-                        }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
