@@ -6,7 +6,7 @@ import {
   Plus, Search, Download, Copy, Printer,
   Pencil, Trash2, Link2, MessageCircle, X, Check,
   Users, UserCheck, UserX, Clock, Upload,
-  ChevronUp, ChevronDown,
+  ChevronUp, ChevronDown, AlertTriangle,
 } from 'lucide-react'
 import ImportGuestsModal from '@/components/admin/ImportGuestsModal'
 
@@ -209,38 +209,152 @@ function GuestModal({
               <Check size={14} />
               {loading ? 'Sauvegarde...' : mode === 'add' ? 'Ajouter' : 'Modifier'}
             </button>
-
-            {/* Bouton WhatsApp Web dans la modal */}
             {mode === 'edit' && guest?.phone && (
               <button
                 onClick={() => {
                   const text = encodeURIComponent(
-                    `✨ *${guest.full_name}* ✨\n\n` +
+                    `*${guest.full_name}*\n\n` +
                     `Votre invitation personnalisée :\n` +
-                    `👇 ${window.location.origin}/invitation/${guest.invitation_token}`
+                    `${window.location.origin}/invitation/${guest.invitation_token}`
                   )
                   const phone = guest.phone.replace(/[^0-9]/g, '')
                   window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
                 }}
                 title="Ouvrir WhatsApp Web"
-                style={{
-                  padding:      '14px 18px',
-                  borderRadius: '100px',
-                  border:       '1px solid rgba(37,211,102,0.4)',
-                  background:   'rgba(37,211,102,0.1)',
-                  color:        '#25D366',
-                  fontFamily:   'var(--font-body)',
-                  fontSize:     '0.78rem',
-                  cursor:       'pointer',
-                  display:      'flex',
-                  alignItems:   'center',
-                  gap:          '6px',
-                }}
+                style={{ padding: '14px 18px', borderRadius: '100px', border: '1px solid rgba(37,211,102,0.4)', background: 'rgba(37,211,102,0.1)', color: '#25D366', fontFamily: 'var(--font-body)', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <MessageCircle size={14} /> WA
               </button>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── MODAL REPORT ──────────────────────────────────────────
+function ReportModal({
+  event,
+  guests,
+  onClose,
+}: {
+  event:   Event
+  guests:  Guest[]
+  onClose: () => void
+}) {
+  const withPhone      = guests.filter(g => g.phone && g.phone.length >= 8)
+  const [sent, setSent] = useState(0)
+  const [started, setStarted] = useState(false)
+
+  const handleSend = () => {
+    setStarted(true)
+    withPhone.forEach((guest, i) => {
+      setTimeout(() => {
+        const text = encodeURIComponent(
+          `Cher(e) *${guest.full_name}*,\n\n` +
+          `Nous vous informons avec regret que le mariage de *${event.groom_name} & ${event.bride_name}*, prévu le *Samedi 13 juin 2026*, est malheureusement reporté à une date ultérieure.\n\n` +
+          `La famille traverse un moment de deuil et vous demande de les accompagner dans vos prières.\n\n` +
+          `La nouvelle date vous sera communiquée très prochainement.\n\n` +
+          `Merci infiniment de votre compréhension et de votre soutien.\n\n` +
+          `— *AlmightyService*`
+        )
+        const phone = guest.phone.replace(/[^0-9]/g, '')
+        window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+        setSent(s => s + 1)
+      }, i * 1500)
+    })
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(232,154,166,0.3)', borderRadius: '24px', padding: '32px' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(232,154,166,0.1)', border: '1px solid rgba(232,154,166,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <AlertTriangle size={16} color="#E89AA6" />
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 300, color: 'white' }}>
+              Report du mariage
+            </h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Message preview */}
+        <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', marginBottom: '20px' }}>
+          <p style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>
+            Aperçu du message
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+            {`Cher(e) *[Nom de l'invité]*,
+
+Nous vous informons avec regret que le mariage de *${event.groom_name} & ${event.bride_name}*, prévu le *Samedi 13 juin 2026*, est malheureusement reporté à une date ultérieure.
+
+La famille traverse un moment de deuil et vous demande de les accompagner dans vos prières.
+
+La nouvelle date vous sera communiquée très prochainement.
+
+Merci infiniment de votre compréhension et de votre soutien.
+
+— *AlmightyService*`}
+          </p>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
+          <div style={{ padding: '14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', textAlign: 'center' }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: 'white', lineHeight: 1 }}>{guests.length}</p>
+            <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>Total invités</p>
+          </div>
+          <div style={{ padding: '14px', background: 'rgba(37,211,102,0.05)', border: '1px solid rgba(37,211,102,0.15)', borderRadius: '10px', textAlign: 'center' }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: '#25D366', lineHeight: 1 }}>{withPhone.length}</p>
+            <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>Avec téléphone</p>
+          </div>
+        </div>
+
+        {/* Progression */}
+        {started && (
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>Ouverture des conversations...</p>
+              <p style={{ fontSize: '0.75rem', color: '#25D366' }}>{sent} / {withPhone.length}</p>
+            </div>
+            <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: withPhone.length > 0 ? (sent / withPhone.length * 100) + '%' : '0%', background: '#25D366', borderRadius: '2px', transition: 'width 0.3s ease' }} />
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)', marginTop: '8px' }}>
+              Chaque conversation s&apos;ouvre toutes les 1.5 secondes — envoyez manuellement dans chaque fenêtre WhatsApp.
+            </p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {!started ? (
+            <>
+              <button onClick={onClose} style={{ flex: 1, padding: '14px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', cursor: 'pointer' }}>
+                Annuler
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={withPhone.length === 0}
+                style={{ flex: 2, padding: '14px', borderRadius: '100px', border: '1px solid rgba(232,154,166,0.4)', background: 'rgba(232,154,166,0.1)', color: '#E89AA6', fontFamily: 'var(--font-body)', fontSize: '0.78rem', cursor: withPhone.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: withPhone.length === 0 ? 0.4 : 1 }}
+              >
+                <MessageCircle size={14} />
+                Envoyer à {withPhone.length} invité{withPhone.length > 1 ? 's' : ''}
+              </button>
+            </>
+          ) : (
+            <button onClick={onClose} style={{ flex: 1, padding: '14px', borderRadius: '100px', border: '1px solid rgba(201,169,110,0.4)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <Check size={14} /> Terminé
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -259,6 +373,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [deleting, setDeleting]           = useState(false)
   const [sortField, setSortField]         = useState<SortField>('full_name')
   const [sortDir, setSortDir]             = useState<SortDir>('asc')
+  const [showReport, setShowReport]       = useState(false)
 
   const total      = countPersons(guests)
   const confirmed  = countPersons(guests.filter(g => g.rsvp_responses?.status === 'confirmed'))
@@ -333,15 +448,14 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     finally { setDeleting(false); setDeleteConfirm(null) }
   }
 
-  // Ouvrir WhatsApp Web avec le message pré-rempli
   const handleWhatsAppWeb = (guest: Guest) => {
     const invitationUrl = window.location.origin + '/invitation/' + guest.invitation_token
     const text = encodeURIComponent(
-      `✨ *${guest.full_name}* ✨\n\n` +
+      `*${guest.full_name}*\n\n` +
       `*${event.groom_name} & ${event.bride_name}* ont l'immense joie et l'honneur de vous convier aux festivités de leur mariage.\n\n` +
-      `📅 Consultez votre invitation personnalisée et confirmez votre présence :\n\n` +
-      `👇 ${invitationUrl}\n\n` +
-      `— AlmightyService`
+      `Consultez votre invitation personnalisée et confirmez votre présence :\n\n` +
+      `${invitationUrl}\n\n` +
+      `- AlmightyService`
     )
     const phone = guest.phone.replace(/[^0-9]/g, '')
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
@@ -489,6 +603,15 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
             style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
             <Printer size={13} /> Print
           </button>
+
+          {/* Bouton Report mariage */}
+          <button
+            onClick={() => setShowReport(true)}
+            style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(232,154,166,0.4)', background: 'rgba(232,154,166,0.08)', color: '#E89AA6', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+          >
+            <AlertTriangle size={13} /> Report mariage
+          </button>
+
           <button onClick={() => setShowImport(true)}
             style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
             <Upload size={14} /> Importer CSV
@@ -566,37 +689,22 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
                       <td style={{ ...cellStyle, textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
-
-                          {/* Copier lien */}
                           <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien d'invitation"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Link2 size={13} />
                           </button>
-
-                          {/* WhatsApp Web */}
                           <button
                             onClick={() => hasPhone && handleWhatsAppWeb(guest)}
                             disabled={!hasPhone}
-                            title={hasPhone ? 'Envoyer via WhatsApp Web' : 'Numéro de téléphone manquant'}
-                            style={{
-                              padding:      '6px',
-                              borderRadius: '6px',
-                              border:       hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
-                              background:   hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
-                              color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
-                              cursor:       hasPhone ? 'pointer' : 'not-allowed',
-                            }}
+                            title={hasPhone ? 'Envoyer via WhatsApp Web' : 'Numéro manquant'}
+                            style={{ padding: '6px', borderRadius: '6px', border: hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)', background: hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent', color: hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)', cursor: hasPhone ? 'pointer' : 'not-allowed' }}
                           >
                             <MessageCircle size={13} />
                           </button>
-
-                          {/* Modifier */}
                           <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Pencil size={13} />
                           </button>
-
-                          {/* Supprimer */}
                           {isConfirm ? (
                             <button onClick={e => { e.stopPropagation(); handleDelete(guest.id) }} disabled={deleting}
                               style={{ position: 'relative', zIndex: 20, padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.5)', background: 'rgba(184,80,96,0.2)', color: '#E89AA6', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 500 }}>
@@ -629,6 +737,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         </div>
       </div>
 
+      {/* Modals */}
       {modalMode && (
         <GuestModal mode={modalMode} guest={editingGuest} tables={tables} eventId={event.id}
           onClose={() => { setModalMode(null); setEditingGuest(undefined) }}
@@ -639,6 +748,14 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         <ImportGuestsModal eventId={event.id} tables={tables}
           onClose={() => setShowImport(false)}
           onSuccess={async () => { setShowImport(false); await reload() }} />
+      )}
+
+      {showReport && (
+        <ReportModal
+          event={event}
+          guests={guests}
+          onClose={() => setShowReport(false)}
+        />
       )}
 
       {deleteConfirm && (
