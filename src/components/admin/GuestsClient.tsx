@@ -63,7 +63,7 @@ const RSVP_LABEL: Record<string, string> = {
 const countPersons = (list: Guest[]) =>
   list.reduce((acc, g) => acc + (g.is_couple ? 2 : 1), 0)
 
-// ── MODAL ─────────────────────────────────────────────────
+// ── MODAL INVITÉ ──────────────────────────────────────────
 function GuestModal({
   mode, guest, tables, eventId, onClose, onSuccess,
 }: {
@@ -235,53 +235,55 @@ function GuestModal({
 
 // ── MODAL REPORT ──────────────────────────────────────────
 function ReportModal({
-  event,
-  guests,
-  onClose,
+  event, guests, onClose,
 }: {
   event:   Event
   guests:  Guest[]
   onClose: () => void
 }) {
-  const withPhone      = guests.filter(g => g.phone && g.phone.length >= 8)
+  const withPhone       = guests.filter(g => g.phone && g.phone.length >= 8)
   const [sent, setSent] = useState(0)
   const [started, setStarted] = useState(false)
+
+  const buildReportText = (guestName: string) =>
+    encodeURIComponent(
+      `Cher(e) *${guestName}*,\n\n` +
+      `Nous vous informons avec regret que le mariage de *${event.groom_name} & ${event.bride_name}*, prévu le *Samedi 13 juin 2026*, est malheureusement reporté à une date ultérieure.\n\n` +
+      `La famille traverse un moment de deuil et vous demande de les accompagner dans vos prières.\n\n` +
+      `La nouvelle date vous sera communiquée très prochainement.\n\n` +
+      `Merci infiniment de votre compréhension et de votre soutien.\n\n` +
+      `— *AlmightyService*`
+    )
 
   const handleSend = () => {
     setStarted(true)
     withPhone.forEach((guest, i) => {
       setTimeout(() => {
-        const text = encodeURIComponent(
-          `Cher(e) *${guest.full_name}*,\n\n` +
-          `Nous vous informons avec regret que le mariage de *${event.groom_name} & ${event.bride_name}*, prévu le *Samedi 13 juin 2026*, est malheureusement reporté à une date ultérieure.\n\n` +
-          `La famille traverse un moment de deuil et vous demande de les accompagner dans vos prières.\n\n` +
-          `La nouvelle date vous sera communiquée très prochainement.\n\n` +
-          `Merci infiniment de votre compréhension et de votre soutien.\n\n` +
-          `— *AlmightyService*`
-        )
         const phone = guest.phone.replace(/[^0-9]/g, '')
-        window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+        window.open(`https://wa.me/${phone}?text=${buildReportText(guest.full_name)}`, '_blank')
         setSent(s => s + 1)
       }, i * 1500)
     })
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', paddingTop: '5vh', overflowY: 'auto' }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', paddingTop: '5vh', overflowY: 'auto' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
       <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(232,154,166,0.3)', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(232,154,166,0.1)', border: '1px solid rgba(232,154,166,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(232,154,166,0.1)', border: '1px solid rgba(232,154,166,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <AlertTriangle size={16} color="#E89AA6" />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 300, color: 'white' }}>
               Report du mariage
             </h2>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', flexShrink: 0 }}>
             <X size={20} />
           </button>
         </div>
@@ -329,7 +331,7 @@ Merci infiniment de votre compréhension et de votre soutien.
               <div style={{ height: '100%', width: withPhone.length > 0 ? (sent / withPhone.length * 100) + '%' : '0%', background: '#25D366', borderRadius: '2px', transition: 'width 0.3s ease' }} />
             </div>
             <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)', marginTop: '8px' }}>
-              Chaque conversation s&apos;ouvre toutes les 1.5 secondes — envoyez manuellement dans chaque fenêtre WhatsApp.
+              Chaque conversation s&apos;ouvre toutes les 1.5s — envoyez manuellement dans chaque fenêtre WhatsApp.
             </p>
           </div>
         )}
@@ -456,6 +458,19 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       `Consultez votre invitation personnalisée et confirmez votre présence :\n\n` +
       `${invitationUrl}\n\n` +
       `- AlmightyService`
+    )
+    const phone = guest.phone.replace(/[^0-9]/g, '')
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+  }
+
+  const handleReportSingle = (guest: Guest) => {
+    const text = encodeURIComponent(
+      `Cher(e) *${guest.full_name}*,\n\n` +
+      `Nous vous informons avec regret que le mariage de *${event.groom_name} & ${event.bride_name}*, prévu le *Samedi 13 juin 2026*, est malheureusement reporté à une date ultérieure.\n\n` +
+      `La famille traverse un moment de deuil et vous demande de les accompagner dans vos prières.\n\n` +
+      `La nouvelle date vous sera communiquée très prochainement.\n\n` +
+      `Merci infiniment de votre compréhension et de votre soutien.\n\n` +
+      `— *AlmightyService*`
     )
     const phone = guest.phone.replace(/[^0-9]/g, '')
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
@@ -603,15 +618,10 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
             style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
             <Printer size={13} /> Print
           </button>
-
-          {/* Bouton Report mariage */}
-          <button
-            onClick={() => setShowReport(true)}
-            style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(232,154,166,0.4)', background: 'rgba(232,154,166,0.08)', color: '#E89AA6', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
-          >
+          <button onClick={() => setShowReport(true)}
+            style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(232,154,166,0.4)', background: 'rgba(232,154,166,0.08)', color: '#E89AA6', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
             <AlertTriangle size={13} /> Report mariage
           </button>
-
           <button onClick={() => setShowImport(true)}
             style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
             <Upload size={14} /> Importer CSV
@@ -689,22 +699,40 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
                       <td style={{ ...cellStyle, textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
-                          <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien d'invitation"
+
+                          {/* Copier lien */}
+                          <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Link2 size={13} />
                           </button>
+
+                          {/* WhatsApp Web — invitation */}
                           <button
                             onClick={() => hasPhone && handleWhatsAppWeb(guest)}
                             disabled={!hasPhone}
-                            title={hasPhone ? 'Envoyer via WhatsApp Web' : 'Numéro manquant'}
+                            title={hasPhone ? 'Envoyer invitation WhatsApp' : 'Numéro manquant'}
                             style={{ padding: '6px', borderRadius: '6px', border: hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)', background: hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent', color: hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)', cursor: hasPhone ? 'pointer' : 'not-allowed' }}
                           >
                             <MessageCircle size={13} />
                           </button>
+
+                          {/* WhatsApp Web — report */}
+                          <button
+                            onClick={() => hasPhone && handleReportSingle(guest)}
+                            disabled={!hasPhone}
+                            title={hasPhone ? 'Envoyer message de report' : 'Numéro manquant'}
+                            style={{ padding: '6px', borderRadius: '6px', border: hasPhone ? '1px solid rgba(232,154,166,0.35)' : '1px solid rgba(255,255,255,0.05)', background: hasPhone ? 'rgba(232,154,166,0.08)' : 'transparent', color: hasPhone ? '#E89AA6' : 'rgba(255,255,255,0.15)', cursor: hasPhone ? 'pointer' : 'not-allowed' }}
+                          >
+                            <AlertTriangle size={13} />
+                          </button>
+
+                          {/* Modifier */}
                           <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
                             <Pencil size={13} />
                           </button>
+
+                          {/* Supprimer */}
                           {isConfirm ? (
                             <button onClick={e => { e.stopPropagation(); handleDelete(guest.id) }} disabled={deleting}
                               style={{ position: 'relative', zIndex: 20, padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.5)', background: 'rgba(184,80,96,0.2)', color: '#E89AA6', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 500 }}>
