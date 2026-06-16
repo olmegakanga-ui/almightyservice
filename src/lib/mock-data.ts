@@ -16,7 +16,7 @@ export const mockEvent: EventData = {
     { time: '16h00', description: 'Cocktail de bienvenue — Jardin du Prestige' },
     { time: '19h00', description: 'Soirée dansante & Dîner de gala' },
   ],
-  rsvpDeadline: '2026-08-10T23:59:59',
+  rsvpDeadline:        '2026-08-10T23:59:59',
   drinkOptions: [
     {
       categoryName: 'Boissons importées',
@@ -29,6 +29,9 @@ export const mockEvent: EventData = {
   ],
   themeColor:          '#C9A96E',
   themeColorSecondary: '#D4B483',
+  musicUrl:            null,
+  musicVolume:         30,
+  giftOptions:         ['envelope', 'present'],
 }
 
 export const mockGuest: GuestData = {
