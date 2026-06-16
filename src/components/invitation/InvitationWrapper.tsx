@@ -29,49 +29,44 @@ interface Props {
 
 export default function InvitationWrapper({ event, guest }: Props) {
   const [introDone, setIntroDone] = useState(false)
-  const [started, setStarted]     = useState(false)
-  const audioRef                  = useRef<HTMLAudioElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const goldColor  = event.themeColor         || '#C9A96E'
   const goldLight  = event.themeColorSecondary || '#D4B483'
   const goldBorder = goldColor + '40'
   const goldSubtle = goldColor + '15'
 
-  // ── Initialiser l'audio sans le jouer ─────────────────────
+  // ── Musique de fond ───────────────────────────────────────
   useEffect(() => {
     if (!event.musicUrl) return
 
-    const audio      = new Audio(event.musicUrl)
-    audio.loop       = true
-    audio.volume     = (event.musicVolume ?? 30) / 100
-    audio.preload    = 'auto'
-    audioRef.current = audio
+    const audio        = new Audio(event.musicUrl)
+    audio.loop         = true
+    audio.volume       = (event.musicVolume ?? 30) / 100
+    audio.preload      = 'auto'
+    audioRef.current   = audio
+
+    // Démarrer dès que possible (après interaction utilisateur)
+    const tryPlay = () => {
+      audio.play().catch(() => {
+        // Autoplay bloqué — on attend un clic
+        const handler = () => {
+          audio.play().catch(console.error)
+          document.removeEventListener('click', handler)
+          document.removeEventListener('touchstart', handler)
+        }
+        document.addEventListener('click', handler, { once: true })
+        document.addEventListener('touchstart', handler, { once: true })
+      })
+    }
+
+    tryPlay()
 
     return () => {
       audio.pause()
       audio.src = ''
     }
   }, [event.musicUrl, event.musicVolume])
-
-  // ── Démarrer la musique au premier clic ───────────────────
-  useEffect(() => {
-    if (!event.musicUrl || started) return
-
-    const handler = () => {
-      if (audioRef.current) {
-        audioRef.current.play().catch(console.error)
-        setStarted(true)
-      }
-    }
-
-    document.addEventListener('click',      handler, { once: true })
-    document.addEventListener('touchstart', handler, { once: true })
-
-    return () => {
-      document.removeEventListener('click',      handler)
-      document.removeEventListener('touchstart', handler)
-    }
-  }, [event.musicUrl, started])
 
   return (
     <>
