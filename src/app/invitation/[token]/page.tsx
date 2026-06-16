@@ -65,6 +65,7 @@ export default async function InvitationPage({
     musicUrl:            data.musicUrl,
     musicVolume:         data.musicVolume,
     giftOptions:         data.giftOptions,
+    sectionsOrder:       data.sectionsOrder,
   }
 
   const guest: GuestData = {

@@ -32,6 +32,7 @@ export const mockEvent: EventData = {
   musicUrl:            null,
   musicVolume:         30,
   giftOptions:         ['envelope', 'present'],
+  sectionsOrder:       ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map'],
 }
 
 export const mockGuest: GuestData = {

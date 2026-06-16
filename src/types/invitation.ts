@@ -20,6 +20,7 @@ export interface EventData {
   musicUrl:             string | null
   musicVolume:          number
   giftOptions:          string[]
+  sectionsOrder:        string[]
 }
 
 export interface ProgramItem {

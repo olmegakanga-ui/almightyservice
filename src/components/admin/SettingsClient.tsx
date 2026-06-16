@@ -46,13 +46,14 @@ interface Event {
   music_url?:                string
   music_volume?:             number
   gift_options?:             string[]
+  sections_order?:           string[]
 }
 
 interface Props {
   event: Event
 }
 
-type Tab = 'general' | 'content' | 'program' | 'drinks' | 'media' | 'rsvp' | 'apparence' | 'extras'
+type Tab = 'general' | 'content' | 'program' | 'drinks' | 'media' | 'rsvp' | 'apparence' | 'extras' | 'sections'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'general',   label: 'Général' },
@@ -63,7 +64,21 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'rsvp',      label: 'RSVP' },
   { id: 'apparence', label: 'Apparence' },
   { id: 'extras',    label: 'Musique & Cadeaux' },
+  { id: 'sections',  label: 'Sections' },
 ]
+
+const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map']
+
+const SECTION_LABELS: Record<string, string> = {
+  countdown: 'Compte à rebours',
+  card:      'Carte d\'invitation',
+  rsvp:      'RSVP — Confirmation',
+  qrcode:    'QR Code d\'entrée',
+  drinks:    'Choix des boissons',
+  guestbook: 'Livre d\'or',
+  gift:      'Type de cadeau',
+  map:       'Carte & Plan',
+}
 
 export default function SettingsClient({ event }: Props) {
   const router              = useRouter()
@@ -91,29 +106,27 @@ export default function SettingsClient({ event }: Props) {
     theme_color_secondary:     event.theme_color_secondary,
     status:                    event.status,
     whatsapp_transfer_allowed: event.whatsapp_transfer_allowed,
-    groom_phone:               event.groom_phone ?? '',
-    bride_phone:               event.bride_phone ?? '',
+    groom_phone:               event.groom_phone  ?? '',
+    bride_phone:               event.bride_phone  ?? '',
     music_url:                 event.music_url    ?? '',
     music_volume:              event.music_volume ?? 30,
-    gift_options:              event.gift_options ?? ['envelope', 'present'],
+    gift_options:              event.gift_options    ?? ['envelope','present'],
+    sections_order:            event.sections_order  ?? DEFAULT_SECTIONS,
   })
 
   const [program, setProgram] = useState<ProgramItem[]>(
     Array.isArray(event.program_json) ? event.program_json : []
   )
-
   const [drinks, setDrinks] = useState<DrinkCategory[]>(
     Array.isArray(event.drink_options_json) ? event.drink_options_json : []
   )
 
-  const set = (key: string, value: string | boolean | number | string[]) => {
+  const set = (key: string, value: string | boolean | number | string[]) =>
     setForm(prev => ({ ...prev, [key]: value }))
-  }
 
   const handleSave = async () => {
     setSaving(true)
     setError(null)
-
     try {
       const supabase      = createClient()
       const db            = supabase as any
@@ -148,15 +161,14 @@ export default function SettingsClient({ event }: Props) {
           music_url:                 form.music_url.trim() || null,
           music_volume:              Number(form.music_volume),
           gift_options:              form.gift_options,
+          sections_order:            form.sections_order,
         })
         .eq('id', event.id)
 
       if (updateError) { setError(updateError.message); return }
-
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
       router.refresh()
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
     } finally {
@@ -167,13 +179,9 @@ export default function SettingsClient({ event }: Props) {
   const handlePreview = async () => {
     const supabase = createClient()
     const { data: firstGuest } = await (supabase as any)
-      .from('guests')
-      .select('invitation_token')
-      .eq('event_id', event.id)
-      .not('invitation_token', 'is', null)
-      .limit(1)
-      .single()
-
+      .from('guests').select('invitation_token')
+      .eq('event_id', event.id).not('invitation_token', 'is', null)
+      .limit(1).single()
     if (firstGuest?.invitation_token) {
       window.open('/invitation/' + firstGuest.invitation_token, '_blank')
     } else {
@@ -184,39 +192,35 @@ export default function SettingsClient({ event }: Props) {
   const handleDuplicate = async () => {
     const supabase = createClient()
     const db       = supabase as any
-    const { data: newEvent } = await db
-      .from('events')
-      .insert({
-        slug:                      event.groom_name + '-' + event.bride_name + '-copy-' + Date.now(),
-        groom_name:                event.groom_name + ' (Copie)',
-        bride_name:                event.bride_name,
-        event_date:                event.event_date,
-        event_time:                event.event_time,
-        venue_name:                event.venue_name,
-        venue_address:             event.venue_address,
-        venue_lat:                 event.venue_lat,
-        venue_lng:                 event.venue_lng,
-        background_image_url:      event.background_image_url,
-        invitation_text:           event.invitation_text,
-        hero_message:              event.hero_message,
-        end_message:               event.end_message,
-        theme_name:                event.theme_name,
-        rsvp_deadline:             event.rsvp_deadline,
-        theme_color_primary:       event.theme_color_primary,
-        theme_color_secondary:     event.theme_color_secondary,
-        status:                    'draft',
-        program_json:              event.program_json,
-        drink_options_json:        event.drink_options_json,
-        whatsapp_transfer_allowed: event.whatsapp_transfer_allowed,
-        groom_phone:               event.groom_phone ?? '',
-        bride_phone:               event.bride_phone ?? '',
-        music_url:                 event.music_url ?? null,
-        music_volume:              event.music_volume ?? 30,
-        gift_options:              event.gift_options ?? ['envelope','present'],
-      })
-      .select('id')
-      .single()
-
+    const { data: newEvent } = await db.from('events').insert({
+      slug:                      event.groom_name + '-' + event.bride_name + '-copy-' + Date.now(),
+      groom_name:                event.groom_name + ' (Copie)',
+      bride_name:                event.bride_name,
+      event_date:                event.event_date,
+      event_time:                event.event_time,
+      venue_name:                event.venue_name,
+      venue_address:             event.venue_address,
+      venue_lat:                 event.venue_lat,
+      venue_lng:                 event.venue_lng,
+      background_image_url:      event.background_image_url,
+      invitation_text:           event.invitation_text,
+      hero_message:              event.hero_message,
+      end_message:               event.end_message,
+      theme_name:                event.theme_name,
+      rsvp_deadline:             event.rsvp_deadline,
+      theme_color_primary:       event.theme_color_primary,
+      theme_color_secondary:     event.theme_color_secondary,
+      status:                    'draft',
+      program_json:              event.program_json,
+      drink_options_json:        event.drink_options_json,
+      whatsapp_transfer_allowed: event.whatsapp_transfer_allowed,
+      groom_phone:               event.groom_phone  ?? '',
+      bride_phone:               event.bride_phone  ?? '',
+      music_url:                 event.music_url    ?? null,
+      music_volume:              event.music_volume ?? 30,
+      gift_options:              event.gift_options    ?? ['envelope','present'],
+      sections_order:            event.sections_order  ?? DEFAULT_SECTIONS,
+    }).select('id').single()
     if (newEvent) router.push('/admin/events/' + newEvent.id + '/settings')
   }
 
@@ -227,16 +231,30 @@ export default function SettingsClient({ event }: Props) {
   const removeProgramItem = (idx: number) => setProgram(prev => prev.filter((_, i) => i !== idx))
 
   // Boissons
-  const addCategory       = () => setDrinks(prev => [...prev, { categoryName: '', drinks: [] }])
-  const updateCategoryName= (ci: number, name: string) =>
+  const addCategory        = () => setDrinks(prev => [...prev, { categoryName: '', drinks: [] }])
+  const updateCategoryName = (ci: number, name: string) =>
     setDrinks(prev => prev.map((cat, i) => i === ci ? { ...cat, categoryName: name } : cat))
-  const removeCategory    = (ci: number) => setDrinks(prev => prev.filter((_, i) => i !== ci))
-  const addDrink          = (ci: number) =>
+  const removeCategory     = (ci: number) => setDrinks(prev => prev.filter((_, i) => i !== ci))
+  const addDrink           = (ci: number) =>
     setDrinks(prev => prev.map((cat, i) => i === ci ? { ...cat, drinks: [...cat.drinks, ''] } : cat))
-  const updateDrink       = (ci: number, di: number, value: string) =>
+  const updateDrink        = (ci: number, di: number, value: string) =>
     setDrinks(prev => prev.map((cat, i) => i === ci ? { ...cat, drinks: cat.drinks.map((d, j) => j === di ? value : d) } : cat))
-  const removeDrink       = (ci: number, di: number) =>
+  const removeDrink        = (ci: number, di: number) =>
     setDrinks(prev => prev.map((cat, i) => i === ci ? { ...cat, drinks: cat.drinks.filter((_, j) => j !== di) } : cat))
+
+  // Sections
+  const moveSectionUp = (idx: number) => {
+    if (idx === 0) return
+    const arr = [...(form.sections_order as string[])]
+    ;[arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]]
+    set('sections_order', arr)
+  }
+  const moveSectionDown = (idx: number) => {
+    const arr = [...(form.sections_order as string[])]
+    if (idx === arr.length - 1) return
+    ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
+    set('sections_order', arr)
+  }
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '12px 16px',
@@ -254,20 +272,16 @@ export default function SettingsClient({ event }: Props) {
     { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }
 
   const SaveButton = ({ fixed = false }: { fixed?: boolean }) => (
-    <button
-      onClick={handleSave}
-      disabled={saving}
-      style={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        padding: fixed ? '14px 28px' : '12px 24px',
-        borderRadius: '100px', border: 'none',
-        background: saved ? 'rgba(90,138,106,0.9)' : 'rgba(201,169,110,0.9)',
-        color: 'white', fontSize: fixed ? '0.88rem' : '0.85rem', fontWeight: 500,
-        cursor: saving ? 'not-allowed' : 'pointer',
-        boxShadow: fixed ? '0 8px 32px rgba(0,0,0,0.4)' : 'none',
-        transition: 'all 0.3s ease',
-      }}
-    >
+    <button onClick={handleSave} disabled={saving} style={{
+      display: 'flex', alignItems: 'center', gap: '8px',
+      padding: fixed ? '14px 28px' : '12px 24px',
+      borderRadius: '100px', border: 'none',
+      background: saved ? 'rgba(90,138,106,0.9)' : 'rgba(201,169,110,0.9)',
+      color: 'white', fontSize: fixed ? '0.88rem' : '0.85rem', fontWeight: 500,
+      cursor: saving ? 'not-allowed' : 'pointer',
+      boxShadow: fixed ? '0 8px 32px rgba(0,0,0,0.4)' : 'none',
+      transition: 'all 0.3s ease',
+    }}>
       {saving ? <><Loader size={15} style={{ animation: 'spin 1s linear infinite' }} /> Sauvegarde...</>
         : saved ? <><Check size={15} /> Sauvegardé !</>
         : <><Save size={15} /> Sauvegarder</>}
@@ -381,12 +395,7 @@ export default function SettingsClient({ event }: Props) {
             <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginBottom: '6px' }}>
               Utilisez Entrée pour créer des paragraphes — ils seront respectés sur l&apos;invitation.
             </p>
-            <textarea
-              style={{ ...inputStyle, resize: 'vertical', minHeight: '140px', lineHeight: 1.8 }}
-              value={form.invitation_text}
-              onChange={e => set('invitation_text', e.target.value)}
-              onFocus={focus} onBlur={blur}
-            />
+            <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: '140px', lineHeight: 1.8 }} value={form.invitation_text} onChange={e => set('invitation_text', e.target.value)} onFocus={focus} onBlur={blur} />
           </div>
           <div>
             <label style={labelStyle}>Thème</label>
@@ -488,7 +497,6 @@ export default function SettingsClient({ event }: Props) {
               Les invités ne pourront plus confirmer après cette date.
             </p>
           </div>
-
           {form.rsvp_deadline && (
             <div style={{ padding: '14px 16px', background: 'rgba(201,169,110,0.05)', border: '1px solid rgba(201,169,110,0.15)', borderRadius: '12px' }}>
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>
@@ -499,7 +507,6 @@ export default function SettingsClient({ event }: Props) {
               </p>
             </div>
           )}
-
           <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
               Notifications RSVP WhatsApp
@@ -520,7 +527,6 @@ export default function SettingsClient({ event }: Props) {
               </div>
             </div>
           </div>
-
           <div>
             <label style={labelStyle}>Transfert WhatsApp</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.07)' }}
@@ -570,8 +576,6 @@ export default function SettingsClient({ event }: Props) {
       {/* ── MUSIQUE & CADEAUX ── */}
       {tab === 'extras' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '700px' }}>
-
-          {/* Musique */}
           <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
               🎵 Musique d&apos;ambiance
@@ -583,32 +587,17 @@ export default function SettingsClient({ event }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={labelStyle}>URL du fichier audio (MP3)</label>
-                <input
-                  style={inputStyle}
-                  value={form.music_url}
-                  onChange={e => set('music_url', e.target.value)}
-                  placeholder="https://res.cloudinary.com/.../musique.mp3"
-                  onFocus={focus} onBlur={blur}
-                />
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '6px' }}>
-                  Laissez vide pour désactiver la musique
-                </p>
+                <input style={inputStyle} value={form.music_url} onChange={e => set('music_url', e.target.value)} placeholder="https://res.cloudinary.com/.../musique.mp3" onFocus={focus} onBlur={blur} />
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '6px' }}>Laissez vide pour désactiver la musique</p>
               </div>
               <div>
                 <label style={labelStyle}>Volume — {form.music_volume}%</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>0%</span>
-                  <input
-                    type="range" min="0" max="100" step="5"
-                    value={form.music_volume}
-                    onChange={e => set('music_volume', Number(e.target.value))}
-                    style={{ flex: 1, accentColor: 'var(--gold)' }}
-                  />
+                  <input type="range" min="0" max="100" step="5" value={form.music_volume} onChange={e => set('music_volume', Number(e.target.value))} style={{ flex: 1, accentColor: 'var(--gold)' }} />
                   <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>100%</span>
                 </div>
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '4px' }}>
-                  Recommandé : 20-40% pour une ambiance douce
-                </p>
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '4px' }}>Recommandé : 20-40% pour une ambiance douce</p>
               </div>
               {form.music_url && (
                 <div style={{ padding: '12px 16px', background: 'rgba(201,169,110,0.05)', border: '1px solid rgba(201,169,110,0.15)', borderRadius: '10px' }}>
@@ -619,14 +608,12 @@ export default function SettingsClient({ event }: Props) {
             </div>
           </div>
 
-          {/* Cadeaux */}
           <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
               🎁 Options de cadeaux
             </p>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginBottom: '20px', lineHeight: 1.6 }}>
-              Choisissez quelles options afficher sur l&apos;invitation.
-              Si une seule option est activée, elle sera pré-sélectionnée automatiquement.
+              Choisissez quelles options afficher sur l&apos;invitation. Si une seule option est activée, elle sera pré-sélectionnée automatiquement.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
@@ -635,25 +622,10 @@ export default function SettingsClient({ event }: Props) {
               ].map(opt => {
                 const isActive = (form.gift_options as string[]).includes(opt.id)
                 return (
-                  <div
-                    key={opt.id}
-                    onClick={() => {
-                      const current = form.gift_options as string[]
-                      const next    = isActive
-                        ? current.filter(o => o !== opt.id)
-                        : [...current, opt.id]
-                      set('gift_options', next)
-                    }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '14px',
-                      padding: '14px 16px',
-                      background:   isActive ? 'rgba(201,169,110,0.06)' : 'rgba(255,255,255,0.02)',
-                      border:       isActive ? '1px solid rgba(201,169,110,0.25)' : '1px solid rgba(255,255,255,0.06)',
-                      borderRadius: '12px',
-                      cursor:       'pointer',
-                      transition:   'all 0.2s ease',
-                    }}
-                  >
+                  <div key={opt.id} onClick={() => {
+                    const current = form.gift_options as string[]
+                    set('gift_options', isActive ? current.filter(o => o !== opt.id) : [...current, opt.id])
+                  }} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: isActive ? 'rgba(201,169,110,0.06)' : 'rgba(255,255,255,0.02)', border: isActive ? '1px solid rgba(201,169,110,0.25)' : '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s ease' }}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '6px', border: isActive ? 'none' : '1px solid rgba(255,255,255,0.2)', background: isActive ? 'var(--gold)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s ease' }}>
                       {isActive && <span style={{ color: '#0D0B09', fontSize: '13px', fontWeight: 700 }}>✓</span>}
                     </div>
@@ -670,6 +642,65 @@ export default function SettingsClient({ event }: Props) {
                 ⚠️ Aucune option — la section cadeaux sera masquée sur l&apos;invitation.
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTIONS ── */}
+      {tab === 'sections' && (
+        <div style={{ maxWidth: '500px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', marginBottom: '8px' }}>
+            Utilisez les flèches pour réorganiser les sections de l&apos;invitation.
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginBottom: '24px' }}>
+            Hero et Footer sont toujours en première et dernière position.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+            {/* Hero — fixe */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', opacity: 0.4 }}>
+              <GripVertical size={16} color="rgba(255,255,255,0.2)" />
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', flex: 1 }}>Hero & Présentation</p>
+              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Fixe</span>
+            </div>
+
+            {/* Sections réorganisables */}
+            {(form.sections_order as string[]).map((key, idx) => {
+              const canUp   = idx > 0
+              const canDown = idx < (form.sections_order as string[]).length - 1
+              return (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', transition: 'all 0.2s ease' }}>
+                  <GripVertical size={16} color="rgba(255,255,255,0.3)" style={{ flexShrink: 0 }} />
+                  <p style={{ color: 'white', fontSize: '0.85rem', flex: 1 }}>
+                    {SECTION_LABELS[key] ?? key}
+                  </p>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      onClick={() => moveSectionUp(idx)}
+                      disabled={!canUp}
+                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: canUp ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)', cursor: canUp ? 'pointer' : 'not-allowed', fontSize: '1rem', transition: 'all 0.2s ease' }}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => moveSectionDown(idx)}
+                      disabled={!canDown}
+                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: canDown ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)', cursor: canDown ? 'pointer' : 'not-allowed', fontSize: '1rem', transition: 'all 0.2s ease' }}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Footer — fixe */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', opacity: 0.4 }}>
+              <GripVertical size={16} color="rgba(255,255,255,0.2)" />
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', flex: 1 }}>Footer</p>
+              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Fixe</span>
+            </div>
           </div>
         </div>
       )}

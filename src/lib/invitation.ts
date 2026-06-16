@@ -21,6 +21,7 @@ export interface FullInvitationData {
   musicUrl:            string | null
   musicVolume:         number
   giftOptions:         string[]
+  sectionsOrder:       string[]
   guestId:             string
   guestFullName:       string
   guestSide:           'HOMME' | 'FEMME'
@@ -33,6 +34,8 @@ export interface FullInvitationData {
   guestbookMessage:    string | null
   giftChoice:          'envelope' | 'present' | null
 }
+
+const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map']
 
 export async function getInvitationByToken(
   token: string
@@ -104,7 +107,8 @@ export async function getInvitationByToken(
     themeColorSecondary: event.theme_color_secondary ?? '#D4B483',
     musicUrl:            event.music_url             ?? null,
     musicVolume:         event.music_volume          ?? 30,
-    giftOptions:         Array.isArray(event.gift_options) ? event.gift_options : ['envelope','present'],
+    giftOptions:         Array.isArray(event.gift_options)    ? event.gift_options    : ['envelope','present'],
+    sectionsOrder:       Array.isArray(event.sections_order)  ? event.sections_order  : DEFAULT_SECTIONS,
     guestId:             guest.id,
     guestFullName:       guest.full_name,
     guestSide:           guest.side,
