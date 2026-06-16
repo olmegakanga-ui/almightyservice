@@ -7,6 +7,8 @@ interface Props {
   brideName:  string
   guestName:  string
   themeColor: string
+  eventDate:  string
+  venueName:  string
   onComplete: () => void
 }
 
