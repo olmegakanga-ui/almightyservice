@@ -44,8 +44,6 @@ export default function InvitationWrapper({ event, guest }: Props) {
           brideName={event.brideName}
           guestName={guest.fullName}
           themeColor={goldColor}
-          eventDate={event.eventDate}
-          venueName={event.venueName}
           onComplete={() => setIntroDone(true)}
         />
       )}
@@ -80,11 +78,11 @@ export default function InvitationWrapper({ event, guest }: Props) {
       {/* Contenu avec couleurs dynamiques */}
       <main
         style={{
-          position:   'relative',
-          zIndex:     2,
-          minHeight:  '100vh',
-          opacity:    introDone ? 1 : 0,
-          transition: 'opacity 0.8s ease',
+          position:  'relative',
+          zIndex:    2,
+          minHeight: '100vh',
+          opacity:   introDone ? 1 : 0,
+          transition:'opacity 0.8s ease',
           '--gold':        goldColor,
           '--gold-light':  goldLight,
           '--gold-border': goldBorder,
