@@ -18,6 +18,9 @@ export interface FullInvitationData {
   drinkOptions:        DrinkCategory[]
   themeColor:          string
   themeColorSecondary: string
+  musicUrl:            string | null
+  musicVolume:         number
+  giftOptions:         string[]
   guestId:             string
   guestFullName:       string
   guestSide:           'HOMME' | 'FEMME'
@@ -37,7 +40,6 @@ export async function getInvitationByToken(
   const supabase = await createClient()
   const db       = supabase as any
 
-  // 1. Chercher l'invité par token
   const { data: guest, error: guestError } = await db
     .from('guests')
     .select('*')
@@ -49,7 +51,6 @@ export async function getInvitationByToken(
     return null
   }
 
-  // 2. Charger l'événement lié
   const { data: event, error: eventError } = await db
     .from('events')
     .select('*')
@@ -62,7 +63,6 @@ export async function getInvitationByToken(
     return null
   }
 
-  // 3. Charger la table de l'invité
   let tableName: string | null = null
   if (guest.table_id) {
     const { data: table } = await db
@@ -73,34 +73,11 @@ export async function getInvitationByToken(
     tableName = table?.name ?? null
   }
 
-  // 4. Charger le RSVP actuel
-  const { data: rsvp } = await db
-    .from('rsvp_responses')
-    .select('status')
-    .eq('guest_id', guest.id)
-    .single()
+  const { data: rsvp }      = await db.from('rsvp_responses').select('status').eq('guest_id', guest.id).single()
+  const { data: drinks }    = await db.from('drink_selections').select('drink_name').eq('guest_id', guest.id)
+  const { data: guestbook } = await db.from('guestbook_entries').select('message').eq('guest_id', guest.id).single()
+  const { data: gift }      = await db.from('gift_choices').select('gift_type').eq('guest_id', guest.id).single()
 
-  // 5. Charger les boissons sélectionnées
-  const { data: drinks } = await db
-    .from('drink_selections')
-    .select('drink_name')
-    .eq('guest_id', guest.id)
-
-  // 6. Charger le livre d'or
-  const { data: guestbook } = await db
-    .from('guestbook_entries')
-    .select('message')
-    .eq('guest_id', guest.id)
-    .single()
-
-  // 7. Charger le choix de cadeau
-  const { data: gift } = await db
-    .from('gift_choices')
-    .select('gift_type')
-    .eq('guest_id', guest.id)
-    .single()
-
-  // Normaliser drink_options_json
   const rawDrinks = event.drink_options_json
   const drinkOptions: DrinkCategory[] = Array.isArray(rawDrinks)
     ? rawDrinks.map((cat: any) => ({
@@ -123,8 +100,11 @@ export async function getInvitationByToken(
     programItems:        event.program_json as ProgramItem[],
     rsvpDeadline:        event.rsvp_deadline,
     drinkOptions,
-    themeColor:          event.theme_color_primary  ?? '#C9A96E',
+    themeColor:          event.theme_color_primary   ?? '#C9A96E',
     themeColorSecondary: event.theme_color_secondary ?? '#D4B483',
+    musicUrl:            event.music_url             ?? null,
+    musicVolume:         event.music_volume          ?? 30,
+    giftOptions:         Array.isArray(event.gift_options) ? event.gift_options : ['envelope','present'],
     guestId:             guest.id,
     guestFullName:       guest.full_name,
     guestSide:           guest.side,

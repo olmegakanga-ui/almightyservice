@@ -62,6 +62,9 @@ export default async function InvitationPage({
     drinkOptions:        data.drinkOptions,
     themeColor:          data.themeColor,
     themeColorSecondary: data.themeColorSecondary,
+    musicUrl:            data.musicUrl,
+    musicVolume:         data.musicVolume,
+    giftOptions:         data.giftOptions,
   }
 
   const guest: GuestData = {

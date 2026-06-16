@@ -17,6 +17,9 @@ export interface EventData {
   drinkOptions:         DrinkCategory[]
   themeColor:           string
   themeColorSecondary:  string
+  musicUrl:             string | null
+  musicVolume:          number
+  giftOptions:          string[]
 }
 
 export interface ProgramItem {

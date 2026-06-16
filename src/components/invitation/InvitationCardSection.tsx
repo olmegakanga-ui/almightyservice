@@ -56,9 +56,17 @@ export default function InvitationCardSection({ event, guest }: Props) {
               {guest.fullName}
             </h2>
 
-            <p className="font-display" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', color: 'rgba(255,255,255,0.95)', lineHeight: 1.8, fontStyle: 'italic', marginBottom: '40px', textShadow: '0 1px 8px rgba(0,0,0,0.6)' }}>
-              {event.invitationText}
-            </p>
+            <div style={{ marginBottom: '40px' }}>
+  {event.invitationText.split('\n').map((line, i) => (
+    line.trim() === '' ? (
+      <div key={i} style={{ height: '1em' }} />
+    ) : (
+      <p key={i} className="font-display" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', color: 'rgba(255,255,255,0.95)', lineHeight: 1.8, fontStyle: 'italic', textShadow: '0 1px 8px rgba(0,0,0,0.6)', margin: '0 0 8px' }}>
+        {line}
+      </p>
+    )
+  ))}
+</div>
 
             <div style={{ borderLeft: '2px solid var(--gold)', marginBottom: '40px', background: 'rgba(0,0,0,0.3)', padding: '16px 24px', borderRadius: '0 12px 12px 0' }}>
               <p className="font-display" style={{ fontSize: 'clamp(1rem, 1.8vw, 1.2rem)', color: 'var(--gold-light)', marginBottom: '4px', fontWeight: 500 }}>

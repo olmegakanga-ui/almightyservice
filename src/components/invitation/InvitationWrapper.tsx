@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import EnvelopeIntro from '@/components/invitation/EnvelopeIntro'
 import { EventData, GuestData } from '@/types/invitation'
 import HeroSection from '@/components/invitation/HeroSection'
@@ -29,11 +29,44 @@ interface Props {
 
 export default function InvitationWrapper({ event, guest }: Props) {
   const [introDone, setIntroDone] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const goldColor  = event.themeColor         || '#C9A96E'
   const goldLight  = event.themeColorSecondary || '#D4B483'
   const goldBorder = goldColor + '40'
   const goldSubtle = goldColor + '15'
+
+  // ── Musique de fond ───────────────────────────────────────
+  useEffect(() => {
+    if (!event.musicUrl) return
+
+    const audio        = new Audio(event.musicUrl)
+    audio.loop         = true
+    audio.volume       = (event.musicVolume ?? 30) / 100
+    audio.preload      = 'auto'
+    audioRef.current   = audio
+
+    // Démarrer dès que possible (après interaction utilisateur)
+    const tryPlay = () => {
+      audio.play().catch(() => {
+        // Autoplay bloqué — on attend un clic
+        const handler = () => {
+          audio.play().catch(console.error)
+          document.removeEventListener('click', handler)
+          document.removeEventListener('touchstart', handler)
+        }
+        document.addEventListener('click', handler, { once: true })
+        document.addEventListener('touchstart', handler, { once: true })
+      })
+    }
+
+    tryPlay()
+
+    return () => {
+      audio.pause()
+      audio.src = ''
+    }
+  }, [event.musicUrl, event.musicVolume])
 
   return (
     <>
@@ -44,6 +77,8 @@ export default function InvitationWrapper({ event, guest }: Props) {
           brideName={event.brideName}
           guestName={guest.fullName}
           themeColor={goldColor}
+          eventDate={event.eventDate}
+          venueName={event.venueName}
           onComplete={() => setIntroDone(true)}
         />
       )}
@@ -75,14 +110,14 @@ export default function InvitationWrapper({ event, guest }: Props) {
         style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
 
-      {/* Contenu avec couleurs dynamiques */}
+      {/* Contenu */}
       <main
         style={{
-          position:  'relative',
-          zIndex:    2,
-          minHeight: '100vh',
-          opacity:   introDone ? 1 : 0,
-          transition:'opacity 0.8s ease',
+          position:   'relative',
+          zIndex:     2,
+          minHeight:  '100vh',
+          opacity:    introDone ? 1 : 0,
+          transition: 'opacity 0.8s ease',
           '--gold':        goldColor,
           '--gold-light':  goldLight,
           '--gold-border': goldBorder,
@@ -129,6 +164,7 @@ export default function InvitationWrapper({ event, guest }: Props) {
           guestId={guest.id}
           eventId={event.id}
           initialChoice={guest.giftChoice}
+          giftOptions={event.giftOptions}
         />
         <Divider />
         <MapSection
