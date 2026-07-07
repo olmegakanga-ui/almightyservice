@@ -40,25 +40,33 @@ export default function InvitationWrapper({ event, guest }: Props) {
   // ── Initialiser l'audio ───────────────────────────────────
   useEffect(() => {
     if (!event.musicUrl) return
-    const audio      = new Audio(event.musicUrl)
-    audio.loop       = true
-    audio.volume     = (event.musicVolume ?? 30) / 100
-    audio.preload    = 'auto'
-    audioRef.current = audio
+
+    const audio       = new Audio()
+    audio.crossOrigin = 'anonymous'
+    audio.src         = event.musicUrl
+    audio.loop        = true
+    audio.volume      = (event.musicVolume ?? 30) / 100
+    audio.preload     = 'auto'
+    audioRef.current  = audio
+
     return () => { audio.pause(); audio.src = '' }
   }, [event.musicUrl, event.musicVolume])
 
   // ── Démarrer au premier clic ──────────────────────────────
   useEffect(() => {
     if (!event.musicUrl || started) return
+
     const handler = () => {
-      if (audioRef.current) {
-        audioRef.current.play().catch(console.error)
-        setStarted(true)
-      }
+      const audio = audioRef.current
+      if (!audio) return
+      audio.play()
+        .then(() => setStarted(true))
+        .catch(err => console.error('Audio play failed:', err))
     }
+
     document.addEventListener('click',      handler, { once: true })
     document.addEventListener('touchstart', handler, { once: true })
+
     return () => {
       document.removeEventListener('click',      handler)
       document.removeEventListener('touchstart', handler)
