@@ -47,7 +47,7 @@ const MESSAGE_TYPES = [
   {
     id:    'RELANCE',
     label: 'Relance',
-    desc:  'Pour les invités qui n\'ont pas encore cliqué',
+    desc:  'Pour les invités qui n\'ont pas encore confirmé',
     icon:  '🔔',
     color: 'rgba(100,149,237,0.15)',
   },
@@ -93,9 +93,22 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
   const [tab, setTab]                   = useState<'send' | 'planning' | 'history'>('send')
 
   const confirmed  = guests.filter(g => g.rsvp_responses?.status === 'confirmed').length
-  const pending    = guests.filter(g => !g.rsvp_responses || g.rsvp_responses.status === 'pending').length
+  const pending    = guests.filter(g => (!g.rsvp_responses || g.rsvp_responses.status === 'pending') && g.phone && g.phone.length > 5).length
   const withPhone  = guests.filter(g => g.phone && g.phone.length > 5).length
   const daysLeft   = daysUntil(event.event_date)
+
+  // Change le type et ajuste automatiquement le filtre
+  const handleTypeChange = (typeId: string) => {
+    setSelectedType(typeId)
+    setResult(null)
+    setError(null)
+    // La relance ne concerne que les invités non-confirmés
+    if (typeId === 'RELANCE') {
+      setOnlyPending(true)
+    } else {
+      setOnlyPending(false)
+    }
+  }
 
   // Planning automatique basé sur la date du mariage
   const planningItems = [
@@ -108,11 +121,11 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
       color:    '#9DB4F5',
     },
     {
-      label:    'Relance non-cliqueurs',
+      label:    'Relance non-confirmés',
       type:     'RELANCE',
       timing:   'J-14',
       icon:     '🔔',
-      desc:     'Aux invités qui n\'ont pas encore ouvert leur invitation',
+      desc:     'Aux invités qui n\'ont pas encore confirmé leur présence',
       color:    'var(--gold)',
     },
     {
@@ -175,6 +188,9 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
     transition:   'all 0.2s ease',
   })
 
+  // Nombre d'invités ciblés selon le filtre
+  const targetCount = onlyPending ? pending : withPhone
+
   return (
     <div style={{ padding: '40px' }}>
 
@@ -186,20 +202,20 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white', marginBottom: '8px' }}>
           WhatsApp
         </h1>
-       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '100px', background: 'rgba(90,138,106,0.1)', border: '1px solid rgba(90,138,106,0.3)' }}>
-  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7EC89A' }} />
-  <span style={{ fontSize: '0.72rem', color: '#7EC89A' }}>
-    Meta WhatsApp actif — template invitation_mariage_premium approuvé ✓
-  </span>
-</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '100px', background: 'rgba(90,138,106,0.1)', border: '1px solid rgba(90,138,106,0.3)' }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7EC89A' }} />
+          <span style={{ fontSize: '0.72rem', color: '#7EC89A' }}>
+            Meta WhatsApp actif — template invitation_mariage_premium approuvé ✓
+          </span>
+        </div>
       </div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '32px' }}>
         {[
           { label: 'Total invités',  value: guests.length, color: 'rgba(255,255,255,0.7)', icon: <Users size={16} /> },
-          { label: 'Avec téléphone', value: withPhone,     color: '#9DB4F5',              icon: <MessageCircle size={16} /> },
-          { label: 'Confirmés',      value: confirmed,     color: '#7EC89A',              icon: <CheckCircle size={16} /> },
+          { label: 'Avec téléphone', value: withPhone,     color: '#9DB4F5',               icon: <MessageCircle size={16} /> },
+          { label: 'Confirmés',      value: confirmed,     color: '#7EC89A',               icon: <CheckCircle size={16} /> },
           { label: 'En attente',     value: pending,       color: 'rgba(201,169,110,0.8)', icon: <Clock size={16} /> },
         ].map((s, i) => (
           <div key={i} style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px' }}>
@@ -235,7 +251,7 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
             {MESSAGE_TYPES.map(type => (
               <button
                 key={type.id}
-                onClick={() => setSelectedType(type.id)}
+                onClick={() => handleTypeChange(type.id)}
                 style={{
                   display:     'flex',
                   alignItems:  'center',
@@ -275,10 +291,11 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
               background:   'rgba(255,255,255,0.03)',
               borderRadius: '12px',
               marginBottom: '20px',
-              cursor:       'pointer',
+              cursor:       selectedType === 'RELANCE' ? 'not-allowed' : 'pointer',
               border:       '1px solid rgba(255,255,255,0.06)',
+              opacity:      selectedType === 'RELANCE' ? 0.6 : 1,
             }}
-            onClick={() => setOnlyPending(!onlyPending)}
+            onClick={() => { if (selectedType !== 'RELANCE') setOnlyPending(!onlyPending) }}
           >
             <div style={{
               width:          '20px',
@@ -296,7 +313,9 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
             <div>
               <p style={{ color: 'white', fontSize: '0.85rem' }}>Seulement les non-confirmés</p>
               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
-                Ignore les invités ayant déjà confirmé
+                {selectedType === 'RELANCE'
+                  ? 'Activé automatiquement pour la relance'
+                  : 'Ignore les invités ayant déjà confirmé'}
               </p>
             </div>
           </div>
@@ -320,7 +339,7 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
 
           <button
             onClick={handleSendAll}
-            disabled={loading || withPhone === 0}
+            disabled={loading || targetCount === 0}
             style={{
               width:         '100%',
               padding:       '16px',
@@ -331,8 +350,8 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
               fontFamily:    'var(--font-body)',
               fontSize:      '0.85rem',
               letterSpacing: '0.1em',
-              cursor:        loading || withPhone === 0 ? 'not-allowed' : 'pointer',
-              opacity:       withPhone === 0 ? 0.4 : 1,
+              cursor:        loading || targetCount === 0 ? 'not-allowed' : 'pointer',
+              opacity:       targetCount === 0 ? 0.4 : 1,
               display:       'flex',
               alignItems:    'center',
               justifyContent:'center',
@@ -343,7 +362,7 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
             {loading ? (
               <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Envoi en cours...</>
             ) : (
-              <><Send size={15} /> Envoyer à {onlyPending ? pending : withPhone} invité{(onlyPending ? pending : withPhone) > 1 ? 's' : ''}</>
+              <><Send size={15} /> Envoyer à {targetCount} invité{targetCount > 1 ? 's' : ''}</>
             )}
           </button>
         </div>
@@ -380,7 +399,6 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
                   borderRadius: '16px',
                 }}
               >
-                {/* Numéro */}
                 <div style={{
                   width:          '36px',
                   height:         '36px',
@@ -396,7 +414,6 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
                   {item.icon}
                 </div>
 
-                {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ color: 'white', fontSize: '0.88rem', fontWeight: 500, marginBottom: '2px' }}>
                     {item.label}
@@ -406,17 +423,15 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
                   </p>
                 </div>
 
-                {/* Timing */}
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <p style={{ color: item.color, fontSize: '0.78rem', fontWeight: 500 }}>
                     {item.timing}
                   </p>
                 </div>
 
-                {/* Bouton envoyer maintenant */}
                 <button
                   onClick={() => {
-                    setSelectedType(item.type)
+                    handleTypeChange(item.type)
                     setTab('send')
                   }}
                   style={{
