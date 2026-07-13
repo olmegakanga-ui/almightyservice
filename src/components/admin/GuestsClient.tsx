@@ -36,6 +36,7 @@ interface Event {
   groom_name: string
   bride_name: string
   event_date: string
+  venue_name?: string
 }
 
 interface Props {
@@ -47,6 +48,7 @@ interface Props {
 type ModalMode = 'add' | 'edit' | null
 type SortField = 'full_name' | 'table' | 'phone' | 'side' | 'is_couple' | 'rsvp'
 type SortDir   = 'asc' | 'desc'
+type MsgType   = 'INVITATION' | 'RELANCE' | 'RAPPEL_J1' | 'JOUR_J' | 'REPORT'
 
 const RSVP_COLOR: Record<string, string> = {
   confirmed: '#7EC89A',
@@ -63,7 +65,165 @@ const RSVP_LABEL: Record<string, string> = {
 const countPersons = (list: Guest[]) =>
   list.reduce((acc, g) => acc + (g.is_couple ? 2 : 1), 0)
 
-// ── MODAL INVITÉ ──────────────────────────────────────────
+// ── Formatage date/heure ────────────────────────────────────
+function formatEventDate(iso: string) {
+  const d      = new Date(iso)
+  const days   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
+  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
+  const time   = iso.includes('T') ? iso.split('T')[1].slice(0, 5).replace(':', 'h') : '19h00'
+  return {
+    full: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`,
+    time,
+  }
+}
+
+// ── Construction des messages WhatsApp ──────────────────────
+function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string): string {
+  const url        = `${origin}/invitation/${guest.invitation_token}`
+  const { full, time } = formatEventDate(event.event_date)
+  const venue      = event.venue_name ?? ''
+  const couple     = `${event.groom_name} & ${event.bride_name}`
+
+  switch (type) {
+    case 'INVITATION':
+      return `*${guest.full_name}*\n\n` +
+        `*${couple}* ont l'immense joie et l'honneur de vous convier aux festivités de leur mariage.\n\n` +
+        `Date : *${full}* à *${time}*\n` +
+        (venue ? `Lieu : *${venue}*\n\n` : '\n') +
+        `Consultez votre invitation personnalisée et confirmez votre présence :\n${url}\n\n` +
+        `- AlmightyService`
+
+    case 'RELANCE':
+      return `*${guest.full_name}*\n\n` +
+        `Nous n'avons pas encore reçu votre confirmation pour le mariage de *${couple}*.\n\n` +
+        `Le grand jour approche et nous aimerions vous compter parmi nous le *${full}* à *${time}*.\n` +
+        (venue ? `Lieu : *${venue}*\n\n` : '\n') +
+        `Confirmez votre présence via votre invitation :\n${url}\n\n` +
+        `- AlmightyService`
+
+    case 'RAPPEL_J1':
+      return `*${guest.full_name}*\n\n` +
+        `C'est demain ! Le mariage de *${couple}* a lieu le *${full}* à *${time}*.\n` +
+        (venue ? `Lieu : *${venue}*\n\n` : '\n') +
+        `Retrouvez tous les détails et votre QR code d'entrée sur votre invitation :\n${url}\n\n` +
+        `- AlmightyService`
+
+    case 'JOUR_J':
+      return `*${guest.full_name}*\n\n` +
+        `C'est aujourd'hui ! *${couple}* vous accueillent avec joie et bonheur.\n\n` +
+        `Rendez-vous à *${time}*.\n` +
+        (venue ? `Lieu : *${venue}*\n\n` : '\n') +
+        `Votre QR code d'entrée se trouve sur votre invitation :\n${url}\n\n` +
+        `- AlmightyService`
+
+    case 'REPORT':
+      return `Cher(e) *${guest.full_name}*,\n\n` +
+        `Nous vous informons avec regret que le mariage de *${couple}*, prévu le *${full}*, est malheureusement reporté à une date ultérieure.\n\n` +
+        `La nouvelle date vous sera communiquée très prochainement.\n\n` +
+        `Merci infiniment de votre compréhension.\n\n` +
+        `— *AlmightyService*`
+  }
+}
+
+const MSG_MENU: { type: MsgType; label: string; desc: string; color: string }[] = [
+  { type: 'INVITATION', label: 'Invitation',  desc: 'Envoi initial',           color: '#25D366' },
+  { type: 'RELANCE',    label: 'Relance',     desc: 'Non-confirmés uniquement', color: 'var(--gold-light)' },
+  { type: 'RAPPEL_J1',  label: 'Rappel J-1',  desc: 'La veille du mariage',    color: '#9DB4F5' },
+  { type: 'JOUR_J',     label: 'Message Jour J', desc: 'Le matin du mariage',  color: '#FFB6C1' },
+  { type: 'REPORT',     label: 'Report',      desc: 'Mariage reporté',         color: '#E89AA6' },
+]
+
+// ── MENU WHATSAPP PAR INVITÉ ────────────────────────────────
+function WhatsAppMenu({
+  guest, event, onClose,
+}: {
+  guest:   Guest
+  event:   Event
+  onClose: () => void
+}) {
+  const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
+  const isPending  = rsvpStatus === 'pending'
+
+  const send = (type: MsgType) => {
+    const text  = encodeURIComponent(buildMessage(type, guest, event, window.location.origin))
+    const phone = guest.phone.replace(/[^0-9]/g, '')
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+    onClose()
+  }
+
+  return (
+    <>
+      {/* Overlay de fermeture */}
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 50 }}
+        onClick={onClose}
+      />
+
+      {/* Menu */}
+      <div style={{
+        position:     'absolute',
+        top:          '100%',
+        right:        0,
+        marginTop:    '6px',
+        width:        '230px',
+        background:   '#141210',
+        border:       '1px solid rgba(255,255,255,0.12)',
+        borderRadius: '12px',
+        boxShadow:    '0 12px 40px rgba(0,0,0,0.6)',
+        zIndex:       60,
+        overflow:     'hidden',
+        textAlign:    'left',
+      }}>
+        <p style={{
+          padding:       '10px 14px',
+          fontSize:      '0.62rem',
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color:         'rgba(255,255,255,0.3)',
+          borderBottom:  '1px solid rgba(255,255,255,0.06)',
+        }}>
+          Envoyer via WhatsApp
+        </p>
+
+        {MSG_MENU.map(item => {
+          // La relance ne concerne que les invités n'ayant pas confirmé
+          const disabled = item.type === 'RELANCE' && !isPending
+
+          return (
+            <button
+              key={item.type}
+              onClick={() => !disabled && send(item.type)}
+              disabled={disabled}
+              style={{
+                display:    'block',
+                width:      '100%',
+                padding:    '10px 14px',
+                background: 'transparent',
+                border:     'none',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                textAlign:  'left',
+                cursor:     disabled ? 'not-allowed' : 'pointer',
+                opacity:    disabled ? 0.35 : 1,
+                transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+            >
+              <p style={{ color: disabled ? 'rgba(255,255,255,0.4)' : item.color, fontSize: '0.82rem', marginBottom: '2px' }}>
+                {item.label}
+              </p>
+              <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.68rem' }}>
+                {disabled ? `Déjà ${RSVP_LABEL[rsvpStatus].toLowerCase()}` : item.desc}
+              </p>
+            </button>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
+// ── MODAL INVITÉ ────────────────────────────────────────────
 function GuestModal({
   mode, guest, tables, eventId, onClose, onSuccess,
 }: {
@@ -209,23 +369,6 @@ function GuestModal({
               <Check size={14} />
               {loading ? 'Sauvegarde...' : mode === 'add' ? 'Ajouter' : 'Modifier'}
             </button>
-            {mode === 'edit' && guest?.phone && (
-              <button
-                onClick={() => {
-                  const text = encodeURIComponent(
-                    `*${guest.full_name}*\n\n` +
-                    `Votre invitation personnalisée :\n` +
-                    `${window.location.origin}/invitation/${guest.invitation_token}`
-                  )
-                  const phone = guest.phone.replace(/[^0-9]/g, '')
-                  window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
-                }}
-                title="Ouvrir WhatsApp Web"
-                style={{ padding: '14px 18px', borderRadius: '100px', border: '1px solid rgba(37,211,102,0.4)', background: 'rgba(37,211,102,0.1)', color: '#25D366', fontFamily: 'var(--font-body)', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <MessageCircle size={14} /> WA
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -233,7 +376,7 @@ function GuestModal({
   )
 }
 
-// ── MODAL REPORT ──────────────────────────────────────────
+// ── MODAL REPORT (envoi en masse) ───────────────────────────
 function ReportModal({
   event, guests, onClose,
 }: {
@@ -241,26 +384,17 @@ function ReportModal({
   guests:  Guest[]
   onClose: () => void
 }) {
-  const withPhone       = guests.filter(g => g.phone && g.phone.length >= 8)
-  const [sent, setSent] = useState(0)
+  const withPhone             = guests.filter(g => g.phone && g.phone.length >= 8)
+  const [sent, setSent]       = useState(0)
   const [started, setStarted] = useState(false)
-
-  const buildReportText = (guestName: string) =>
-    encodeURIComponent(
-      `Cher(e) *${guestName}*,\n\n` +
-      `Nous vous informons avec regret que le mariage de *${event.groom_name} & ${event.bride_name}*, prévu le *Samedi 13 juin 2026*, est malheureusement reporté à une date ultérieure.\n\n` +
-      `La famille traverse un moment de deuil et vous demande de les accompagner dans vos prières.\n\n` +
-      `La nouvelle date vous sera communiquée très prochainement.\n\n` +
-      `Merci infiniment de votre compréhension et de votre soutien.\n\n` +
-      `— *AlmightyService*`
-    )
 
   const handleSend = () => {
     setStarted(true)
     withPhone.forEach((guest, i) => {
       setTimeout(() => {
+        const text  = encodeURIComponent(buildMessage('REPORT', guest, event, window.location.origin))
         const phone = guest.phone.replace(/[^0-9]/g, '')
-        window.open(`https://wa.me/${phone}?text=${buildReportText(guest.full_name)}`, '_blank')
+        window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
         setSent(s => s + 1)
       }, i * 1500)
     })
@@ -273,7 +407,6 @@ function ReportModal({
     >
       <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(232,154,166,0.3)', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(232,154,166,0.1)', border: '1px solid rgba(232,154,166,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -288,27 +421,17 @@ function ReportModal({
           </button>
         </div>
 
-        {/* Message preview */}
         <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', marginBottom: '20px' }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>
             Aperçu du message
           </p>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
-            {`Cher(e) *[Nom de l'invité]*,
-
-Nous vous informons avec regret que le mariage de *${event.groom_name} & ${event.bride_name}*, prévu le *Samedi 13 juin 2026*, est malheureusement reporté à une date ultérieure.
-
-La famille traverse un moment de deuil et vous demande de les accompagner dans vos prières.
-
-La nouvelle date vous sera communiquée très prochainement.
-
-Merci infiniment de votre compréhension et de votre soutien.
-
-— *AlmightyService*`}
+            {guests[0]
+              ? buildMessage('REPORT', { ...guests[0], full_name: "[Nom de l'invité]" }, event, '')
+              : ''}
           </p>
         </div>
 
-        {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
           <div style={{ padding: '14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', textAlign: 'center' }}>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: 'white', lineHeight: 1 }}>{guests.length}</p>
@@ -320,7 +443,6 @@ Merci infiniment de votre compréhension et de votre soutien.
           </div>
         </div>
 
-        {/* Progression */}
         {started && (
           <div style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -336,7 +458,6 @@ Merci infiniment de votre compréhension et de votre soutien.
           </div>
         )}
 
-        {/* Actions */}
         <div style={{ display: 'flex', gap: '10px' }}>
           {!started ? (
             <>
@@ -363,7 +484,7 @@ Merci infiniment de votre compréhension et de votre soutien.
   )
 }
 
-// ── PAGE PRINCIPALE ───────────────────────────────────────
+// ── PAGE PRINCIPALE ─────────────────────────────────────────
 export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [guests, setGuests]               = useState<Guest[]>(initialGuests)
   const [search, setSearch]               = useState('')
@@ -376,6 +497,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [sortField, setSortField]         = useState<SortField>('full_name')
   const [sortDir, setSortDir]             = useState<SortDir>('asc')
   const [showReport, setShowReport]       = useState(false)
+  const [openMenuId, setOpenMenuId]       = useState<string | null>(null)
 
   const total      = countPersons(guests)
   const confirmed  = countPersons(guests.filter(g => g.rsvp_responses?.status === 'confirmed'))
@@ -415,11 +537,11 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     list = [...list].sort((a, b) => {
       let va = '', vb = ''
       switch (sortField) {
-        case 'full_name': va = a.full_name;                            vb = b.full_name; break
-        case 'table':     va = a.guest_tables?.name ?? '';             vb = b.guest_tables?.name ?? ''; break
-        case 'phone':     va = a.phone;                                vb = b.phone; break
-        case 'side':      va = a.side;                                 vb = b.side; break
-        case 'is_couple': va = a.is_couple ? '1' : '0';               vb = b.is_couple ? '1' : '0'; break
+        case 'full_name': va = a.full_name;                           vb = b.full_name; break
+        case 'table':     va = a.guest_tables?.name ?? '';            vb = b.guest_tables?.name ?? ''; break
+        case 'phone':     va = a.phone;                               vb = b.phone; break
+        case 'side':      va = a.side;                                vb = b.side; break
+        case 'is_couple': va = a.is_couple ? '1' : '0';              vb = b.is_couple ? '1' : '0'; break
         case 'rsvp':      va = a.rsvp_responses?.status ?? 'pending'; vb = b.rsvp_responses?.status ?? 'pending'; break
       }
       const cmp = va.localeCompare(vb)
@@ -450,42 +572,17 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     finally { setDeleting(false); setDeleteConfirm(null) }
   }
 
-  const handleWhatsAppWeb = (guest: Guest) => {
-    const invitationUrl = window.location.origin + '/invitation/' + guest.invitation_token
-    const text = encodeURIComponent(
-      `*${guest.full_name}*\n\n` +
-      `*${event.groom_name} & ${event.bride_name}* ont l'immense joie et l'honneur de vous convier aux festivités de leur mariage.\n\n` +
-      `Consultez votre invitation personnalisée et confirmez votre présence :\n\n` +
-      `${invitationUrl}\n\n` +
-      `- AlmightyService`
-    )
-    const phone = guest.phone.replace(/[^0-9]/g, '')
-    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
-  }
-
-  const handleReportSingle = (guest: Guest) => {
-    const text = encodeURIComponent(
-      `Cher(e) *${guest.full_name}*,\n\n` +
-      `Nous vous informons avec regret que le mariage de *${event.groom_name} & ${event.bride_name}*, prévu le *Samedi 13 juin 2026*, est malheureusement reporté à une date ultérieure.\n\n` +
-      `La famille traverse un moment de deuil et vous demande de les accompagner dans vos prières.\n\n` +
-      `La nouvelle date vous sera communiquée très prochainement.\n\n` +
-      `Merci infiniment de votre compréhension et de votre soutien.\n\n` +
-      `— *AlmightyService*`
-    )
-    const phone = guest.phone.replace(/[^0-9]/g, '')
-    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
-  }
-
   const copyLink = (token: string) => {
     navigator.clipboard.writeText(window.location.origin + '/invitation/' + token)
   }
 
   const exportCSV = () => {
-    const headers = ['Nom','Téléphone','Table','Côté','Couple','Personnes','Statut RSVP','Étiquette']
+    const headers = ['Nom','Téléphone','Table','Côté','Couple','Personnes','Statut RSVP','Étiquette','Lien invitation']
     const rows    = filtered.map(g => [
       g.full_name, g.phone, g.guest_tables?.name ?? '', g.side,
       g.is_couple ? 'Oui' : 'Non', g.is_couple ? '2' : '1',
       RSVP_LABEL[g.rsvp_responses?.status ?? 'pending'], g.label ?? '',
+      window.location.origin + '/invitation/' + g.invitation_token,
     ])
     const csv  = [headers, ...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -542,7 +639,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
         <div style={{ padding: '20px', background: 'rgba(100,149,237,0.05)', border: '1px solid rgba(100,149,237,0.15)', borderRadius: '16px' }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#9DB4F5', marginBottom: '12px' }}>
-            ♂ Côté Marié — {event.groom_name}
+            Côté Marié — {event.groom_name}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             {[
@@ -566,7 +663,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
         <div style={{ padding: '20px', background: 'rgba(255,182,193,0.05)', border: '1px solid rgba(255,182,193,0.15)', borderRadius: '16px' }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#FFB6C1', marginBottom: '12px' }}>
-            ♀ Côté Mariée — {event.bride_name}
+            Côté Mariée — {event.bride_name}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             {[
@@ -600,7 +697,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         <div style={{ display: 'flex', gap: '6px' }}>
           {(['ALL', 'HOMME', 'FEMME'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{ padding: '8px 16px', borderRadius: '8px', border: filter === f ? '1px solid rgba(201,169,110,0.4)' : '1px solid rgba(255,255,255,0.08)', background: filter === f ? 'rgba(201,169,110,0.1)' : 'transparent', color: filter === f ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-              {f === 'ALL' ? 'Tous' : f === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
+              {f === 'ALL' ? 'Tous' : f === 'HOMME' ? 'Marié' : 'Mariée'}
             </button>
           ))}
         </div>
@@ -634,7 +731,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       </div>
 
       {/* Tableau */}
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -661,6 +758,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
                   const isConfirm  = deleteConfirm === guest.id
                   const hasPhone   = guest.phone && guest.phone.length >= 8
+                  const menuOpen   = openMenuId === guest.id
+
                   return (
                     <tr key={guest.id}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)' }}
@@ -682,12 +781,12 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.5)' }}>{guest.phone || '—'}</td>
                       <td style={cellStyle}>
                         <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', letterSpacing: '0.1em', background: guest.side === 'HOMME' ? 'rgba(100,149,237,0.1)' : 'rgba(255,182,193,0.1)', color: guest.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1' }}>
-                          {guest.side === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
+                          {guest.side === 'HOMME' ? 'Marié' : 'Mariée'}
                         </span>
                       </td>
                       <td style={cellStyle}>
                         <span style={{ color: guest.is_couple ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
-                          {guest.is_couple ? '👫 Couple (2)' : '👤 Solo (1)'}
+                          {guest.is_couple ? 'Couple (2)' : 'Solo (1)'}
                         </span>
                       </td>
                       <td style={cellStyle}>
@@ -697,8 +796,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         </span>
                       </td>
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
-                      <td style={{ ...cellStyle, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
+                      <td style={{ ...cellStyle, textAlign: 'center', overflow: 'visible' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative' }}>
 
                           {/* Copier lien */}
                           <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
@@ -706,25 +805,36 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                             <Link2 size={13} />
                           </button>
 
-                          {/* WhatsApp Web — invitation */}
-                          <button
-                            onClick={() => hasPhone && handleWhatsAppWeb(guest)}
-                            disabled={!hasPhone}
-                            title={hasPhone ? 'Envoyer invitation WhatsApp' : 'Numéro manquant'}
-                            style={{ padding: '6px', borderRadius: '6px', border: hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)', background: hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent', color: hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)', cursor: hasPhone ? 'pointer' : 'not-allowed' }}
-                          >
-                            <MessageCircle size={13} />
-                          </button>
+                          {/* Menu WhatsApp */}
+                          <div style={{ position: 'relative' }}>
+                            <button
+                              onClick={() => hasPhone && setOpenMenuId(menuOpen ? null : guest.id)}
+                              disabled={!hasPhone}
+                              title={hasPhone ? 'Envoyer un message WhatsApp' : 'Numéro manquant'}
+                              style={{
+                                padding:      '6px 10px',
+                                borderRadius: '6px',
+                                border:       hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
+                                background:   menuOpen ? 'rgba(37,211,102,0.2)' : hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
+                                color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
+                                cursor:       hasPhone ? 'pointer' : 'not-allowed',
+                                display:      'flex',
+                                alignItems:   'center',
+                                gap:          '4px',
+                              }}
+                            >
+                              <MessageCircle size={13} />
+                              <ChevronDown size={10} />
+                            </button>
 
-                          {/* WhatsApp Web — report */}
-                          <button
-                            onClick={() => hasPhone && handleReportSingle(guest)}
-                            disabled={!hasPhone}
-                            title={hasPhone ? 'Envoyer message de report' : 'Numéro manquant'}
-                            style={{ padding: '6px', borderRadius: '6px', border: hasPhone ? '1px solid rgba(232,154,166,0.35)' : '1px solid rgba(255,255,255,0.05)', background: hasPhone ? 'rgba(232,154,166,0.08)' : 'transparent', color: hasPhone ? '#E89AA6' : 'rgba(255,255,255,0.15)', cursor: hasPhone ? 'pointer' : 'not-allowed' }}
-                          >
-                            <AlertTriangle size={13} />
-                          </button>
+                            {menuOpen && hasPhone && (
+                              <WhatsAppMenu
+                                guest={guest}
+                                event={event}
+                                onClose={() => setOpenMenuId(null)}
+                              />
+                            )}
+                          </div>
 
                           {/* Modifier */}
                           <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
