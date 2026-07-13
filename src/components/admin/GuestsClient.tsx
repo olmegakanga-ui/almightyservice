@@ -130,7 +130,7 @@ const MSG_MENU: { type: MsgType; label: string; desc: string; color: string }[] 
   { type: 'RELANCE',    label: 'Relance',     desc: 'Non-confirmés uniquement', color: 'var(--gold-light)' },
   { type: 'RAPPEL_J1',  label: 'Rappel J-1',  desc: 'La veille du mariage',    color: '#9DB4F5' },
   { type: 'JOUR_J',     label: 'Message Jour J', desc: 'Le matin du mariage',  color: '#FFB6C1' },
-  { type: 'REPORT',     label: 'Report',      desc: 'Mariage reporté',         color: '#E89AA6' },
+  
 ]
 
 // ── MENU WHATSAPP PAR INVITÉ ────────────────────────────────
