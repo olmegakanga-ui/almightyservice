@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react'
 
 interface Props {
-  groomName:  string
-  brideName:  string
-  guestName:  string
-  themeColor: string
-  eventDate:  string
-  venueName:  string
-  onComplete: () => void
+  groomName:            string
+  brideName:            string
+  guestName:            string
+  themeColor:           string
+  themeColorSecondary?: string
+  eventDate:            string
+  venueName:            string
+  onComplete:           () => void
 }
 
 export default function EnvelopeIntro({ groomName, brideName, guestName, themeColor, onComplete }: Props) {
@@ -50,14 +51,14 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
 
       {/* Logo */}
       <p style={{
-        fontFamily:  'var(--font-script)',
-        fontSize:    'clamp(1.4rem, 3vw, 2rem)',
-        color:       gold,
-        opacity:     0.6,
-        marginBottom:'48px',
+        fontFamily:    'var(--font-script)',
+        fontSize:      'clamp(1.4rem, 3vw, 2rem)',
+        color:         gold,
+        opacity:       0.6,
+        marginBottom:  '48px',
         letterSpacing: '0.05em',
-        position:    'relative',
-        zIndex:      2,
+        position:      'relative',
+        zIndex:        2,
       }}>
         AlmightyService
       </p>
@@ -96,17 +97,17 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
 
         {/* Rabat supérieur — s'ouvre */}
         <div style={{
-          position:       'absolute',
-          top:            0,
-          left:           0,
-          right:          0,
-          height:         '55%',
-          transformOrigin:'top center',
-          transform:      phase === 'open' || phase === 'rise' || phase === 'fadeout'
+          position:        'absolute',
+          top:             0,
+          left:            0,
+          right:           0,
+          height:          '55%',
+          transformOrigin: 'top center',
+          transform:       phase === 'open' || phase === 'rise' || phase === 'fadeout'
             ? 'perspective(600px) rotateX(-160deg)'
             : 'perspective(600px) rotateX(0deg)',
-          transition:     'transform 1s cubic-bezier(0.4,0,0.2,1)',
-          zIndex:         3,
+          transition:      'transform 1s cubic-bezier(0.4,0,0.2,1)',
+          zIndex:          3,
         }}>
           <svg width="100%" height="100%" viewBox="0 0 420 160" preserveAspectRatio="none">
             <polygon points="0,0 420,0 210,140" fill="#1a1510" stroke={`${gold}40`} strokeWidth="0.5" />
@@ -118,21 +119,21 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
 
         {/* Carte qui sort de l'enveloppe */}
         <div style={{
-          position:   'absolute',
-          left:       '8%',
-          right:      '8%',
-          bottom:     '5%',
-          background: `linear-gradient(160deg, #1e1812, #16120d)`,
-          border:     `1px solid ${gold}35`,
-          borderRadius:'4px',
-          padding:    'clamp(16px, 3vw, 28px)',
-          transform:  phase === 'rise' || phase === 'fadeout'
+          position:     'absolute',
+          left:         '8%',
+          right:        '8%',
+          bottom:       '5%',
+          background:   `linear-gradient(160deg, #1e1812, #16120d)`,
+          border:       `1px solid ${gold}35`,
+          borderRadius: '4px',
+          padding:      'clamp(16px, 3vw, 28px)',
+          transform:    phase === 'rise' || phase === 'fadeout'
             ? 'translateY(-85%)'
             : 'translateY(10%)',
-          transition: 'transform 1.2s cubic-bezier(0.16,1,0.3,1)',
-          zIndex:     phase === 'rise' || phase === 'fadeout' ? 5 : 1,
-          boxShadow:  `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${gold}15`,
-          textAlign:  'center',
+          transition:   'transform 1.2s cubic-bezier(0.16,1,0.3,1)',
+          zIndex:       phase === 'rise' || phase === 'fadeout' ? 5 : 1,
+          boxShadow:    `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${gold}15`,
+          textAlign:    'center',
         }}>
 
           {/* Ligne décorative top */}
@@ -161,16 +162,16 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
 
       {/* Texte invitation sous enveloppe */}
       <p style={{
-        marginTop:   '40px',
-        fontFamily:  'var(--font-body)',
-        fontSize:    'clamp(0.65rem, 1.5vw, 0.75rem)',
-        letterSpacing:'0.25em',
-        textTransform:'uppercase',
-        color:       `rgba(255,255,255,0.2)`,
-        position:    'relative',
-        zIndex:      2,
-        opacity:     phase === 'rise' || phase === 'fadeout' ? 1 : 0,
-        transition:  'opacity 0.8s ease 0.5s',
+        marginTop:     '40px',
+        fontFamily:    'var(--font-body)',
+        fontSize:      'clamp(0.65rem, 1.5vw, 0.75rem)',
+        letterSpacing: '0.25em',
+        textTransform: 'uppercase',
+        color:         `rgba(255,255,255,0.2)`,
+        position:      'relative',
+        zIndex:        2,
+        opacity:       phase === 'rise' || phase === 'fadeout' ? 1 : 0,
+        transition:    'opacity 0.8s ease 0.5s',
       }}>
         Découvrez votre invitation
       </p>
