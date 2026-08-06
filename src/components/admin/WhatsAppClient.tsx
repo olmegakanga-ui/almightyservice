@@ -6,6 +6,7 @@ import {
   Clock, XCircle, AlertTriangle, RefreshCw,
   Calendar, Bell,
 } from 'lucide-react'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface Guest {
   id: string
@@ -379,7 +380,7 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
                 Mariage dans <span style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>{daysLeft}</span> jours
               </p>
               <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem', marginTop: '2px' }}>
-                {new Date(event.event_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                {parseEventDate(event.event_date).fullLong}
               </p>
             </div>
           </div>

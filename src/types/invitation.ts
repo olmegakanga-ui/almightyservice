@@ -21,6 +21,8 @@ export interface EventData {
   musicVolume:          number
   giftOptions:          string[]
   sectionsOrder:        string[]
+  dressCode:            string | null
+  dressColors:          string[]
 }
 
 export interface ProgramItem {

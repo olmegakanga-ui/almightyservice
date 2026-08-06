@@ -6,6 +6,7 @@ import {
   Users, Heart, CheckCircle, MessageCircle,
   TrendingUp, Calendar, Award,
 } from 'lucide-react'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface Event {
   id:         string
@@ -43,11 +44,7 @@ interface Props {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', {
-    day:   'numeric',
-    month: 'short',
-    year:  'numeric',
-  })
+  return parseEventDate(iso).full
 }
 
 function daysUntil(iso: string) {

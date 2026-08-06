@@ -13,6 +13,9 @@ interface Props {
   eventId:         string
 }
 
+// Résolution du QR téléchargé — au moins 1024×1024px pour rester net à l'impression
+const EXPORT_QR_SIZE = 1024
+
 export default function QRCodeSection({
   guestId,
   guestName,
@@ -65,9 +68,22 @@ export default function QRCodeSection({
   }, [guestId, eventId, invitationToken])
 
   const handleDownload = () => {
-    const canvas = document.querySelector('#qr-canvas canvas') as HTMLCanvasElement
-    if (!canvas) return
-    const url  = canvas.toDataURL('image/png')
+    const sourceCanvas = document.querySelector('#qr-canvas-export canvas') as HTMLCanvasElement
+    if (!sourceCanvas) return
+
+    // Redessiner sur un canvas dédié avec fond blanc opaque garanti,
+    // pour éviter toute transparence ou dérive de couleur à l'export.
+    const exportCanvas = document.createElement('canvas')
+    exportCanvas.width  = sourceCanvas.width
+    exportCanvas.height = sourceCanvas.height
+    const ctx = exportCanvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height)
+    ctx.drawImage(sourceCanvas, 0, 0)
+
+    const url  = exportCanvas.toDataURL('image/png')
     const a    = document.createElement('a')
     a.href     = url
     a.download = `invitation-${guestName.replace(/\s+/g, '-').toLowerCase()}.png`
@@ -141,11 +157,33 @@ export default function QRCodeSection({
               value={qrValue}
               size={200}
               level="H"
-              includeMargin={false}
+              marginSize={0}
               imageSettings={{
                 src:      '/logo-qr.png',
                 width:    32,
                 height:   32,
+                excavate: true,
+              }}
+            />
+          </div>
+
+          {/* QR Code haute résolution, hors écran — sert uniquement au téléchargement */}
+          <div
+            id="qr-canvas-export"
+            aria-hidden="true"
+            style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}
+          >
+            <QRCodeCanvas
+              value={qrValue}
+              size={EXPORT_QR_SIZE}
+              level="H"
+              marginSize={4}
+              fgColor="#000000"
+              bgColor="#FFFFFF"
+              imageSettings={{
+                src:      '/logo-qr.png',
+                width:    Math.round(EXPORT_QR_SIZE * 0.16),
+                height:   Math.round(EXPORT_QR_SIZE * 0.16),
                 excavate: true,
               }}
             />

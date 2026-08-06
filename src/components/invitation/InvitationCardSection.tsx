@@ -2,31 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { EventData, GuestData } from '@/types/invitation'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface Props {
   event: EventData
   guest: GuestData
 }
 
-function formatDate(isoString: string): string {
-  const date   = new Date(isoString)
-  const days   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
-  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
-  return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
-}
-
-function extractTime(isoString: string): string {
-  if (!isoString.includes('T')) return '00h00'
-  const timePart = isoString.split('T')[1].slice(0, 5)
-  const [h, m]   = timePart.split(':')
-  return `${h}h${m}`
-}
-
 export default function InvitationCardSection({ event, guest }: Props) {
   const sectionRef            = useRef<HTMLElement>(null)
   const [visible, setVisible] = useState(false)
-  const dateFormatted         = formatDate(event.eventDate)
-  const timeFormatted         = extractTime(event.eventDate)
+  const { fullLong: dateFormatted, time: timeFormatted } = parseEventDate(event.eventDate)
 
   useEffect(() => {
     const el = sectionRef.current

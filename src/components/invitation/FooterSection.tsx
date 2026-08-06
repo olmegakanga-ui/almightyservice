@@ -2,22 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { EventData } from '@/types/invitation'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface Props {
   event: EventData
-}
-
-function extractDateParts(isoString: string) {
-  const date   = new Date(isoString)
-  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
-  const timePart = isoString.includes('T') ? isoString.split('T')[1].slice(0, 5) : '00:00'
-  const [h, m]   = timePart.split(':')
-  return {
-    day:   date.getDate(),
-    month: months[date.getMonth()],
-    year:  date.getFullYear(),
-    time:  `${h}h${m}`,
-  }
 }
 
 export default function FooterSection({ event }: Props) {
@@ -34,7 +22,7 @@ export default function FooterSection({ event }: Props) {
     return () => obs.disconnect()
   }, [])
 
-  const { day, month, year, time } = extractDateParts(event.eventDate)
+  const { dayNumber: day, monthName: month, year, time } = parseEventDate(event.eventDate)
 
   return (
     <footer ref={sectionRef} style={{ padding: '120px 24px 60px', position: 'relative', textAlign: 'center' }}>

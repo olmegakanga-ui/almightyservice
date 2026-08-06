@@ -11,6 +11,7 @@ import QRCodeSection from '@/components/invitation/QRCodeSection'
 import DrinksSection from '@/components/invitation/DrinksSection'
 import GuestbookSection from '@/components/invitation/GuestbookSection'
 import GiftSection from '@/components/invitation/GiftSection'
+import DressCodeSection from '@/components/invitation/DressCodeSection'
 import MapSection from '@/components/invitation/MapSection'
 import FooterSection from '@/components/invitation/FooterSection'
 
@@ -155,11 +156,20 @@ export default function InvitationWrapper({ event, guest }: Props) {
         <Divider />
       </React.Fragment>
     ),
+    dresscode: (
+      <React.Fragment key="dresscode">
+        <DressCodeSection
+          dressCode={event.dressCode}
+          dressColors={event.dressColors}
+        />
+        <Divider />
+      </React.Fragment>
+    ),
   }
 
   const order = event.sectionsOrder?.length
     ? event.sectionsOrder
-    : ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map']
+    : ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode']
 
   return (
     <>
@@ -170,6 +180,7 @@ export default function InvitationWrapper({ event, guest }: Props) {
           brideName={event.brideName}
           guestName={guest.fullName}
           themeColor={goldColor}
+          themeColorSecondary={goldLight}
           eventDate={event.eventDate}
           venueName={event.venueName}
           onComplete={() => setIntroDone(true)}

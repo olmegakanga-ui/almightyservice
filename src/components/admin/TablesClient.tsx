@@ -616,4 +616,4 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
       )}
     </div>
   )
-}
+}c

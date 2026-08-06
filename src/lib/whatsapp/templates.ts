@@ -1,3 +1,5 @@
+import { parseEventDate } from '@/lib/date-utils'
+
 export interface MessageTemplateData {
   guestName:     string
   groomName:     string
@@ -9,15 +11,11 @@ export interface MessageTemplateData {
 }
 
 export function formatDate(isoString: string): string {
-  const date   = new Date(isoString)
-  const days   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
-  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
-  return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
+  return parseEventDate(isoString).fullLong
 }
 
 export function formatTime(isoString: string): string {
-  const date = new Date(isoString)
-  return `${date.getHours()}h${String(date.getMinutes()).padStart(2, '0')}`
+  return parseEventDate(isoString).time
 }
 
 // Message initial d'invitation

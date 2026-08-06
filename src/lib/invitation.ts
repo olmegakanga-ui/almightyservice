@@ -22,6 +22,8 @@ export interface FullInvitationData {
   musicVolume:         number
   giftOptions:         string[]
   sectionsOrder:       string[]
+  dressCode:           string | null
+  dressColors:         string[]
   guestId:             string
   guestFullName:       string
   guestSide:           'HOMME' | 'FEMME'
@@ -109,6 +111,8 @@ export async function getInvitationByToken(
     musicVolume:         event.music_volume          ?? 30,
     giftOptions:         Array.isArray(event.gift_options)    ? event.gift_options    : ['envelope','present'],
     sectionsOrder:       Array.isArray(event.sections_order)  ? event.sections_order  : DEFAULT_SECTIONS,
+    dressCode:           event.dress_code ?? null,
+    dressColors:         Array.isArray(event.dress_colors) ? event.dress_colors : [],
     guestId:             guest.id,
     guestFullName:       guest.full_name,
     guestSide:           guest.side,

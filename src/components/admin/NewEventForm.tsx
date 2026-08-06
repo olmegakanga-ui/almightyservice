@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Check, Loader } from 'lucide-react'
 import Link from 'next/link'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface FormData {
   groom_name:         string
@@ -568,7 +569,7 @@ export default function NewEventForm() {
                 {form.groom_name} & {form.bride_name}
               </p>
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
-                📅 {new Date(form.event_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à {form.event_time}
+                📅 {parseEventDate(form.event_date).fullLong} à {form.event_time}
               </p>
               {form.venue_name && (
                 <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', marginTop: '4px' }}>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Plus } from 'lucide-react'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface Event {
   id: string
@@ -16,9 +17,7 @@ interface Event {
 }
 
 function formatDate(iso: string) {
-  const d = new Date(iso)
-  const months = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc']
-  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear()
+  return parseEventDate(iso).full
 }
 
 export default function AdminEventsPage() {

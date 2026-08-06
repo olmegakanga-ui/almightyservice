@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import ImageUpload from '@/components/admin/ImageUpload'
+import { parseEventDate } from '@/lib/date-utils'
 import {
   Save, Loader, Check, Plus, Trash2,
   GripVertical, Eye, Copy,
@@ -34,6 +35,8 @@ interface Event {
   hero_message:              string
   end_message:               string
   theme_name:                string
+  dress_code?:               string
+  dress_colors?:             string[]
   rsvp_deadline:             string
   drink_options_json:        DrinkCategory[]
   program_json:              ProgramItem[]
@@ -67,7 +70,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'sections',  label: 'Sections' },
 ]
 
-const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map']
+const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode']
 
 const SECTION_LABELS: Record<string, string> = {
   countdown: 'Compte à rebours',
@@ -78,6 +81,7 @@ const SECTION_LABELS: Record<string, string> = {
   guestbook: 'Livre d\'or',
   gift:      'Type de cadeau',
   map:       'Carte & Plan',
+  dresscode: 'Dress code',
 }
 
 export default function SettingsClient({ event }: Props) {
@@ -100,7 +104,8 @@ export default function SettingsClient({ event }: Props) {
     invitation_text:           event.invitation_text,
     hero_message:              event.hero_message ?? '',
     end_message:               event.end_message ?? '',
-    theme_name:                event.theme_name ?? '',
+    dress_code:                event.dress_code ?? '',
+    dress_colors:              event.dress_colors ?? [],
     rsvp_deadline:             event.rsvp_deadline?.split('T')[0] ?? '',
     theme_color_primary:       event.theme_color_primary,
     theme_color_secondary:     event.theme_color_secondary,
@@ -148,7 +153,8 @@ export default function SettingsClient({ event }: Props) {
           invitation_text:           form.invitation_text.trim(),
           hero_message:              form.hero_message.trim(),
           end_message:               form.end_message.trim(),
-          theme_name:                form.theme_name.trim(),
+          dress_code:                form.dress_code.trim() || null,
+          dress_colors:              form.dress_colors,
           rsvp_deadline:             rsvpDeadline,
           theme_color_primary:       form.theme_color_primary,
           theme_color_secondary:     form.theme_color_secondary,
@@ -206,7 +212,8 @@ export default function SettingsClient({ event }: Props) {
       invitation_text:           event.invitation_text,
       hero_message:              event.hero_message,
       end_message:               event.end_message,
-      theme_name:                event.theme_name,
+      dress_code:                event.dress_code ?? null,
+      dress_colors:              event.dress_colors ?? [],
       rsvp_deadline:             event.rsvp_deadline,
       theme_color_primary:       event.theme_color_primary,
       theme_color_secondary:     event.theme_color_secondary,
@@ -398,8 +405,39 @@ export default function SettingsClient({ event }: Props) {
             <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: '140px', lineHeight: 1.8 }} value={form.invitation_text} onChange={e => set('invitation_text', e.target.value)} onFocus={focus} onBlur={blur} />
           </div>
           <div>
-            <label style={labelStyle}>Thème</label>
-            <input style={inputStyle} value={form.theme_name} onChange={e => set('theme_name', e.target.value)} placeholder="Ex: Noir & Or" onFocus={focus} onBlur={blur} />
+            <label style={labelStyle}>Dress code</label>
+            <input style={inputStyle} value={form.dress_code} onChange={e => set('dress_code', e.target.value)} placeholder="Ex : Tenue de soirée, Chic décontracté" onFocus={focus} onBlur={blur} />
+          </div>
+          <div>
+            <label style={labelStyle}>Couleurs suggérées</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+              {(form.dress_colors as string[]).map((color, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={e => {
+                      const next = [...(form.dress_colors as string[])]
+                      next[idx] = e.target.value
+                      set('dress_colors', next)
+                    }}
+                    style={{ width: '36px', height: '36px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}
+                  />
+                  <button
+                    onClick={() => set('dress_colors', (form.dress_colors as string[]).filter((_, i) => i !== idx))}
+                    style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.3)', background: 'rgba(184,80,96,0.1)', color: '#E89AA6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => set('dress_colors', [...(form.dress_colors as string[]), '#C9A96E'])}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '100px', border: '1px solid rgba(201,169,110,0.3)', background: 'rgba(201,169,110,0.05)', color: 'var(--gold-light)', fontSize: '0.8rem', cursor: 'pointer' }}
+            >
+              <Plus size={13} /> Ajouter une couleur
+            </button>
           </div>
           <div>
             <label style={labelStyle}>Message de fin</label>
@@ -502,7 +540,7 @@ export default function SettingsClient({ event }: Props) {
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>
                 Les invités verront :{' '}
                 <span style={{ color: 'var(--gold-light)' }}>
-                  Date limite : {new Date(form.rsvp_deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  Date limite : {parseEventDate(form.rsvp_deadline).full}
                 </span>
               </p>
             </div>

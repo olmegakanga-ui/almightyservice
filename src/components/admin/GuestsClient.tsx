@@ -9,6 +9,7 @@ import {
   ChevronUp, ChevronDown, AlertTriangle,
 } from 'lucide-react'
 import ImportGuestsModal from '@/components/admin/ImportGuestsModal'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface Guest {
   id:               string
@@ -67,14 +68,8 @@ const countPersons = (list: Guest[]) =>
 
 // ── Formatage date/heure ────────────────────────────────────
 function formatEventDate(iso: string) {
-  const d      = new Date(iso)
-  const days   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
-  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
-  const time   = iso.includes('T') ? iso.split('T')[1].slice(0, 5).replace(':', 'h') : '19h00'
-  return {
-    full: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`,
-    time,
-  }
+  const { fullLong: full, time } = parseEventDate(iso)
+  return { full, time }
 }
 
 // ── Construction des messages WhatsApp ──────────────────────

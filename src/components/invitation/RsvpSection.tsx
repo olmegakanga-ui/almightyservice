@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Check, X, Clock } from 'lucide-react'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface Props {
   deadline:      string
@@ -21,9 +22,7 @@ function daysLeft(deadline: string) {
 
 function formatDeadline(iso: string) {
   if (!iso) return ''
-  const d      = new Date(iso)
-  const months = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc']
-  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear()
+  return parseEventDate(iso).full
 }
 
 export default function RsvpSection({

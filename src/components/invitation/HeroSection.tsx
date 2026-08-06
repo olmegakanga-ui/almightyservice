@@ -3,28 +3,16 @@
 import { useEffect, useState } from 'react'
 import { EventData, GuestData } from '@/types/invitation'
 import { ChevronDown } from 'lucide-react'
+import { parseEventDate } from '@/lib/date-utils'
 
 interface Props {
   event: EventData
   guest: GuestData
 }
 
-function formatEventDate(isoString: string) {
-  const date   = new Date(isoString)
-  const days   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
-  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
-  const timePart = isoString.includes('T') ? isoString.split('T')[1].slice(0, 5) : '00:00'
-  const [h, m]   = timePart.split(':')
-  return {
-    day:  days[date.getDay()],
-    date: `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`,
-    time: `${h}h${m}`,
-  }
-}
-
 export default function HeroSection({ event, guest }: Props) {
   const [mounted, setMounted] = useState(false)
-  const { day, date, time }   = formatEventDate(event.eventDate)
+  const { dayName: day, full: date, time } = parseEventDate(event.eventDate)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -101,6 +89,16 @@ export default function HeroSection({ event, guest }: Props) {
                 <div style={{ textAlign: 'center', padding: '0 clamp(16px, 3vw, 32px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '80px' }}>
                   <p className="label-overline" style={{ marginBottom: '6px', display: 'block', textAlign: 'center' }}>Table</p>
                   <p style={{ color: 'var(--gold-light)', fontSize: '0.9rem', fontFamily: 'var(--font-display)', textAlign: 'center', display: 'block' }}>{guest.tableName}</p>
+                </div>
+              </>
+            )}
+            {event.dressCode && (
+              <>
+                <div style={{ width: '1px', height: '32px', background: 'var(--gold-border)', flexShrink: 0 }} />
+                {/* Dress code */}
+                <div style={{ textAlign: 'center', padding: '0 clamp(16px, 3vw, 32px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '80px' }}>
+                  <p className="label-overline" style={{ marginBottom: '6px', display: 'block', textAlign: 'center' }}>Dress code</p>
+                  <p style={{ color: 'var(--gold-light)', fontSize: '0.9rem', fontFamily: 'var(--font-display)', textAlign: 'center', display: 'block' }}>{event.dressCode}</p>
                 </div>
               </>
             )}

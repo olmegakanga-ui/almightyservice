@@ -33,6 +33,8 @@ export const mockEvent: EventData = {
   musicVolume:         30,
   giftOptions:         ['envelope', 'present'],
   sectionsOrder:       ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map'],
+  dressCode:           'Tenue de soirée',
+  dressColors:         ['#6E1A33', '#C2A24E'],
 }
 
 export const mockGuest: GuestData = {
