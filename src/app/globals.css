@@ -289,3 +289,28 @@ body {
 .reveal-delay-3 { transition-delay: 0.3s; }
 .reveal-delay-4 { transition-delay: 0.4s; }
 .reveal-delay-5 { transition-delay: 0.5s; }
+
+/* ─── LISTES DÉROULANTES SUR FOND SOMBRE ─── */
+select option {
+  background-color: var(--slate-800);
+  color: #ffffff;
+}
+
+select option:checked {
+  background-color: var(--slate-700);
+  color: var(--gold);
+  font-weight: 500;
+}
+
+select option:hover,
+select option:focus {
+  background-color: var(--slate-700);
+  color: var(--gold-light);
+}
+
+select optgroup {
+  background-color: var(--slate-900);
+  color: var(--gold);
+  font-style: normal;
+  font-weight: 600;
+}
