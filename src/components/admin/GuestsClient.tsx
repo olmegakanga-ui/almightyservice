@@ -947,7 +947,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           ) : (
                             <button onClick={e => { e.stopPropagation(); setDeleteConfirm(guest.id) }} title="Supprimer"
                               style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                              <Trash2 size={13} color="rgba(255,255,255,0.55)" />
+                              <Trash2 size={15} strokeWidth={2.2} color="rgba(255,255,255,0.7)" />
                             </button>
                           )}
                         </div>
