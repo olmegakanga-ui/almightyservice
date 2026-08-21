@@ -903,7 +903,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           {/* Copier lien */}
                           <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                            <Link2 size={13} />
+                            <Link2 size={13} color="rgba(255,255,255,0.55)" />
                           </button>
 
                           {/* Menu WhatsApp */}
@@ -928,14 +928,14 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                               gap:          '4px',
                             }}
                           >
-                            <MessageCircle size={13} />
-                            <ChevronDown size={10} />
+                            <MessageCircle size={13} color={hasPhone ? '#25D366' : 'rgba(255,255,255,0.2)'} />
+                            <ChevronDown size={10} color={hasPhone ? '#25D366' : 'rgba(255,255,255,0.2)'} />
                           </button>
 
                           {/* Modifier */}
                           <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
                             style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                            <Pencil size={13} />
+                            <Pencil size={13} color="rgba(255,255,255,0.55)" />
                           </button>
 
                           {/* Supprimer */}
@@ -947,7 +947,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           ) : (
                             <button onClick={e => { e.stopPropagation(); setDeleteConfirm(guest.id) }} title="Supprimer"
                               style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                              <Trash2 size={13} />
+                              <Trash2 size={13} color="rgba(255,255,255,0.55)" />
                             </button>
                           )}
                         </div>
