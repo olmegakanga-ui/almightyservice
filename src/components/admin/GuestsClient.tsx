@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Plus, Search, Download, Copy, Printer,
@@ -50,6 +50,14 @@ type ModalMode = 'add' | 'edit' | null
 type SortField = 'full_name' | 'table' | 'phone' | 'side' | 'is_couple' | 'rsvp'
 type SortDir   = 'asc' | 'desc'
 type MsgType   = 'INVITATION' | 'RELANCE' | 'RAPPEL_J1' | 'JOUR_J' | 'REPORT'
+
+/** Position du bouton qui a ouvert le menu WhatsApp, en coordonnées écran. */
+interface MenuAnchor {
+  id:     string
+  top:    number
+  bottom: number
+  right:  number
+}
 
 const RSVP_COLOR: Record<string, string> = {
   confirmed: '#7EC89A',
@@ -121,23 +129,36 @@ function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string)
 }
 
 const MSG_MENU: { type: MsgType; label: string; desc: string; color: string }[] = [
-  { type: 'INVITATION', label: 'Invitation',  desc: 'Envoi initial',           color: '#25D366' },
-  { type: 'RELANCE',    label: 'Relance',     desc: 'Non-confirmés uniquement', color: 'var(--gold-light)' },
-  { type: 'RAPPEL_J1',  label: 'Rappel J-1',  desc: 'La veille du mariage',    color: '#9DB4F5' },
-  { type: 'JOUR_J',     label: 'Message Jour J', desc: 'Le matin du mariage',  color: '#FFB6C1' },
-  
+  { type: 'INVITATION', label: 'Invitation',     desc: 'Envoi initial',            color: '#25D366' },
+  { type: 'RELANCE',    label: 'Relance',        desc: 'Non-confirmés uniquement', color: 'var(--gold-light)' },
+  { type: 'RAPPEL_J1',  label: 'Rappel J-1',     desc: 'La veille du mariage',     color: '#9DB4F5' },
+  { type: 'JOUR_J',     label: 'Message Jour J', desc: 'Le matin du mariage',      color: '#FFB6C1' },
 ]
 
 // ── MENU WHATSAPP PAR INVITÉ ────────────────────────────────
+// Positionné en `fixed` par rapport à l'écran : il n'est donc jamais rogné
+// par le conteneur à défilement horizontal qui entoure le tableau.
 function WhatsAppMenu({
-  guest, event, onClose,
+  guest, event, anchor, onClose,
 }: {
   guest:   Guest
   event:   Event
+  anchor:  MenuAnchor
   onClose: () => void
 }) {
   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
   const isPending  = rsvpStatus === 'pending'
+
+  // Le menu suit le bouton : dès que la page bouge, on ferme.
+  useEffect(() => {
+    const close = () => onClose()
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [onClose])
 
   const send = (type: MsgType) => {
     const text  = encodeURIComponent(buildMessage(type, guest, event, window.location.origin))
@@ -146,26 +167,36 @@ function WhatsAppMenu({
     onClose()
   }
 
+  const MENU_W = 230
+  const MENU_H = 230
+  const vw     = typeof window !== 'undefined' ? window.innerWidth  : 1024
+  const vh     = typeof window !== 'undefined' ? window.innerHeight : 768
+
+  // Aligné à droite du bouton, sans jamais sortir de l'écran
+  const left   = Math.max(8, Math.min(anchor.right - MENU_W, vw - MENU_W - 8))
+  const openUp = anchor.bottom + MENU_H > vh
+
   return (
     <>
       {/* Overlay de fermeture */}
       <div
-        style={{ position: 'fixed', inset: 0, zIndex: 50 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 900 }}
         onClick={onClose}
       />
 
       {/* Menu */}
       <div style={{
-        position:     'absolute',
-        top:          '100%',
-        right:        0,
-        marginTop:    '6px',
-        width:        '230px',
+        position:     'fixed',
+        left:         `${left}px`,
+        ...(openUp
+          ? { bottom: `${vh - anchor.top + 6}px` }
+          : { top:    `${anchor.bottom + 6}px` }),
+        width:        `${MENU_W}px`,
         background:   '#141210',
         border:       '1px solid rgba(255,255,255,0.12)',
         borderRadius: '12px',
         boxShadow:    '0 12px 40px rgba(0,0,0,0.6)',
-        zIndex:       60,
+        zIndex:       910,
         overflow:     'hidden',
         textAlign:    'left',
       }}>
@@ -190,16 +221,16 @@ function WhatsAppMenu({
               onClick={() => !disabled && send(item.type)}
               disabled={disabled}
               style={{
-                display:    'block',
-                width:      '100%',
-                padding:    '10px 14px',
-                background: 'transparent',
-                border:     'none',
+                display:      'block',
+                width:        '100%',
+                padding:      '10px 14px',
+                background:   'transparent',
+                border:       'none',
                 borderBottom: '1px solid rgba(255,255,255,0.04)',
-                textAlign:  'left',
-                cursor:     disabled ? 'not-allowed' : 'pointer',
-                opacity:    disabled ? 0.35 : 1,
-                transition: 'background 0.15s ease',
+                textAlign:    'left',
+                cursor:       disabled ? 'not-allowed' : 'pointer',
+                opacity:      disabled ? 0.35 : 1,
+                transition:   'background 0.15s ease',
               }}
               onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
@@ -279,7 +310,7 @@ function GuestModal({
     width: '100%', padding: '11px 14px',
     background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)',
-    fontSize: '0.88rem', outline: 'none',
+    fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box',
   }
   const labelStyle: React.CSSProperties = {
     display: 'block', fontSize: '0.65rem', letterSpacing: '0.2em',
@@ -287,14 +318,14 @@ function GuestModal({
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(201,169,110,0.2)', borderRadius: '24px', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 300, color: 'white' }}>
+      <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(201,169,110,0.2)', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', gap: '12px' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 300, color: 'white', minWidth: 0 }}>
             {mode === 'add' ? 'Nouvel invité' : "Modifier l'invité"}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', flexShrink: 0 }}>
             <X size={20} />
           </button>
         </div>
@@ -326,7 +357,7 @@ function GuestModal({
               ))}
             </select>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="modal-duo">
             <div>
               <label style={labelStyle}>Invité côté de</label>
               <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.side}
@@ -400,14 +431,14 @@ function ReportModal({
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', paddingTop: '5vh', overflowY: 'auto' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(232,154,166,0.3)', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(232,154,166,0.3)', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(232,154,166,0.1)', border: '1px solid rgba(232,154,166,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <AlertTriangle size={16} color="#E89AA6" />
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 300, color: 'white' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 300, color: 'white', minWidth: 0 }}>
               Report du mariage
             </h2>
           </div>
@@ -420,14 +451,14 @@ function ReportModal({
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>
             Aperçu du message
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', lineHeight: 1.7, whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>
             {guests[0]
               ? buildMessage('REPORT', { ...guests[0], full_name: "[Nom de l'invité]" }, event, '')
               : ''}
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
+        <div className="modal-duo" style={{ marginBottom: '24px' }}>
           <div style={{ padding: '14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', textAlign: 'center' }}>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: 'white', lineHeight: 1 }}>{guests.length}</p>
             <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>Total invités</p>
@@ -440,9 +471,9 @@ function ReportModal({
 
         {started && (
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', gap: '10px' }}>
               <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>Ouverture des conversations...</p>
-              <p style={{ fontSize: '0.75rem', color: '#25D366' }}>{sent} / {withPhone.length}</p>
+              <p style={{ fontSize: '0.75rem', color: '#25D366', flexShrink: 0 }}>{sent} / {withPhone.length}</p>
             </div>
             <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
               <div style={{ height: '100%', width: withPhone.length > 0 ? (sent / withPhone.length * 100) + '%' : '0%', background: '#25D366', borderRadius: '2px', transition: 'width 0.3s ease' }} />
@@ -492,7 +523,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [sortField, setSortField]         = useState<SortField>('full_name')
   const [sortDir, setSortDir]             = useState<SortDir>('asc')
   const [showReport, setShowReport]       = useState(false)
-  const [openMenuId, setOpenMenuId]       = useState<string | null>(null)
+  const [menuAnchor, setMenuAnchor]       = useState<MenuAnchor | null>(null)
 
   const total      = countPersons(guests)
   const confirmed  = countPersons(guests.filter(g => g.rsvp_responses?.status === 'confirmed'))
@@ -536,7 +567,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         case 'table':     va = a.guest_tables?.name ?? '';            vb = b.guest_tables?.name ?? ''; break
         case 'phone':     va = a.phone;                               vb = b.phone; break
         case 'side':      va = a.side;                                vb = b.side; break
-        case 'is_couple': va = a.is_couple ? '1' : '0';              vb = b.is_couple ? '1' : '0'; break
+        case 'is_couple': va = a.is_couple ? '1' : '0';               vb = b.is_couple ? '1' : '0'; break
         case 'rsvp':      va = a.rsvp_responses?.status ?? 'pending'; vb = b.rsvp_responses?.status ?? 'pending'; break
       }
       const cmp = va.localeCompare(vb)
@@ -599,14 +630,76 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   )
 
   return (
-    <div style={{ padding: '40px' }}>
+    <div className="admin-page">
+      <style>{`
+        /* Page — le padding descend sur mobile et laisse la place au hamburger */
+        .admin-page {
+          padding: 40px;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        @media (max-width: 767px) {
+          .admin-page { padding: 68px 16px 32px; }
+        }
+
+        /* Stats globales : 2 colonnes sur mobile, 4 à partir de 720px.
+           minmax(0, 1fr) autorise la colonne à passer sous la largeur du texte. */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        @media (min-width: 720px) {
+          .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+
+        /* Blocs Marié / Mariée : empilés sur mobile, côte à côte ensuite */
+        .sides-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+          margin-bottom: 32px;
+        }
+        @media (min-width: 720px) {
+          .sides-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        .side-inner {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        /* Duo de champs dans les modales */
+        .modal-duo {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+        }
+        @media (min-width: 420px) {
+          .modal-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        /* Seul conteneur autorisé à défiler horizontalement */
+        .table-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          border-radius: 16px;
+        }
+
+        .stat-value { font-size: 1.8rem; }
+        @media (max-width: 400px) {
+          .stat-value { font-size: 1.5rem; }
+        }
+      `}</style>
 
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
-          {event.groom_name} & {event.bride_name}
+          {event.groom_name} &amp; {event.bride_name}
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white', lineHeight: 1.15 }}>
           Gestion des invités
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem', marginTop: '4px' }}>
@@ -615,34 +708,34 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
       </div>
 
       {/* Stats globales */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
+      <div className="stats-grid">
         {[
           { icon: Users,     label: 'Personnes',  value: total,     color: 'rgba(255,255,255,0.7)' },
           { icon: UserCheck, label: 'Confirmées', value: confirmed, color: '#7EC89A' },
           { icon: UserX,     label: 'Déclinées',  value: declined,  color: '#E89AA6' },
           { icon: Clock,     label: 'En attente', value: pending,   color: 'rgba(201,169,110,0.8)' },
         ].map((stat, i) => (
-          <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
+          <div key={i} style={{ padding: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', minWidth: 0 }}>
             <stat.icon size={18} color={stat.color} style={{ marginBottom: '10px' }} />
-            <p style={{ fontSize: '1.8rem', fontFamily: 'var(--font-display)', color: stat.color, lineHeight: 1 }}>{stat.value}</p>
+            <p className="stat-value" style={{ fontFamily: 'var(--font-display)', color: stat.color, lineHeight: 1 }}>{stat.value}</p>
             <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.1em' }}>{stat.label}</p>
           </div>
         ))}
       </div>
 
       {/* Stats par côté */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
-        <div style={{ padding: '20px', background: 'rgba(100,149,237,0.05)', border: '1px solid rgba(100,149,237,0.15)', borderRadius: '16px' }}>
-          <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#9DB4F5', marginBottom: '12px' }}>
+      <div className="sides-grid">
+        <div style={{ padding: '18px', background: 'rgba(100,149,237,0.05)', border: '1px solid rgba(100,149,237,0.15)', borderRadius: '16px', minWidth: 0 }}>
+          <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#9DB4F5', marginBottom: '12px', overflowWrap: 'anywhere' }}>
             Côté Marié — {event.groom_name}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div className="side-inner">
             {[
               { label: 'Personnes',  value: totalHomme },
               { label: 'Confirmées', value: confHomme },
               { label: 'En attente', value: totalHomme - confHomme - declHomme },
             ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+              <div key={i} style={{ textAlign: 'center', padding: '10px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', minWidth: 0 }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#9DB4F5', lineHeight: 1 }}>{s.value}</p>
                 <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{s.label}</p>
               </div>
@@ -656,17 +749,17 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </p>
         </div>
 
-        <div style={{ padding: '20px', background: 'rgba(255,182,193,0.05)', border: '1px solid rgba(255,182,193,0.15)', borderRadius: '16px' }}>
-          <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#FFB6C1', marginBottom: '12px' }}>
+        <div style={{ padding: '18px', background: 'rgba(255,182,193,0.05)', border: '1px solid rgba(255,182,193,0.15)', borderRadius: '16px', minWidth: 0 }}>
+          <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#FFB6C1', marginBottom: '12px', overflowWrap: 'anywhere' }}>
             Côté Mariée — {event.bride_name}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div className="side-inner">
             {[
               { label: 'Personnes',  value: totalFemme },
               { label: 'Confirmées', value: confFemme },
               { label: 'En attente', value: totalFemme - confFemme - declFemme },
             ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
+              <div key={i} style={{ textAlign: 'center', padding: '10px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', minWidth: 0 }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#FFB6C1', lineHeight: 1 }}>{s.value}</p>
                 <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{s.label}</p>
               </div>
@@ -683,13 +776,13 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+        <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 0 }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher nom, téléphone, table..."
-            style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none' }} />
+            style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }} />
         </div>
 
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {(['ALL', 'HOMME', 'FEMME'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{ padding: '8px 16px', borderRadius: '8px', border: filter === f ? '1px solid rgba(201,169,110,0.4)' : '1px solid rgba(255,255,255,0.08)', background: filter === f ? 'rgba(201,169,110,0.1)' : 'transparent', color: filter === f ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s ease' }}>
               {f === 'ALL' ? 'Tous' : f === 'HOMME' ? 'Marié' : 'Mariée'}
@@ -715,11 +808,11 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
             <AlertTriangle size={13} /> Report mariage
           </button>
           <button onClick={() => setShowImport(true)}
-            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
+            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
             <Upload size={14} /> Importer CSV
           </button>
           <button onClick={() => { setEditingGuest(undefined); setModalMode('add') }}
-            style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
+            style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
             <Plus size={15} /> Ajouter un invité
           </button>
         </div>
@@ -727,7 +820,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
 
       {/* Tableau */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-scroll">
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -744,7 +837,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ ...cellStyle, textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)' }}>
+                  <td colSpan={8} style={{ ...cellStyle, textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)', whiteSpace: 'normal' }}>
                     {search || filter !== 'ALL' ? 'Aucun invité trouvé' : 'Aucun invité — importez une liste ou ajoutez manuellement'}
                   </td>
                 </tr>
@@ -753,7 +846,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
                   const isConfirm  = deleteConfirm === guest.id
                   const hasPhone   = guest.phone && guest.phone.length >= 8
-                  const menuOpen   = openMenuId === guest.id
+                  const menuOpen   = menuAnchor?.id === guest.id
 
                   return (
                     <tr key={guest.id}
@@ -791,8 +884,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         </span>
                       </td>
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
-                      <td style={{ ...cellStyle, textAlign: 'center', overflow: 'visible' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative' }}>
+                      <td style={{ ...cellStyle, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
 
                           {/* Copier lien */}
                           <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
@@ -801,35 +894,30 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           </button>
 
                           {/* Menu WhatsApp */}
-                          <div style={{ position: 'relative' }}>
-                            <button
-                              onClick={() => hasPhone && setOpenMenuId(menuOpen ? null : guest.id)}
-                              disabled={!hasPhone}
-                              title={hasPhone ? 'Envoyer un message WhatsApp' : 'Numéro manquant'}
-                              style={{
-                                padding:      '6px 10px',
-                                borderRadius: '6px',
-                                border:       hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
-                                background:   menuOpen ? 'rgba(37,211,102,0.2)' : hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
-                                color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
-                                cursor:       hasPhone ? 'pointer' : 'not-allowed',
-                                display:      'flex',
-                                alignItems:   'center',
-                                gap:          '4px',
-                              }}
-                            >
-                              <MessageCircle size={13} />
-                              <ChevronDown size={10} />
-                            </button>
-
-                            {menuOpen && hasPhone && (
-                              <WhatsAppMenu
-                                guest={guest}
-                                event={event}
-                                onClose={() => setOpenMenuId(null)}
-                              />
-                            )}
-                          </div>
+                          <button
+                            onClick={e => {
+                              if (!hasPhone) return
+                              if (menuOpen) { setMenuAnchor(null); return }
+                              const r = e.currentTarget.getBoundingClientRect()
+                              setMenuAnchor({ id: guest.id, top: r.top, bottom: r.bottom, right: r.right })
+                            }}
+                            disabled={!hasPhone}
+                            title={hasPhone ? 'Envoyer un message WhatsApp' : 'Numéro manquant'}
+                            style={{
+                              padding:      '6px 10px',
+                              borderRadius: '6px',
+                              border:       hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
+                              background:   menuOpen ? 'rgba(37,211,102,0.2)' : hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
+                              color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
+                              cursor:       hasPhone ? 'pointer' : 'not-allowed',
+                              display:      'flex',
+                              alignItems:   'center',
+                              gap:          '4px',
+                            }}
+                          >
+                            <MessageCircle size={13} />
+                            <ChevronDown size={10} />
+                          </button>
 
                           {/* Modifier */}
                           <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
@@ -859,7 +947,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </table>
         </div>
 
-        <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)' }}>
             {filtered.length} entrée{filtered.length > 1 ? 's' : ''} · <span style={{ color: 'rgba(255,255,255,0.4)' }}>{filteredPersons} personne{filteredPersons > 1 ? 's' : ''}</span>
             {filtered.length !== guests.length && ' (filtrées sur ' + guests.length + ')'}
@@ -869,6 +957,20 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </p>
         </div>
       </div>
+
+      {/* Menu WhatsApp — rendu hors du tableau pour ne jamais être rogné */}
+      {menuAnchor && (() => {
+        const g = filtered.find(x => x.id === menuAnchor.id)
+        if (!g) return null
+        return (
+          <WhatsAppMenu
+            guest={g}
+            event={event}
+            anchor={menuAnchor}
+            onClose={() => setMenuAnchor(null)}
+          />
+        )
+      })()}
 
       {/* Modals */}
       {modalMode && (
