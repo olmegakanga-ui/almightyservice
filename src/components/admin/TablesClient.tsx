@@ -51,7 +51,7 @@ const RSVP_COLOR: Record<string, string> = {
   pending:   'rgba(255,255,255,0.5)',
 }
 
-// ── MODAL ─────────────────────────────────────────────────
+// ── MODAL ───────────────────────────────────────────────────
 function TableModal({
   mode, table, eventId, onClose, onSuccess,
 }: {
@@ -110,6 +110,7 @@ function TableModal({
     fontFamily:   'var(--font-body)',
     fontSize:     '0.88rem',
     outline:      'none',
+    boxSizing:    'border-box',
   }
 
   const labelStyle: React.CSSProperties = {
@@ -123,15 +124,15 @@ function TableModal({
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div style={{ width: '100%', maxWidth: '440px', background: '#141210', border: '1px solid rgba(201,169,110,0.2)', borderRadius: '24px', padding: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 300, color: 'white' }}>
+      <div className="modal-box" style={{ width: '100%', maxWidth: '440px', background: '#141210', border: '1px solid rgba(201,169,110,0.2)', borderRadius: '24px', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', gap: '12px' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 300, color: 'white', minWidth: 0 }}>
             {mode === 'add' ? 'Nouvelle table' : 'Modifier la table'}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', flexShrink: 0 }}>
             <X size={20} />
           </button>
         </div>
@@ -163,7 +164,7 @@ function TableModal({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="modal-duo">
             <div>
               <label style={labelStyle}>Catégorie</label>
               <select
@@ -227,7 +228,7 @@ function TableModal({
   )
 }
 
-// ── DRAWER INVITÉS ────────────────────────────────────────
+// ── DRAWER INVITÉS ──────────────────────────────────────────
 function GuestsDrawer({ table, guests, onClose }: {
   table:   Table
   guests:  Guest[]
@@ -240,17 +241,17 @@ function GuestsDrawer({ table, guests, onClose }: {
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div style={{ width: '380px', height: '100vh', background: '#141210', borderLeft: '1px solid rgba(201,169,110,0.15)', padding: '32px', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: 'white' }}>
+      <div className="side-drawer" style={{ height: '100vh', background: '#141210', borderLeft: '1px solid rgba(201,169,110,0.15)', overflowY: 'auto', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: 'white', overflowWrap: 'anywhere' }}>
               {table.name}
             </p>
             <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
               {tableGuests.length} / {table.capacity} invités
             </p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', flexShrink: 0 }}>
             <X size={20} />
           </button>
         </div>
@@ -274,11 +275,11 @@ function GuestsDrawer({ table, guests, onClose }: {
             {tableGuests.map(guest => {
               const status = guest.rsvp_responses?.status ?? 'pending'
               return (
-                <div key={guest.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <p style={{ color: RSVP_COLOR[status], fontSize: '0.88rem' }}>
+                <div key={guest.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p style={{ color: RSVP_COLOR[status], fontSize: '0.88rem', minWidth: 0, overflowWrap: 'anywhere' }}>
                     {guest.full_name}
                   </p>
-                  <span style={{ fontSize: '0.65rem', color: RSVP_COLOR[status] }}>
+                  <span style={{ fontSize: '0.65rem', color: RSVP_COLOR[status], flexShrink: 0 }}>
                     {status === 'confirmed' ? '✓' : status === 'declined' ? '✗' : '—'}
                   </span>
                 </div>
@@ -291,7 +292,7 @@ function GuestsDrawer({ table, guests, onClose }: {
   )
 }
 
-// ── PAGE PRINCIPALE ───────────────────────────────────────
+// ── PAGE PRINCIPALE ─────────────────────────────────────────
 export default function TablesClient({ event, initialTables, guests }: Props) {
   const [tables, setTables]             = useState<Table[]>(initialTables)
   const [search, setSearch]             = useState('')
@@ -379,42 +380,140 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
     whiteSpace:   'nowrap',
   }
 
+  // Bouton d'action carré — ne se comprime jamais
+  const iconBtn: React.CSSProperties = {
+    flexShrink:     0,
+    width:          '30px',
+    height:         '30px',
+    padding:        0,
+    borderRadius:   '6px',
+    border:         '1px solid rgba(255,255,255,0.08)',
+    background:     'transparent',
+    cursor:         'pointer',
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'center',
+  }
+
   return (
-    <div style={{ padding: '40px' }}>
+    <div className="admin-page">
+      <style>{`
+        /* ---------- Page ---------- */
+        .admin-page {
+          padding: 40px;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        @media (max-width: 767px) {
+          .admin-page { padding: 68px 16px 32px; }
+        }
+
+        .page-title { font-size: 2rem; }
+        @media (max-width: 599px) { .page-title { font-size: 1.55rem; } }
+
+        /* ---------- Cartes de statistiques ---------- */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          margin-bottom: 32px;
+        }
+        @media (min-width: 720px) {
+          .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+        @media (max-width: 339px) {
+          .stats-grid { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        .stat-value { font-size: 1.8rem; }
+        @media (max-width: 599px) {
+          .stats-grid > div { padding: 14px !important; }
+          .stat-value { font-size: 1.45rem; }
+        }
+
+        /* ---------- Résumé Marié / Mariée ---------- */
+        .sides-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 16px;
+          margin-bottom: 32px;
+        }
+        @media (min-width: 720px) {
+          .sides-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 599px) {
+          .sides-grid > div { padding: 14px !important; }
+        }
+
+        /* ---------- Champs jumelés dans la modale ---------- */
+        .modal-duo {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+        }
+        @media (min-width: 420px) {
+          .modal-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        .modal-box { padding: 32px; }
+        @media (max-width: 599px) { .modal-box { padding: 20px; border-radius: 18px; } }
+
+        /* ---------- Tiroir latéral ---------- */
+        .side-drawer {
+          width: 380px;
+          max-width: 100vw;
+          padding: 32px;
+        }
+        @media (max-width: 599px) {
+          .side-drawer { width: 100vw; padding: 20px; }
+        }
+
+        /* ---------- Tableau ---------- */
+        .table-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        /* Les icônes SVG ne se laissent jamais écraser par le flex */
+        .actions-cell svg {
+          flex-shrink: 0;
+          display: block;
+        }
+      `}</style>
 
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
-          {event.groom_name} & {event.bride_name}
+          {event.groom_name} &amp; {event.bride_name}
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white' }}>
+        <h1 className="page-title" style={{ fontFamily: 'var(--font-display)', fontWeight: 300, color: 'white', lineHeight: 1.15 }}>
           Gestion des tables
         </h1>
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '32px' }}>
+      <div className="stats-grid">
         {[
-          { label: 'Total tables',  value: tables.length,                                  color: 'rgba(255,255,255,0.7)' },
-          { label: 'Côté Marié',   value: tables.filter(t => t.side === 'HOMME').length,   color: '#9DB4F5' },
-          { label: 'Côté Mariée',  value: tables.filter(t => t.side === 'FEMME').length,   color: '#FFB6C1' },
-          { label: 'Total invités', value: guests.length,                                  color: 'rgba(201,169,110,0.8)' },
+          { label: 'Total tables',  value: tables.length,                                color: 'rgba(255,255,255,0.7)' },
+          { label: 'Côté Marié',    value: tables.filter(t => t.side === 'HOMME').length, color: '#9DB4F5' },
+          { label: 'Côté Mariée',   value: tables.filter(t => t.side === 'FEMME').length, color: '#FFB6C1' },
+          { label: 'Total invités', value: guests.length,                                color: 'rgba(201,169,110,0.8)' },
         ].map((s, i) => (
-          <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
-            <p style={{ fontSize: '1.8rem', fontFamily: 'var(--font-display)', color: s.color, lineHeight: 1 }}>{s.value}</p>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.1em' }}>{s.label}</p>
+          <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', minWidth: 0 }}>
+            <p className="stat-value" style={{ fontFamily: 'var(--font-display)', color: s.color, lineHeight: 1 }}>{s.value}</p>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.08em' }}>{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Résumé Homme / Femme */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+      {/* Résumé Marié / Mariée */}
+      <div className="sides-grid">
         {(['HOMME', 'FEMME'] as const).map(side => {
           const sideTables = tables.filter(t => t.side === side)
           const sideGuests = guests.filter(g => g.side === side)
           return (
-            <div key={side} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
-              <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: side === 'HOMME' ? '#9DB4F5' : '#FFB6C1', marginBottom: '12px' }}>
+            <div key={side} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', minWidth: 0 }}>
+              <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: side === 'HOMME' ? '#9DB4F5' : '#FFB6C1', marginBottom: '12px', overflowWrap: 'anywhere', lineHeight: 1.6 }}>
                 Côté {side === 'HOMME' ? 'Marié' : 'Mariée'} — {sideTables.length} table{sideTables.length > 1 ? 's' : ''} · {sideGuests.length} invités
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -423,14 +522,14 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                   return (
                     <div
                       key={t.id}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', background: CATEGORY_COLOR[t.category], cursor: 'pointer' }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '8px 12px', borderRadius: '8px', background: CATEGORY_COLOR[t.category], cursor: 'pointer' }}
                       onClick={() => setDrawerTable(t)}
                     >
-                      <div>
-                        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>{t.name}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', overflowWrap: 'anywhere' }}>{t.name}</span>
                         <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginLeft: '8px' }}>{t.category}</span>
                       </div>
-                      <span style={{ fontSize: '0.82rem', color: count >= t.capacity ? '#E89AA6' : 'var(--gold)', fontFamily: 'var(--font-display)', padding: '2px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)' }}>
+                      <span style={{ fontSize: '0.82rem', color: count >= t.capacity ? '#E89AA6' : 'var(--gold)', fontFamily: 'var(--font-display)', padding: '2px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', flexShrink: 0, whiteSpace: 'nowrap' }}>
                         {count}/{t.capacity}
                       </span>
                     </div>
@@ -444,40 +543,40 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+        <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 0 }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher table, catégorie, invité..."
-            style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none' }}
+            style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {(['ALL', 'HOMME', 'FEMME'] as const).map(f => (
-            <button key={f} onClick={() => setSideFilter(f)} style={{ padding: '8px 14px', borderRadius: '8px', border: sideFilter === f ? '1px solid rgba(201,169,110,0.4)' : '1px solid rgba(255,255,255,0.08)', background: sideFilter === f ? 'rgba(201,169,110,0.1)' : 'transparent', color: sideFilter === f ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.78rem', cursor: 'pointer' }}>
+            <button key={f} onClick={() => setSideFilter(f)} style={{ padding: '8px 14px', borderRadius: '8px', border: sideFilter === f ? '1px solid rgba(201,169,110,0.4)' : '1px solid rgba(255,255,255,0.08)', background: sideFilter === f ? 'rgba(201,169,110,0.1)' : 'transparent', color: sideFilter === f ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {f === 'ALL' ? 'Tous' : f === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
             </button>
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', flexWrap: 'wrap' }}>
           <button onClick={() => navigator.clipboard.writeText(filtered.map(t => t.name).join('\n'))}
-            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
             <Copy size={13} /> Copier
           </button>
           <button onClick={exportCSV}
-            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
             <Download size={13} /> CSV
           </button>
           <button onClick={() => window.print()}
-            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
             <Printer size={13} /> Print
           </button>
           <button
             onClick={() => { setEditingTable(undefined); setModalMode('add') }}
-            style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+            style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(201,169,110,0.5)', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
           >
             <Plus size={15} /> Ajouter une table
           </button>
@@ -486,7 +585,7 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
 
       {/* Tableau */}
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-scroll">
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -495,21 +594,21 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                 <th style={thStyle}>Catégorie</th>
                 <th style={thStyle}>Invités / Capacité</th>
                 <th style={thStyle}>Remplissage</th>
-                <th style={{ ...thStyle, textAlign: 'center' }}>Actions</th>
+                <th style={{ ...thStyle, textAlign: 'center', width: '1%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ ...cellStyle, textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)' }}>
+                  <td colSpan={6} style={{ ...cellStyle, textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)', whiteSpace: 'normal' }}>
                     Aucune table trouvée
                   </td>
                 </tr>
               ) : (
                 filtered.map(table => {
-                  const count    = guests.filter(g => g.table_id === table.id).length
-                  const pct      = Math.min(100, Math.round((count / table.capacity) * 100))
-                  const isFull   = count >= table.capacity
+                  const count     = guests.filter(g => g.table_id === table.id).length
+                  const pct       = Math.min(100, Math.round((count / table.capacity) * 100))
+                  const isFull    = count >= table.capacity
                   const isConfirm = deleteConfirm === table.id
                   return (
                     <tr key={table.id}
@@ -518,7 +617,7 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                     >
                       <td style={cellStyle}>
                         <button onClick={() => setDrawerTable(table)} style={{ background: 'none', border: 'none', color: 'white', fontWeight: 500, cursor: 'pointer', fontSize: '0.85rem', padding: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Users size={13} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                          <Users size={13} color="rgba(255,255,255,0.4)" style={{ flexShrink: 0 }} />
                           {table.name}
                         </button>
                       </td>
@@ -542,23 +641,36 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                           <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: pct + '%', background: isFull ? '#E89AA6' : 'var(--gold)', borderRadius: '2px', transition: 'width 0.3s ease' }} />
                           </div>
-                          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)', minWidth: '32px' }}>{pct}%</span>
+                          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)', minWidth: '32px', flexShrink: 0 }}>{pct}%</span>
                         </div>
                       </td>
-                      <td style={{ ...cellStyle, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
+                      <td className="actions-cell" style={{ ...cellStyle, textAlign: 'center', width: '1%' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexShrink: 0, position: 'relative', zIndex: 10 }}>
                           <button
                             onClick={() => { setEditingTable(table); setModalMode('edit') }}
                             title="Modifier"
-                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+                            style={iconBtn}
                           >
-                            <Pencil size={13} />
+                            <Pencil size={15} strokeWidth={2.2} color="rgba(255,255,255,0.7)" />
                           </button>
                           {isConfirm ? (
                             <button
                               onClick={e => { e.stopPropagation(); handleDelete(table.id) }}
                               disabled={deleting}
-                              style={{ position: 'relative', zIndex: 20, padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.5)', background: 'rgba(184,80,96,0.2)', color: '#E89AA6', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 500 }}
+                              style={{
+                                ...iconBtn,
+                                width:      'auto',
+                                padding:    '0 10px',
+                                position:   'relative',
+                                zIndex:     20,
+                                border:     '1px solid rgba(184,80,96,0.5)',
+                                background: 'rgba(184,80,96,0.2)',
+                                color:      '#E89AA6',
+                                cursor:     deleting ? 'not-allowed' : 'pointer',
+                                fontSize:   '0.72rem',
+                                fontWeight: 500,
+                                whiteSpace: 'nowrap',
+                              }}
                             >
                               {deleting ? '...' : 'Confirmer'}
                             </button>
@@ -566,9 +678,9 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                             <button
                               onClick={e => { e.stopPropagation(); setDeleteConfirm(table.id) }}
                               title="Supprimer"
-                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+                              style={iconBtn}
                             >
-                              <Trash2 size={13} />
+                              <Trash2 size={15} strokeWidth={2.2} color="rgba(255,255,255,0.7)" />
                             </button>
                           )}
                         </div>
