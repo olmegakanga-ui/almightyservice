@@ -623,6 +623,21 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap',
   }
 
+  // Bouton d'action carré — ne se comprime jamais
+  const iconBtn: React.CSSProperties = {
+    flexShrink:     0,
+    width:          '30px',
+    height:         '30px',
+    padding:        0,
+    borderRadius:   '6px',
+    border:         '1px solid rgba(255,255,255,0.08)',
+    background:     'transparent',
+    cursor:         'pointer',
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'center',
+  }
+
   const thBtn = (field: SortField, label: string) => (
     <button onClick={() => handleSort(field)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: sortField === field ? 'var(--gold-light)' : 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', padding: 0, whiteSpace: 'nowrap' }}>
       {label} <SortIcon field={field} />
@@ -704,6 +719,12 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         .table-scroll {
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
+        }
+
+        /* Les icônes SVG ne se laissent jamais écraser par le flex */
+        .actions-cell svg {
+          flex-shrink: 0;
+          display: block;
         }
       `}</style>
 
@@ -844,7 +865,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                 <th style={{ padding: '12px 16px', textAlign: 'left' }}>{thBtn('is_couple', 'Format')}</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left' }}>{thBtn('rsvp', 'Statut RSVP')}</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>Étiquette</th>
-                <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>Actions</th>
+                <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', width: '1%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -897,13 +918,12 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         </span>
                       </td>
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
-                      <td style={{ ...cellStyle, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <td className="actions-cell" style={{ ...cellStyle, textAlign: 'center', width: '1%' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexShrink: 0 }}>
 
                           {/* Copier lien */}
-                          <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
-                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                            <Link2 size={13} color="rgba(255,255,255,0.55)" />
+                          <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien" style={iconBtn}>
+                            <Link2 size={15} strokeWidth={2.2} color="rgba(255,255,255,0.7)" />
                           </button>
 
                           {/* Menu WhatsApp */}
@@ -917,36 +937,44 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                             disabled={!hasPhone}
                             title={hasPhone ? 'Envoyer un message WhatsApp' : 'Numéro manquant'}
                             style={{
-                              padding:      '6px 10px',
-                              borderRadius: '6px',
-                              border:       hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
-                              background:   menuOpen ? 'rgba(37,211,102,0.2)' : hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
-                              color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
-                              cursor:       hasPhone ? 'pointer' : 'not-allowed',
-                              display:      'flex',
-                              alignItems:   'center',
-                              gap:          '4px',
+                              ...iconBtn,
+                              width:      '44px',
+                              gap:        '3px',
+                              border:     hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
+                              background: menuOpen ? 'rgba(37,211,102,0.2)' : hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
+                              cursor:     hasPhone ? 'pointer' : 'not-allowed',
                             }}
                           >
-                            <MessageCircle size={13} color={hasPhone ? '#25D366' : 'rgba(255,255,255,0.2)'} />
-                            <ChevronDown size={10} color={hasPhone ? '#25D366' : 'rgba(255,255,255,0.2)'} />
+                            <MessageCircle size={15} strokeWidth={2.2} color={hasPhone ? '#25D366' : 'rgba(255,255,255,0.25)'} />
+                            <ChevronDown size={11} strokeWidth={2.2} color={hasPhone ? '#25D366' : 'rgba(255,255,255,0.25)'} />
                           </button>
 
                           {/* Modifier */}
-                          <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
-                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                          <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier" style={iconBtn}>
                             <Pencil size={15} strokeWidth={2.2} color="rgba(255,255,255,0.7)" />
                           </button>
 
                           {/* Supprimer */}
                           {isConfirm ? (
                             <button onClick={e => { e.stopPropagation(); handleDelete(guest.id) }} disabled={deleting}
-                              style={{ position: 'relative', zIndex: 20, padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(184,80,96,0.5)', background: 'rgba(184,80,96,0.2)', color: '#E89AA6', cursor: deleting ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 500 }}>
+                              style={{
+                                ...iconBtn,
+                                width:       'auto',
+                                padding:     '0 10px',
+                                position:    'relative',
+                                zIndex:      20,
+                                border:      '1px solid rgba(184,80,96,0.5)',
+                                background:  'rgba(184,80,96,0.2)',
+                                color:       '#E89AA6',
+                                cursor:      deleting ? 'not-allowed' : 'pointer',
+                                fontSize:    '0.72rem',
+                                fontWeight:  500,
+                                whiteSpace:  'nowrap',
+                              }}>
                               {deleting ? '...' : 'Confirmer'}
                             </button>
                           ) : (
-                            <button onClick={e => { e.stopPropagation(); setDeleteConfirm(guest.id) }} title="Supprimer"
-                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
+                            <button onClick={e => { e.stopPropagation(); setDeleteConfirm(guest.id) }} title="Supprimer" style={iconBtn}>
                               <Trash2 size={15} strokeWidth={2.2} color="rgba(255,255,255,0.7)" />
                             </button>
                           )}
