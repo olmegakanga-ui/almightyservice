@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Plus, Search, Download, Copy, Printer,
@@ -50,14 +50,6 @@ type ModalMode = 'add' | 'edit' | null
 type SortField = 'full_name' | 'table' | 'phone' | 'side' | 'is_couple' | 'rsvp'
 type SortDir   = 'asc' | 'desc'
 type MsgType   = 'INVITATION' | 'RELANCE' | 'RAPPEL_J1' | 'JOUR_J' | 'REPORT'
-
-/** Position du bouton qui a ouvert le menu WhatsApp, en coordonnées écran. */
-interface MenuAnchor {
-  id:     string
-  top:    number
-  bottom: number
-  right:  number
-}
 
 const RSVP_COLOR: Record<string, string> = {
   confirmed: '#7EC89A',
@@ -136,29 +128,16 @@ const MSG_MENU: { type: MsgType; label: string; desc: string; color: string }[] 
 ]
 
 // ── MENU WHATSAPP PAR INVITÉ ────────────────────────────────
-// Positionné en `fixed` par rapport à l'écran : il n'est donc jamais rogné
-// par le conteneur à défilement horizontal qui entoure le tableau.
 function WhatsAppMenu({
-  guest, event, anchor, onClose,
+  guest, event, onClose, openUp = false,
 }: {
   guest:   Guest
   event:   Event
-  anchor:  MenuAnchor
   onClose: () => void
+  openUp?: boolean
 }) {
   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
   const isPending  = rsvpStatus === 'pending'
-
-  // Le menu suit le bouton : dès que la page bouge, on ferme.
-  useEffect(() => {
-    const close = () => onClose()
-    window.addEventListener('scroll', close, true)
-    window.addEventListener('resize', close)
-    return () => {
-      window.removeEventListener('scroll', close, true)
-      window.removeEventListener('resize', close)
-    }
-  }, [onClose])
 
   const send = (type: MsgType) => {
     const text  = encodeURIComponent(buildMessage(type, guest, event, window.location.origin))
@@ -167,36 +146,28 @@ function WhatsAppMenu({
     onClose()
   }
 
-  const MENU_W = 230
-  const MENU_H = 230
-  const vw     = typeof window !== 'undefined' ? window.innerWidth  : 1024
-  const vh     = typeof window !== 'undefined' ? window.innerHeight : 768
-
-  // Aligné à droite du bouton, sans jamais sortir de l'écran
-  const left   = Math.max(8, Math.min(anchor.right - MENU_W, vw - MENU_W - 8))
-  const openUp = anchor.bottom + MENU_H > vh
-
   return (
     <>
       {/* Overlay de fermeture */}
       <div
-        style={{ position: 'fixed', inset: 0, zIndex: 900 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 50 }}
         onClick={onClose}
       />
 
       {/* Menu */}
       <div style={{
-        position:     'fixed',
-        left:         `${left}px`,
+        position:     'absolute',
         ...(openUp
-          ? { bottom: `${vh - anchor.top + 6}px` }
-          : { top:    `${anchor.bottom + 6}px` }),
-        width:        `${MENU_W}px`,
+          ? { bottom: '100%', marginBottom: '6px' }
+          : { top: '100%', marginTop: '6px' }),
+        right:        0,
+        width:        '230px',
+        maxWidth:     'calc(100vw - 40px)',
         background:   '#141210',
         border:       '1px solid rgba(255,255,255,0.12)',
         borderRadius: '12px',
         boxShadow:    '0 12px 40px rgba(0,0,0,0.6)',
-        zIndex:       910,
+        zIndex:       60,
         overflow:     'hidden',
         textAlign:    'left',
       }}>
@@ -320,7 +291,7 @@ function GuestModal({
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(201,169,110,0.2)', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+      <div className="modal-box" style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(201,169,110,0.2)', borderRadius: '24px', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', gap: '12px' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 300, color: 'white', minWidth: 0 }}>
             {mode === 'add' ? 'Nouvel invité' : "Modifier l'invité"}
@@ -357,7 +328,7 @@ function GuestModal({
               ))}
             </select>
           </div>
-          <div className="modal-duo">
+          <div className="duo-grid">
             <div>
               <label style={labelStyle}>Invité côté de</label>
               <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.side}
@@ -431,7 +402,7 @@ function ReportModal({
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', paddingTop: '5vh', overflowY: 'auto' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(232,154,166,0.3)', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+      <div className="modal-box" style={{ width: '100%', maxWidth: '480px', background: '#141210', border: '1px solid rgba(232,154,166,0.3)', borderRadius: '24px', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
@@ -458,7 +429,7 @@ function ReportModal({
           </p>
         </div>
 
-        <div className="modal-duo" style={{ marginBottom: '24px' }}>
+        <div className="duo-grid" style={{ marginBottom: '24px' }}>
           <div style={{ padding: '14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', textAlign: 'center' }}>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: 'white', lineHeight: 1 }}>{guests.length}</p>
             <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>Total invités</p>
@@ -523,7 +494,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
   const [sortField, setSortField]         = useState<SortField>('full_name')
   const [sortDir, setSortDir]             = useState<SortDir>('asc')
   const [showReport, setShowReport]       = useState(false)
-  const [menuAnchor, setMenuAnchor]       = useState<MenuAnchor | null>(null)
+  const [openMenuId, setOpenMenuId]       = useState<string | null>(null)
 
   const total      = countPersons(guests)
   const confirmed  = countPersons(guests.filter(g => g.rsvp_responses?.status === 'confirmed'))
@@ -629,41 +600,46 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
     </button>
   )
 
+  // Style commun aux boutons d'action des cartes
+  const cardBtnStyle: React.CSSProperties = {
+    width: '100%', padding: '9px 0', borderRadius: '8px',
+    border: '1px solid rgba(255,255,255,0.08)', background: 'transparent',
+    color: 'rgba(255,255,255,0.45)', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  }
+
   return (
     <div className="admin-page">
       <style>{`
-        /* Page — le padding descend sur mobile et laisse la place au hamburger */
+        /* ---------- Page ---------- */
         .admin-page {
           padding: 40px;
           max-width: 100%;
           box-sizing: border-box;
         }
-        @media (max-width: 767px) {
-          .admin-page { padding: 68px 16px 32px; }
-        }
+        @media (max-width: 899px) { .admin-page { padding: 24px 16px 40px; } }
+        @media (max-width: 767px) { .admin-page { padding-top: 68px; } }
 
-        /* Stats globales : 2 colonnes sur mobile, 4 à partir de 720px.
-           minmax(0, 1fr) autorise la colonne à passer sous la largeur du texte. */
+        .page-title { font-size: 2rem; }
+        @media (max-width: 599px) { .page-title { font-size: 1.55rem; } }
+
+        /* ---------- Grilles de statistiques ---------- */
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 12px;
           margin-bottom: 16px;
         }
-        @media (min-width: 720px) {
-          .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        }
+        @media (max-width: 899px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 359px) { .stats-grid { grid-template-columns: minmax(0, 1fr); } }
 
-        /* Blocs Marié / Mariée : empilés sur mobile, côte à côte ensuite */
         .sides-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
           margin-bottom: 32px;
         }
-        @media (min-width: 720px) {
-          .sides-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
+        @media (max-width: 899px) { .sides-grid { grid-template-columns: minmax(0, 1fr); } }
 
         .side-inner {
           display: grid;
@@ -671,27 +647,59 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           gap: 8px;
         }
 
-        /* Duo de champs dans les modales */
-        .modal-duo {
+        .duo-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1fr);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
         }
-        @media (min-width: 420px) {
-          .modal-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        @media (max-width: 419px) { .duo-grid { grid-template-columns: minmax(0, 1fr); } }
+
+        .modal-box { padding: 32px; }
+        @media (max-width: 599px) { .modal-box { padding: 20px; border-radius: 18px; } }
+
+        /* ---------- Bascule tableau / cartes ---------- */
+        .guests-table { display: block; }
+        .guests-cards { display: none; }
+        @media (max-width: 899px) {
+          .guests-table { display: none; }
+          .guests-cards { display: flex; flex-direction: column; gap: 10px; }
         }
 
-        /* Seul conteneur autorisé à défiler horizontalement */
-        .table-scroll {
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
+        /* ---------- Carte invité ---------- */
+        .guest-card {
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.06);
           border-radius: 16px;
+          padding: 16px;
+          min-width: 0;
         }
-
-        .stat-value { font-size: 1.8rem; }
-        @media (max-width: 400px) {
-          .stat-value { font-size: 1.5rem; }
+        .guest-card-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
         }
+        .guest-card-name {
+          color: white;
+          font-weight: 500;
+          font-size: 0.95rem;
+          overflow-wrap: anywhere;
+          line-height: 1.35;
+        }
+        .guest-badges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 10px;
+        }
+        .guest-card-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .guest-card-actions > * { flex: 1; min-width: 0; }
       `}</style>
 
       {/* Header */}
@@ -699,7 +707,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
           {event.groom_name} &amp; {event.bride_name}
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white', lineHeight: 1.15 }}>
+        <h1 className="page-title" style={{ fontFamily: 'var(--font-display)', fontWeight: 300, color: 'white', lineHeight: 1.15 }}>
           Gestion des invités
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem', marginTop: '4px' }}>
@@ -717,8 +725,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         ].map((stat, i) => (
           <div key={i} style={{ padding: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', minWidth: 0 }}>
             <stat.icon size={18} color={stat.color} style={{ marginBottom: '10px' }} />
-            <p className="stat-value" style={{ fontFamily: 'var(--font-display)', color: stat.color, lineHeight: 1 }}>{stat.value}</p>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.1em' }}>{stat.label}</p>
+            <p style={{ fontSize: '1.7rem', fontFamily: 'var(--font-display)', color: stat.color, lineHeight: 1 }}>{stat.value}</p>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.08em' }}>{stat.label}</p>
           </div>
         ))}
       </div>
@@ -735,7 +743,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
               { label: 'Confirmées', value: confHomme },
               { label: 'En attente', value: totalHomme - confHomme - declHomme },
             ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '10px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', minWidth: 0 }}>
+              <div key={i} style={{ textAlign: 'center', padding: '10px 4px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', minWidth: 0 }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#9DB4F5', lineHeight: 1 }}>{s.value}</p>
                 <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{s.label}</p>
               </div>
@@ -759,7 +767,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
               { label: 'Confirmées', value: confFemme },
               { label: 'En attente', value: totalFemme - confFemme - declFemme },
             ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '10px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', minWidth: 0 }}>
+              <div key={i} style={{ textAlign: 'center', padding: '10px 4px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', minWidth: 0 }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: '#FFB6C1', lineHeight: 1 }}>{s.value}</p>
                 <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px' }}>{s.label}</p>
               </div>
@@ -818,9 +826,9 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         </div>
       </div>
 
-      {/* Tableau */}
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
-        <div className="table-scroll">
+      {/* ══════════ VUE TABLEAU — à partir de 900 px ══════════ */}
+      <div className="guests-table" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
+        <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -837,16 +845,16 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ ...cellStyle, textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)', whiteSpace: 'normal' }}>
+                  <td colSpan={8} style={{ ...cellStyle, textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.2)' }}>
                     {search || filter !== 'ALL' ? 'Aucun invité trouvé' : 'Aucun invité — importez une liste ou ajoutez manuellement'}
                   </td>
                 </tr>
               ) : (
-                filtered.map(guest => {
+                filtered.map((guest, idx) => {
                   const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
                   const isConfirm  = deleteConfirm === guest.id
                   const hasPhone   = guest.phone && guest.phone.length >= 8
-                  const menuOpen   = menuAnchor?.id === guest.id
+                  const menuOpen   = openMenuId === guest.id
 
                   return (
                     <tr key={guest.id}
@@ -884,8 +892,8 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                         </span>
                       </td>
                       <td style={{ ...cellStyle, color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem' }}>{guest.label || '—'}</td>
-                      <td style={{ ...cellStyle, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <td style={{ ...cellStyle, textAlign: 'center', overflow: 'visible' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', position: 'relative' }}>
 
                           {/* Copier lien */}
                           <button onClick={() => copyLink(guest.invitation_token)} title="Copier le lien"
@@ -894,30 +902,36 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
                           </button>
 
                           {/* Menu WhatsApp */}
-                          <button
-                            onClick={e => {
-                              if (!hasPhone) return
-                              if (menuOpen) { setMenuAnchor(null); return }
-                              const r = e.currentTarget.getBoundingClientRect()
-                              setMenuAnchor({ id: guest.id, top: r.top, bottom: r.bottom, right: r.right })
-                            }}
-                            disabled={!hasPhone}
-                            title={hasPhone ? 'Envoyer un message WhatsApp' : 'Numéro manquant'}
-                            style={{
-                              padding:      '6px 10px',
-                              borderRadius: '6px',
-                              border:       hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
-                              background:   menuOpen ? 'rgba(37,211,102,0.2)' : hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
-                              color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
-                              cursor:       hasPhone ? 'pointer' : 'not-allowed',
-                              display:      'flex',
-                              alignItems:   'center',
-                              gap:          '4px',
-                            }}
-                          >
-                            <MessageCircle size={13} />
-                            <ChevronDown size={10} />
-                          </button>
+                          <div style={{ position: 'relative' }}>
+                            <button
+                              onClick={() => hasPhone && setOpenMenuId(menuOpen ? null : guest.id)}
+                              disabled={!hasPhone}
+                              title={hasPhone ? 'Envoyer un message WhatsApp' : 'Numéro manquant'}
+                              style={{
+                                padding:      '6px 10px',
+                                borderRadius: '6px',
+                                border:       hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
+                                background:   menuOpen ? 'rgba(37,211,102,0.2)' : hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
+                                color:        hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
+                                cursor:       hasPhone ? 'pointer' : 'not-allowed',
+                                display:      'flex',
+                                alignItems:   'center',
+                                gap:          '4px',
+                              }}
+                            >
+                              <MessageCircle size={13} />
+                              <ChevronDown size={10} />
+                            </button>
+
+                            {menuOpen && hasPhone && (
+                              <WhatsAppMenu
+                                guest={guest}
+                                event={event}
+                                openUp={filtered.length > 4 && idx >= filtered.length - 3}
+                                onClose={() => setOpenMenuId(null)}
+                              />
+                            )}
+                          </div>
 
                           {/* Modifier */}
                           <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} title="Modifier"
@@ -947,7 +961,7 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
           </table>
         </div>
 
-        <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)' }}>
             {filtered.length} entrée{filtered.length > 1 ? 's' : ''} · <span style={{ color: 'rgba(255,255,255,0.4)' }}>{filteredPersons} personne{filteredPersons > 1 ? 's' : ''}</span>
             {filtered.length !== guests.length && ' (filtrées sur ' + guests.length + ')'}
@@ -958,19 +972,126 @@ export default function GuestsClient({ event, initialGuests, tables }: Props) {
         </div>
       </div>
 
-      {/* Menu WhatsApp — rendu hors du tableau pour ne jamais être rogné */}
-      {menuAnchor && (() => {
-        const g = filtered.find(x => x.id === menuAnchor.id)
-        if (!g) return null
-        return (
-          <WhatsAppMenu
-            guest={g}
-            event={event}
-            anchor={menuAnchor}
-            onClose={() => setMenuAnchor(null)}
-          />
-        )
-      })()}
+      {/* ══════════ VUE CARTES — en dessous de 900 px ══════════ */}
+      <div className="guests-cards">
+        {filtered.length === 0 ? (
+          <div style={{ padding: '48px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', fontSize: '0.85rem' }}>
+            {search || filter !== 'ALL' ? 'Aucun invité trouvé' : 'Aucun invité — importez une liste ou ajoutez manuellement'}
+          </div>
+        ) : (
+          filtered.map((guest, idx) => {
+            const rsvpStatus = guest.rsvp_responses?.status ?? 'pending'
+            const isConfirm  = deleteConfirm === guest.id
+            const hasPhone   = guest.phone && guest.phone.length >= 8
+            const menuOpen   = openMenuId === guest.id
+
+            return (
+              <div key={guest.id} className="guest-card">
+
+                {/* Nom + statut RSVP */}
+                <div className="guest-card-top">
+                  <div style={{ minWidth: 0 }}>
+                    <p className="guest-card-name">{guest.full_name}</p>
+                    {guest.is_couple && (
+                      <p style={{ fontSize: '0.68rem', color: 'rgba(201,169,110,0.6)', marginTop: '2px' }}>× 2 personnes</p>
+                    )}
+                  </div>
+                  <span style={{ color: RSVP_COLOR[rsvpStatus], fontSize: '0.76rem', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, whiteSpace: 'nowrap', paddingTop: '2px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: RSVP_COLOR[rsvpStatus], flexShrink: 0 }} />
+                    {RSVP_LABEL[rsvpStatus]}
+                  </span>
+                </div>
+
+                {/* Badges */}
+                <div className="guest-badges">
+                  <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '0.7rem', letterSpacing: '0.08em', background: guest.side === 'HOMME' ? 'rgba(100,149,237,0.1)' : 'rgba(255,182,193,0.1)', color: guest.side === 'HOMME' ? '#9DB4F5' : '#FFB6C1' }}>
+                    {guest.side === 'HOMME' ? 'Marié' : 'Mariée'}
+                  </span>
+
+                  {guest.guest_tables?.name && (
+                    <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(201,169,110,0.1)', color: 'var(--gold-light)', fontSize: '0.7rem', overflowWrap: 'anywhere' }}>
+                      {guest.guest_tables.name}
+                    </span>
+                  )}
+
+                  <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', fontSize: '0.7rem' }}>
+                    {guest.is_couple ? 'Couple (2)' : 'Solo (1)'}
+                  </span>
+
+                  {guest.label && (
+                    <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem', overflowWrap: 'anywhere' }}>
+                      {guest.label}
+                    </span>
+                  )}
+                </div>
+
+                {/* Téléphone */}
+                <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', marginTop: '10px' }}>
+                  {guest.phone || 'Numéro manquant'}
+                </p>
+
+                {/* Actions */}
+                <div className="guest-card-actions">
+                  <button onClick={() => copyLink(guest.invitation_token)} aria-label="Copier le lien" style={cardBtnStyle}>
+                    <Link2 size={15} />
+                  </button>
+
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => hasPhone && setOpenMenuId(menuOpen ? null : guest.id)}
+                      disabled={!hasPhone}
+                      aria-label={hasPhone ? 'Envoyer un message WhatsApp' : 'Numéro manquant'}
+                      style={{
+                        ...cardBtnStyle,
+                        gap:        '4px',
+                        border:     hasPhone ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(255,255,255,0.05)',
+                        background: menuOpen ? 'rgba(37,211,102,0.2)' : hasPhone ? 'rgba(37,211,102,0.08)' : 'transparent',
+                        color:      hasPhone ? '#25D366' : 'rgba(255,255,255,0.15)',
+                        cursor:     hasPhone ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      <MessageCircle size={15} />
+                      <ChevronDown size={11} />
+                    </button>
+
+                    {menuOpen && hasPhone && (
+                      <WhatsAppMenu
+                        guest={guest}
+                        event={event}
+                        openUp={filtered.length > 3 && idx >= filtered.length - 2}
+                        onClose={() => setOpenMenuId(null)}
+                      />
+                    )}
+                  </div>
+
+                  <button onClick={() => { setEditingGuest(guest); setModalMode('edit') }} aria-label="Modifier" style={cardBtnStyle}>
+                    <Pencil size={15} />
+                  </button>
+
+                  {isConfirm ? (
+                    <button onClick={e => { e.stopPropagation(); handleDelete(guest.id) }} disabled={deleting}
+                      style={{ ...cardBtnStyle, position: 'relative', zIndex: 20, border: '1px solid rgba(184,80,96,0.5)', background: 'rgba(184,80,96,0.2)', color: '#E89AA6', fontSize: '0.72rem', fontWeight: 500, cursor: deleting ? 'not-allowed' : 'pointer' }}>
+                      {deleting ? '...' : 'Confirmer'}
+                    </button>
+                  ) : (
+                    <button onClick={e => { e.stopPropagation(); setDeleteConfirm(guest.id) }} aria-label="Supprimer" style={cardBtnStyle}>
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })
+        )}
+
+        {/* Pied de liste */}
+        {filtered.length > 0 && (
+          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center', paddingTop: '8px' }}>
+            {filtered.length} entrée{filtered.length > 1 ? 's' : ''} · <span style={{ color: 'rgba(255,255,255,0.4)' }}>{filteredPersons} personne{filteredPersons > 1 ? 's' : ''}</span>
+            {filtered.length !== guests.length && ' (filtrées sur ' + guests.length + ')'}
+          </p>
+        )}
+      </div>
 
       {/* Modals */}
       {modalMode && (
