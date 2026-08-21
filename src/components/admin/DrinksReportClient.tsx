@@ -34,12 +34,49 @@ export default function DrinksReportClient({ event, selections }: Props) {
   const maxCount = drinkStats[0]?.guests.length ?? 1
 
   return (
-    <div style={{ padding: '40px' }}>
+    <div className="admin-page">
+      <style>{`
+        .admin-page {
+          padding: 40px;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        @media (max-width: 767px) {
+          .admin-page { padding: 68px 16px 32px; }
+        }
+        .drink-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 16px 20px;
+          cursor: pointer;
+          min-width: 0;
+        }
+        @media (max-width: 767px) {
+          .drink-row { padding: 14px 16px; gap: 10px; }
+        }
+        .drink-name {
+          font-family: var(--font-display);
+          font-size: 1rem;
+          color: white;
+          overflow-wrap: anywhere;
+          line-height: 1.3;
+        }
+        .drink-category {
+          font-size: 0.68rem;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.3);
+          margin-top: 3px;
+          overflow-wrap: anywhere;
+        }
+      `}</style>
+
       <div style={{ marginBottom: '32px' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
-          {event.groom_name} & {event.bride_name}
+          {event.groom_name} &amp; {event.bride_name}
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white', lineHeight: 1.15 }}>
           Rapport des boissons
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', marginTop: '6px' }}>
@@ -53,51 +90,82 @@ export default function DrinksReportClient({ event, selections }: Props) {
             Aucune boisson sélectionnée pour l&apos;instant
           </p>
         ) : (
-          drinkStats.map(drink => (
-            <div
-              key={drink.name}
-              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', overflow: 'hidden' }}
-            >
+          drinkStats.map(drink => {
+            const isOpen = expanded === drink.name
+
+            return (
               <div
-                style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer' }}
-                onClick={() => setExpanded(expanded === drink.name ? null : drink.name)}
+                key={drink.name}
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', overflow: 'hidden' }}
               >
-                {/* Barre */}
-                <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: (drink.guests.length / maxCount * 100) + '%', background: 'var(--gold)', borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                {/* Ligne principale */}
+                <div
+                  className="drink-row"
+                  onClick={() => setExpanded(isOpen ? null : drink.name)}
+                >
+                  {/* Nom + catégorie — occupe l'espace restant et peut rétrécir */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p className="drink-name">{drink.name}</p>
+                    <p className="drink-category">{drink.category}</p>
+                  </div>
+
+                  {/* Compteur */}
+                  <span style={{
+                    color:      'var(--gold)',
+                    fontFamily: 'var(--font-display)',
+                    fontSize:   '1.25rem',
+                    lineHeight: 1,
+                    flexShrink: 0,
+                  }}>
+                    {drink.guests.length}
+                  </span>
+
+                  <button
+                    aria-label={isOpen ? 'Masquer les invités' : 'Voir les invités'}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '4px', flexShrink: 0, display: 'flex' }}
+                  >
+                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
                 </div>
 
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'white', minWidth: '180px' }}>
-                  {drink.name}
-                </span>
+                {/* Barre de proportion — pleine largeur, sous la ligne */}
+                <div style={{ padding: '0 20px 14px' }}>
+                  <div style={{ height: '5px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{
+                      height:       '100%',
+                      width:        (drink.guests.length / maxCount * 100) + '%',
+                      background:   'var(--gold)',
+                      borderRadius: '3px',
+                      transition:   'width 0.5s ease',
+                    }} />
+                  </div>
+                </div>
 
-                <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', minWidth: '80px' }}>
-                  {drink.category}
-                </span>
-
-                <span style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: '1.1rem', minWidth: '40px', textAlign: 'right' }}>
-                  {drink.guests.length}
-                </span>
-
-                <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '4px' }}>
-                  {expanded === drink.name ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
+                {/* Liste des invités */}
+                {isOpen && (
+                  <div style={{ padding: '0 16px 16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {drink.guests.map((name, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          padding:       '4px 12px',
+                          borderRadius:  '100px',
+                          background:    'rgba(201,169,110,0.08)',
+                          border:        '1px solid rgba(201,169,110,0.2)',
+                          color:         'var(--gold-light)',
+                          fontSize:      '0.8rem',
+                          maxWidth:      '100%',
+                          overflowWrap:  'anywhere',
+                        }}
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-
-              {expanded === drink.name && (
-                <div style={{ padding: '0 20px 16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {drink.guests.map((name, i) => (
-                    <span
-                      key={i}
-                      style={{ padding: '4px 12px', borderRadius: '100px', background: 'rgba(201,169,110,0.08)', border: '1px solid rgba(201,169,110,0.2)', color: 'var(--gold-light)', fontSize: '0.8rem' }}
-                    >
-                      {name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>
