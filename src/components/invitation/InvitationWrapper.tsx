@@ -33,7 +33,7 @@ export default function InvitationWrapper({ event, guest }: Props) {
   const [started, setStarted]     = useState(false)
   const audioRef                  = useRef<HTMLAudioElement | null>(null)
 
-  const goldColor  = event.themeColor         || '#C9A96E'
+  const goldColor  = event.themeColor          || '#C9A96E'
   const goldLight  = event.themeColorSecondary || '#D4B483'
   const goldBorder = goldColor + '40'
   const goldSubtle = goldColor + '15'
@@ -167,9 +167,10 @@ export default function InvitationWrapper({ event, guest }: Props) {
     ),
   }
 
-  const order = event.sectionsOrder?.length
-    ? event.sectionsOrder
-    : ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode']
+  // La liste vient du serveur, qui a déjà appliqué le repli par défaut.
+  // Un tableau vide signifie « toutes les sections optionnelles désactivées »
+  // et doit être respecté tel quel.
+  const order = Array.isArray(event.sectionsOrder) ? event.sectionsOrder : []
 
   return (
     <>

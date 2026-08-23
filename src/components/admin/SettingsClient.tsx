@@ -84,6 +84,18 @@ const SECTION_LABELS: Record<string, string> = {
   dresscode: 'Dress code',
 }
 
+const SECTION_HINTS: Record<string, string> = {
+  countdown: 'Décompte jusqu\'au jour J',
+  card:      'Le carton avec le programme de la journée',
+  rsvp:      'Boutons Confirmer / Décliner',
+  qrcode:    'Code d\'entrée à scanner au contrôle',
+  drinks:    'L\'invité choisit jusqu\'à 2 boissons',
+  guestbook: 'Message des invités aux mariés',
+  gift:      'Enveloppe ou présent',
+  map:       'Localisation et itinéraire',
+  dresscode: 'Tenue et couleurs suggérées',
+}
+
 export default function SettingsClient({ event }: Props) {
   const router              = useRouter()
   const [tab, setTab]       = useState<Tab>('general')
@@ -116,7 +128,7 @@ export default function SettingsClient({ event }: Props) {
     music_url:                 event.music_url    ?? '',
     music_volume:              event.music_volume ?? 30,
     gift_options:              event.gift_options    ?? ['envelope','present'],
-    sections_order:            event.sections_order  ?? DEFAULT_SECTIONS,
+    sections_order:            Array.isArray(event.sections_order) ? event.sections_order : DEFAULT_SECTIONS,
   })
 
   const [program, setProgram] = useState<ProgramItem[]>(
@@ -225,8 +237,8 @@ export default function SettingsClient({ event }: Props) {
       bride_phone:               event.bride_phone  ?? '',
       music_url:                 event.music_url    ?? null,
       music_volume:              event.music_volume ?? 30,
-      gift_options:              event.gift_options    ?? ['envelope','present'],
-      sections_order:            event.sections_order  ?? DEFAULT_SECTIONS,
+      gift_options:              event.gift_options   ?? ['envelope','present'],
+      sections_order:            Array.isArray(event.sections_order) ? event.sections_order : DEFAULT_SECTIONS,
     }).select('id').single()
     if (newEvent) router.push('/admin/events/' + newEvent.id + '/settings')
   }
@@ -249,25 +261,35 @@ export default function SettingsClient({ event }: Props) {
   const removeDrink        = (ci: number, di: number) =>
     setDrinks(prev => prev.map((cat, i) => i === ci ? { ...cat, drinks: cat.drinks.filter((_, j) => j !== di) } : cat))
 
-  // Sections
+  // Sections — ordre
+  const activeSections   = form.sections_order as string[]
+  const inactiveSections = DEFAULT_SECTIONS.filter(s => !activeSections.includes(s))
+
   const moveSectionUp = (idx: number) => {
     if (idx === 0) return
-    const arr = [...(form.sections_order as string[])]
+    const arr = [...activeSections]
     ;[arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]]
     set('sections_order', arr)
   }
   const moveSectionDown = (idx: number) => {
-    const arr = [...(form.sections_order as string[])]
+    const arr = [...activeSections]
     if (idx === arr.length - 1) return
     ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
     set('sections_order', arr)
   }
+
+  // Sections — activation / désactivation
+  const disableSection = (key: string) =>
+    set('sections_order', activeSections.filter(s => s !== key))
+  const enableSection  = (key: string) =>
+    set('sections_order', [...activeSections, key])
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '12px 16px',
     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: '12px', color: 'white', fontFamily: 'var(--font-body)',
     fontSize: '0.9rem', outline: 'none', transition: 'border-color 0.2s ease',
+    boxSizing: 'border-box',
   }
   const labelStyle: React.CSSProperties = {
     display: 'block', fontSize: '0.68rem', letterSpacing: '0.2em',
@@ -287,7 +309,7 @@ export default function SettingsClient({ event }: Props) {
       color: 'white', fontSize: fixed ? '0.88rem' : '0.85rem', fontWeight: 500,
       cursor: saving ? 'not-allowed' : 'pointer',
       boxShadow: fixed ? '0 8px 32px rgba(0,0,0,0.4)' : 'none',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.3s ease', whiteSpace: 'nowrap',
     }}>
       {saving ? <><Loader size={15} style={{ animation: 'spin 1s linear infinite' }} /> Sauvegarde...</>
         : saved ? <><Check size={15} /> Sauvegardé !</>
@@ -296,23 +318,23 @@ export default function SettingsClient({ event }: Props) {
   )
 
   return (
-    <div style={{ padding: '40px' }}>
+    <div className="admin-page">
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
-            {form.groom_name} & {form.bride_name}
+            {form.groom_name} &amp; {form.bride_name}
           </p>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white' }}>
+          <h1 className="page-title" style={{ fontFamily: 'var(--font-display)', fontWeight: 300, color: 'white', lineHeight: 1.15 }}>
             Paramètres
           </h1>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button onClick={handlePreview} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', cursor: 'pointer' }}>
+          <button onClick={handlePreview} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
             <Eye size={14} /> Prévisualiser
           </button>
-          <button onClick={handleDuplicate} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', cursor: 'pointer' }}>
+          <button onClick={handleDuplicate} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
             <Copy size={14} /> Dupliquer
           </button>
           <SaveButton />
@@ -322,7 +344,7 @@ export default function SettingsClient({ event }: Props) {
       {/* Onglets */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '32px', flexWrap: 'wrap', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px' }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '8px 18px', borderRadius: '8px', border: tab === t.id ? '1px solid rgba(201,169,110,0.4)' : '1px solid transparent', background: tab === t.id ? 'rgba(201,169,110,0.1)' : 'transparent', color: tab === t.id ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '8px 18px', borderRadius: '8px', border: tab === t.id ? '1px solid rgba(201,169,110,0.4)' : '1px solid transparent', background: tab === t.id ? 'rgba(201,169,110,0.1)' : 'transparent', color: tab === t.id ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)', fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}>
             {t.label}
           </button>
         ))}
@@ -337,7 +359,7 @@ export default function SettingsClient({ event }: Props) {
       {/* ── GÉNÉRAL ── */}
       {tab === 'general' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="duo-grid">
             <div>
               <label style={labelStyle}>Nom du marié</label>
               <input style={inputStyle} value={form.groom_name} onChange={e => set('groom_name', e.target.value)} onFocus={focus} onBlur={blur} />
@@ -347,7 +369,7 @@ export default function SettingsClient({ event }: Props) {
               <input style={inputStyle} value={form.bride_name} onChange={e => set('bride_name', e.target.value)} onFocus={focus} onBlur={blur} />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
+          <div className="duo-grid">
             <div>
               <label style={labelStyle}>Date du mariage</label>
               <input type="date" style={inputStyle} value={form.event_date} onChange={e => set('event_date', e.target.value)} onFocus={focus} onBlur={blur} />
@@ -365,7 +387,7 @@ export default function SettingsClient({ event }: Props) {
             <label style={labelStyle}>Adresse</label>
             <input style={inputStyle} value={form.venue_address} onChange={e => set('venue_address', e.target.value)} onFocus={focus} onBlur={blur} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="duo-grid">
             <div>
               <label style={labelStyle}>Latitude GPS</label>
               <input style={inputStyle} value={form.venue_lat} onChange={e => set('venue_lat', e.target.value)} onFocus={focus} onBlur={blur} />
@@ -454,13 +476,13 @@ export default function SettingsClient({ event }: Props) {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
             {program.map((item, idx) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 40px', gap: '12px', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div key={idx} className="program-row" style={{ alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                   <GripVertical size={14} color="rgba(255,255,255,0.2)" style={{ flexShrink: 0 }} />
                   <input style={{ ...inputStyle, padding: '8px 12px', fontSize: '0.85rem' }} value={item.time} onChange={e => updateProgramItem(idx, 'time', e.target.value)} placeholder="19h00" onFocus={focus} onBlur={blur} />
                 </div>
                 <input style={{ ...inputStyle, padding: '8px 12px', fontSize: '0.85rem' }} value={item.description} onChange={e => updateProgramItem(idx, 'description', e.target.value)} placeholder="Description de l'activité" onFocus={focus} onBlur={blur} />
-                <button onClick={() => removeProgramItem(idx)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid rgba(184,80,96,0.3)', background: 'rgba(184,80,96,0.1)', color: '#E89AA6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button onClick={() => removeProgramItem(idx)} style={{ width: '38px', height: '38px', flexShrink: 0, borderRadius: '8px', border: '1px solid rgba(184,80,96,0.3)', background: 'rgba(184,80,96,0.1)', color: '#E89AA6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -482,16 +504,16 @@ export default function SettingsClient({ event }: Props) {
             {drinks.map((cat, ci) => (
               <div key={ci} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
                 <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center' }}>
-                  <input style={{ ...inputStyle, flex: 1 }} value={cat.categoryName} onChange={e => updateCategoryName(ci, e.target.value)} placeholder="Ex: Boissons importées" onFocus={focus} onBlur={blur} />
-                  <button onClick={() => removeCategory(ci)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(184,80,96,0.3)', background: 'rgba(184,80,96,0.1)', color: '#E89AA6', cursor: 'pointer', flexShrink: 0 }}>
+                  <input style={{ ...inputStyle, flex: 1, minWidth: 0 }} value={cat.categoryName} onChange={e => updateCategoryName(ci, e.target.value)} placeholder="Ex: Boissons importées" onFocus={focus} onBlur={blur} />
+                  <button onClick={() => removeCategory(ci)} style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '8px', border: '1px solid rgba(184,80,96,0.3)', background: 'rgba(184,80,96,0.1)', color: '#E89AA6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Trash2 size={13} />
                   </button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                   {cat.drinks.map((drink, di) => (
                     <div key={di} style={{ display: 'flex', gap: '8px' }}>
-                      <input style={{ ...inputStyle, flex: 1, padding: '10px 14px', fontSize: '0.85rem' }} value={drink} onChange={e => updateDrink(ci, di, e.target.value)} placeholder="Nom de la boisson" onFocus={focus} onBlur={blur} />
-                      <button onClick={() => removeDrink(ci, di)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}>
+                      <input style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '10px 14px', fontSize: '0.85rem' }} value={drink} onChange={e => updateDrink(ci, di, e.target.value)} placeholder="Nom de la boisson" onFocus={focus} onBlur={blur} />
+                      <button onClick={() => removeDrink(ci, di)} style={{ width: '36px', height: '36px', flexShrink: 0, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -528,6 +550,14 @@ export default function SettingsClient({ event }: Props) {
       {/* ── RSVP ── */}
       {tab === 'rsvp' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px' }}>
+          {!activeSections.includes('rsvp') && (
+            <div style={{ padding: '14px 16px', background: 'rgba(232,154,166,0.08)', border: '1px solid rgba(232,154,166,0.25)', borderRadius: '12px' }}>
+              <p style={{ color: '#E89AA6', fontSize: '0.82rem' }}>
+                La section RSVP est actuellement désactivée pour ce mariage — les invités ne verront pas les boutons de confirmation.
+                Réactivez-la depuis l&apos;onglet Sections.
+              </p>
+            </div>
+          )}
           <div>
             <label style={labelStyle}>Date limite RSVP</label>
             <input type="date" style={inputStyle} value={form.rsvp_deadline} onChange={e => set('rsvp_deadline', e.target.value)} onFocus={focus} onBlur={blur} />
@@ -552,7 +582,7 @@ export default function SettingsClient({ event }: Props) {
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginBottom: '16px' }}>
               Le marié et la mariée recevront un message WhatsApp chaque fois qu&apos;un invité de leur côté confirme sa présence.
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="duo-grid">
               <div>
                 <label style={labelStyle}>WhatsApp du marié</label>
                 <input style={inputStyle} value={form.groom_phone} onChange={e => set('groom_phone', e.target.value)} placeholder="243810000001" onFocus={focus} onBlur={blur} />
@@ -584,25 +614,25 @@ export default function SettingsClient({ event }: Props) {
       {/* ── APPARENCE ── */}
       {tab === 'apparence' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '500px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="duo-grid">
             <div>
               <label style={labelStyle}>Couleur principale</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <input type="color" value={form.theme_color_primary} onChange={e => set('theme_color_primary', e.target.value)} style={{ width: '48px', height: '48px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', cursor: 'pointer', padding: '2px' }} />
-                <input style={{ ...inputStyle, flex: 1 }} value={form.theme_color_primary} onChange={e => set('theme_color_primary', e.target.value)} onFocus={focus} onBlur={blur} />
+                <input type="color" value={form.theme_color_primary} onChange={e => set('theme_color_primary', e.target.value)} style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', cursor: 'pointer', padding: '2px' }} />
+                <input style={{ ...inputStyle, flex: 1, minWidth: 0 }} value={form.theme_color_primary} onChange={e => set('theme_color_primary', e.target.value)} onFocus={focus} onBlur={blur} />
               </div>
             </div>
             <div>
               <label style={labelStyle}>Couleur secondaire</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <input type="color" value={form.theme_color_secondary} onChange={e => set('theme_color_secondary', e.target.value)} style={{ width: '48px', height: '48px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', cursor: 'pointer', padding: '2px' }} />
-                <input style={{ ...inputStyle, flex: 1 }} value={form.theme_color_secondary} onChange={e => set('theme_color_secondary', e.target.value)} onFocus={focus} onBlur={blur} />
+                <input type="color" value={form.theme_color_secondary} onChange={e => set('theme_color_secondary', e.target.value)} style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', cursor: 'pointer', padding: '2px' }} />
+                <input style={{ ...inputStyle, flex: 1, minWidth: 0 }} value={form.theme_color_secondary} onChange={e => set('theme_color_secondary', e.target.value)} onFocus={focus} onBlur={blur} />
               </div>
             </div>
           </div>
           <div style={{ padding: '20px', borderRadius: '16px', background: form.theme_color_primary + '15', border: '1px solid ' + form.theme_color_primary + '40', textAlign: 'center' }}>
             <p style={{ fontFamily: 'var(--font-script)', fontSize: '1.8rem', color: form.theme_color_primary, marginBottom: '4px' }}>
-              {form.groom_name} & {form.bride_name}
+              {form.groom_name} &amp; {form.bride_name}
             </p>
             <p style={{ color: form.theme_color_secondary, fontSize: '0.85rem', opacity: 0.8 }}>
               Aperçu du thème couleur
@@ -616,7 +646,7 @@ export default function SettingsClient({ event }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '700px' }}>
           <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
-              🎵 Musique d&apos;ambiance
+              Musique d&apos;ambiance
             </p>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginBottom: '20px', lineHeight: 1.6 }}>
               La musique joue en continu à l&apos;ouverture de l&apos;invitation, en boucle avec un volume doux.
@@ -632,7 +662,7 @@ export default function SettingsClient({ event }: Props) {
                 <label style={labelStyle}>Volume — {form.music_volume}%</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>0%</span>
-                  <input type="range" min="0" max="100" step="5" value={form.music_volume} onChange={e => set('music_volume', Number(e.target.value))} style={{ flex: 1, accentColor: 'var(--gold)' }} />
+                  <input type="range" min="0" max="100" step="5" value={form.music_volume} onChange={e => set('music_volume', Number(e.target.value))} style={{ flex: 1, minWidth: 0, accentColor: 'var(--gold)' }} />
                   <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>100%</span>
                 </div>
                 <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '4px' }}>Recommandé : 20-40% pour une ambiance douce</p>
@@ -648,7 +678,7 @@ export default function SettingsClient({ event }: Props) {
 
           <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
-              🎁 Options de cadeaux
+              Options de cadeaux
             </p>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginBottom: '20px', lineHeight: 1.6 }}>
               Choisissez quelles options afficher sur l&apos;invitation. Si une seule option est activée, elle sera pré-sélectionnée automatiquement.
@@ -677,7 +707,7 @@ export default function SettingsClient({ event }: Props) {
             </div>
             {(form.gift_options as string[]).length === 0 && (
               <p style={{ color: '#E89AA6', fontSize: '0.78rem', marginTop: '10px', padding: '10px', background: 'rgba(184,80,96,0.08)', borderRadius: '8px' }}>
-                ⚠️ Aucune option — la section cadeaux sera masquée sur l&apos;invitation.
+                Aucune option — la section cadeaux sera masquée sur l&apos;invitation.
               </p>
             )}
           </div>
@@ -686,45 +716,74 @@ export default function SettingsClient({ event }: Props) {
 
       {/* ── SECTIONS ── */}
       {tab === 'sections' && (
-        <div style={{ maxWidth: '500px' }}>
+        <div style={{ maxWidth: '560px' }}>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', marginBottom: '8px' }}>
-            Utilisez les flèches pour réorganiser les sections de l&apos;invitation.
+            Activez ou désactivez chaque section, et réorganisez-les avec les flèches.
           </p>
           <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginBottom: '24px' }}>
-            Hero et Footer sont toujours en première et dernière position.
+            Hero et Footer sont toujours affichés, en première et dernière position.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Sections actives */}
+          <p style={{ fontSize: '0.62rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--gold-light)', marginBottom: '10px' }}>
+            Affichées — {activeSections.length}
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '32px' }}>
 
             {/* Hero — fixe */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', opacity: 0.4 }}>
-              <GripVertical size={16} color="rgba(255,255,255,0.2)" />
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', flex: 1 }}>Hero & Présentation</p>
-              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Fixe</span>
+              <GripVertical size={16} color="rgba(255,255,255,0.2)" style={{ flexShrink: 0 }} />
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', flex: 1, minWidth: 0 }}>Hero &amp; Présentation</p>
+              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.15em', textTransform: 'uppercase', flexShrink: 0 }}>Fixe</span>
             </div>
 
+            {activeSections.length === 0 && (
+              <div style={{ padding: '20px 16px', background: 'rgba(232,154,166,0.06)', border: '1px solid rgba(232,154,166,0.2)', borderRadius: '12px' }}>
+                <p style={{ color: '#E89AA6', fontSize: '0.82rem' }}>
+                  Aucune section active — l&apos;invitation n&apos;affichera que le Hero et le Footer.
+                </p>
+              </div>
+            )}
+
             {/* Sections réorganisables */}
-            {(form.sections_order as string[]).map((key, idx) => {
+            {activeSections.map((key, idx) => {
               const canUp   = idx > 0
-              const canDown = idx < (form.sections_order as string[]).length - 1
+              const canDown = idx < activeSections.length - 1
               return (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', transition: 'all 0.2s ease' }}>
-                  <GripVertical size={16} color="rgba(255,255,255,0.3)" style={{ flexShrink: 0 }} />
-                  <p style={{ color: 'white', fontSize: '0.85rem', flex: 1 }}>
-                    {SECTION_LABELS[key] ?? key}
-                  </p>
-                  <div style={{ display: 'flex', gap: '4px' }}>
+                <div key={key} className="section-row" style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', transition: 'all 0.2s ease' }}>
+                  {/* Interrupteur */}
+                  <button
+                    onClick={() => disableSection(key)}
+                    title="Désactiver cette section"
+                    style={{ width: '22px', height: '22px', flexShrink: 0, borderRadius: '6px', border: 'none', background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+                  >
+                    <span style={{ color: '#0D0B09', fontSize: '13px', fontWeight: 700, lineHeight: 1 }}>✓</span>
+                  </button>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: 'white', fontSize: '0.85rem', overflowWrap: 'anywhere' }}>
+                      {SECTION_LABELS[key] ?? key}
+                    </p>
+                    <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.72rem', marginTop: '2px' }}>
+                      {SECTION_HINTS[key] ?? ''}
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                     <button
                       onClick={() => moveSectionUp(idx)}
                       disabled={!canUp}
-                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: canUp ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)', cursor: canUp ? 'pointer' : 'not-allowed', fontSize: '1rem', transition: 'all 0.2s ease' }}
+                      title="Monter"
+                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: canUp ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.12)', cursor: canUp ? 'pointer' : 'not-allowed', fontSize: '1rem', transition: 'all 0.2s ease' }}
                     >
                       ↑
                     </button>
                     <button
                       onClick={() => moveSectionDown(idx)}
                       disabled={!canDown}
-                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: canDown ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)', cursor: canDown ? 'pointer' : 'not-allowed', fontSize: '1rem', transition: 'all 0.2s ease' }}
+                      title="Descendre"
+                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: canDown ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.12)', cursor: canDown ? 'pointer' : 'not-allowed', fontSize: '1rem', transition: 'all 0.2s ease' }}
                     >
                       ↓
                     </button>
@@ -735,11 +794,50 @@ export default function SettingsClient({ event }: Props) {
 
             {/* Footer — fixe */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', opacity: 0.4 }}>
-              <GripVertical size={16} color="rgba(255,255,255,0.2)" />
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', flex: 1 }}>Footer</p>
-              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Fixe</span>
+              <GripVertical size={16} color="rgba(255,255,255,0.2)" style={{ flexShrink: 0 }} />
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', flex: 1, minWidth: 0 }}>Footer</p>
+              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.15em', textTransform: 'uppercase', flexShrink: 0 }}>Fixe</span>
             </div>
           </div>
+
+          {/* Sections désactivées */}
+          {inactiveSections.length > 0 && (
+            <>
+              <p style={{ fontSize: '0.62rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '10px' }}>
+                Masquées — {inactiveSections.length}
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {inactiveSections.map(key => (
+                  <div key={key} className="section-row" style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.015)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                    <button
+                      onClick={() => enableSection(key)}
+                      title="Activer cette section"
+                      style={{ width: '22px', height: '22px', flexShrink: 0, borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', cursor: 'pointer', padding: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', overflowWrap: 'anywhere' }}>
+                        {SECTION_LABELS[key] ?? key}
+                      </p>
+                      <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '2px' }}>
+                        {SECTION_HINTS[key] ?? ''}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => enableSection(key)}
+                      style={{ flexShrink: 0, padding: '6px 14px', borderRadius: '100px', border: '1px solid rgba(201,169,110,0.3)', background: 'rgba(201,169,110,0.05)', color: 'var(--gold-light)', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      Activer
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: '24px', lineHeight: 1.6 }}>
+            Une section masquée n&apos;apparaît plus sur l&apos;invitation, mais les données déjà saisies par les
+            invités sont conservées — la réactiver les fait réapparaître.
+          </p>
         </div>
       )}
 
@@ -753,6 +851,46 @@ export default function SettingsClient({ event }: Props) {
         input[type="date"]::-webkit-calendar-picker-indicator,
         input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.5); cursor: pointer; }
         input[type="range"] { height: 4px; }
+
+        .admin-page {
+          padding: 40px;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        @media (max-width: 767px) {
+          .admin-page { padding: 68px 16px 96px; }
+        }
+
+        .page-title { font-size: 2rem; }
+        @media (max-width: 599px) { .page-title { font-size: 1.55rem; } }
+
+        .duo-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+        @media (max-width: 519px) {
+          .duo-grid { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        .program-row {
+          display: grid;
+          grid-template-columns: 130px minmax(0, 1fr) 38px;
+          gap: 12px;
+        }
+        @media (max-width: 599px) {
+          .program-row { grid-template-columns: minmax(0, 1fr) 38px; }
+          .program-row > div:first-child { grid-column: 1 / -1; }
+        }
+
+        .section-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        @media (max-width: 419px) {
+          .section-row { flex-wrap: wrap; }
+        }
       `}</style>
     </div>
   )

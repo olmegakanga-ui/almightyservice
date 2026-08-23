@@ -37,7 +37,18 @@ export interface FullInvitationData {
   giftChoice:          'envelope' | 'present' | null
 }
 
-const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map']
+const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode']
+
+/**
+ * Résout la liste des sections à afficher.
+ * Un tableau vide est une configuration volontaire (toutes les sections
+ * optionnelles désactivées) et doit être respecté — seul un champ absent
+ * ou non initialisé déclenche le repli sur la liste complète.
+ */
+function resolveSections(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw as string[]
+  return DEFAULT_SECTIONS
+}
 
 export async function getInvitationByToken(
   token: string
@@ -109,8 +120,8 @@ export async function getInvitationByToken(
     themeColorSecondary: event.theme_color_secondary ?? '#D4B483',
     musicUrl:            event.music_url             ?? null,
     musicVolume:         event.music_volume          ?? 30,
-    giftOptions:         Array.isArray(event.gift_options)    ? event.gift_options    : ['envelope','present'],
-    sectionsOrder:       Array.isArray(event.sections_order)  ? event.sections_order  : DEFAULT_SECTIONS,
+    giftOptions:         Array.isArray(event.gift_options) ? event.gift_options : ['envelope','present'],
+    sectionsOrder:       resolveSections(event.sections_order),
     dressCode:           event.dress_code ?? null,
     dressColors:         Array.isArray(event.dress_colors) ? event.dress_colors : [],
     guestId:             guest.id,
