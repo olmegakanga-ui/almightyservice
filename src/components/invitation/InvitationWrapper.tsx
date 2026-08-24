@@ -201,10 +201,13 @@ export default function InvitationWrapper({ event, guest }: Props) {
           backgroundRepeat:   'no-repeat',
         }}
       >
-        <div style={{
+                <div style={{
           position:   'absolute',
           inset:      0,
-          background: 'linear-gradient(160deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.60) 50%, rgba(0,0,0,0.82) 100%)',
+          background: `linear-gradient(160deg,
+                        color-mix(in srgb, ${goldColor} 26%, rgba(0,0,0,0.80)) 0%,
+                        color-mix(in srgb, ${goldLight} 22%, rgba(0,0,0,0.62)) 50%,
+                        color-mix(in srgb, ${goldColor} 28%, rgba(0,0,0,0.84)) 100%)`,
         }} />
       </div>
 
