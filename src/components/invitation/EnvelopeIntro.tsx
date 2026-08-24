@@ -13,6 +13,9 @@ interface Props {
   onComplete:           () => void
 }
 
+/** Crème du thème — lisible sur n'importe quel fond profond. */
+const CREAM = '#EFE3CE'
+
 export default function EnvelopeIntro({ groomName, brideName, guestName, themeColor, onComplete }: Props) {
   const [phase, setPhase] = useState<'idle' | 'open' | 'rise' | 'fadeout'>('idle')
 
@@ -30,13 +33,21 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
 
   const gold = themeColor || '#C9A96E'
 
+  // Matières teintées par la couleur du thème — mélangées à du noir pour rester profondes.
+  const bgDeep     = `color-mix(in srgb, ${gold} 22%, #0A0806)`   // fond de scène
+  const bgVignette = `color-mix(in srgb, ${gold} 10%, #050403)`   // bords assombris
+  const paperBack  = `color-mix(in srgb, ${gold} 26%, #120E0A)`   // dos de l'enveloppe
+  const paperFront = `color-mix(in srgb, ${gold} 20%, #0E0B08)`   // rabat
+  const cardTop    = `color-mix(in srgb, ${gold} 18%, #17120D)`   // carte, haut
+  const cardBottom = `color-mix(in srgb, ${gold} 12%, #100C09)`   // carte, bas
+
   return (
     <div
       style={{
         position:       'fixed',
         inset:          0,
         zIndex:         9999,
-        background:     '#0D0B09',
+        background:     bgDeep,
         display:        'flex',
         flexDirection:  'column',
         alignItems:     'center',
@@ -46,19 +57,33 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
         pointerEvents:  phase === 'fadeout' ? 'none' : 'all',
       }}
     >
-      {/* Fond radial doré */}
-      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 50%, ${gold}08 0%, transparent 70%)`, pointerEvents: 'none' }} />
+      {/* Vignettage — assombrit les bords, garde le centre lumineux */}
+      <div style={{
+        position:      'absolute',
+        inset:         0,
+        background:    `radial-gradient(ellipse 70% 70% at 50% 48%, transparent 0%, ${bgVignette} 100%)`,
+        pointerEvents: 'none',
+      }} />
+
+      {/* Halo central teinté */}
+      <div style={{
+        position:      'absolute',
+        inset:         0,
+        background:    `radial-gradient(ellipse at 50% 50%, ${gold}22 0%, transparent 65%)`,
+        pointerEvents: 'none',
+      }} />
 
       {/* Logo */}
       <p style={{
         fontFamily:    'var(--font-script)',
         fontSize:      'clamp(1.4rem, 3vw, 2rem)',
-        color:         gold,
-        opacity:       0.6,
+        color:         CREAM,
+        opacity:       0.72,
         marginBottom:  '48px',
         letterSpacing: '0.05em',
         position:      'relative',
         zIndex:        2,
+        textShadow:    '0 2px 16px rgba(0,0,0,0.6)',
       }}>
         AlmightyService
       </p>
@@ -77,21 +102,21 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
         <div style={{
           width:        '100%',
           paddingTop:   '65%',
-          background:   `linear-gradient(145deg, #1a1510, #120f0a)`,
-          border:       `1px solid ${gold}40`,
+          background:   `linear-gradient(145deg, ${paperBack}, ${paperFront})`,
+          border:       `1px solid ${gold}55`,
           borderRadius: '4px 4px 8px 8px',
           position:     'relative',
-          boxShadow:    `0 20px 60px rgba(0,0,0,0.6), 0 0 40px ${gold}10`,
+          boxShadow:    `0 20px 60px rgba(0,0,0,0.7), 0 0 50px ${gold}22`,
           overflow:     'hidden',
         }}>
 
           {/* Lignes décoratives intérieures */}
-          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${gold}05 25%, transparent 25%) -10px 0, linear-gradient(225deg, ${gold}05 25%, transparent 25%) -10px 0`, backgroundSize: '20px 20px' }} />
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${gold}0D 25%, transparent 25%) -10px 0, linear-gradient(225deg, ${gold}0D 25%, transparent 25%) -10px 0`, backgroundSize: '20px 20px' }} />
 
           {/* Diagonales bas enveloppe */}
           <svg style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '60%' }} viewBox="0 0 420 160" preserveAspectRatio="none">
-            <polygon points="0,160 210,60 420,160" fill={`${gold}18`} />
-            <polygon points="0,160 210,60 420,160" fill="none" stroke={`${gold}30`} strokeWidth="0.5" />
+            <polygon points="0,160 210,60 420,160" fill={`${gold}26`} />
+            <polygon points="0,160 210,60 420,160" fill="none" stroke={`${gold}45`} strokeWidth="0.5" />
           </svg>
         </div>
 
@@ -110,10 +135,10 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
           zIndex:          3,
         }}>
           <svg width="100%" height="100%" viewBox="0 0 420 160" preserveAspectRatio="none">
-            <polygon points="0,0 420,0 210,140" fill="#1a1510" stroke={`${gold}40`} strokeWidth="0.5" />
+            <polygon points="0,0 420,0 210,140" fill={paperBack} stroke={`${gold}55`} strokeWidth="0.5" />
             {/* Sceau central */}
-            <circle cx="210" cy="60" r="20" fill={`${gold}20`} stroke={`${gold}60`} strokeWidth="1" />
-            <text x="210" y="65" textAnchor="middle" fill={gold} fontSize="14" fontFamily="serif" opacity="0.8">A</text>
+            <circle cx="210" cy="60" r="20" fill={`${gold}35`} stroke={`${gold}80`} strokeWidth="1" />
+            <text x="210" y="65" textAnchor="middle" fill={CREAM} fontSize="14" fontFamily="serif" opacity="0.9">A</text>
           </svg>
         </div>
 
@@ -123,8 +148,8 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
           left:         '8%',
           right:        '8%',
           bottom:       '5%',
-          background:   `linear-gradient(160deg, #1e1812, #16120d)`,
-          border:       `1px solid ${gold}35`,
+          background:   `linear-gradient(160deg, ${cardTop}, ${cardBottom})`,
+          border:       `1px solid ${gold}4D`,
           borderRadius: '4px',
           padding:      'clamp(16px, 3vw, 28px)',
           transform:    phase === 'rise' || phase === 'fadeout'
@@ -132,14 +157,14 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
             : 'translateY(10%)',
           transition:   'transform 1.2s cubic-bezier(0.16,1,0.3,1)',
           zIndex:       phase === 'rise' || phase === 'fadeout' ? 5 : 1,
-          boxShadow:    `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${gold}15`,
+          boxShadow:    `0 8px 32px rgba(0,0,0,0.6), 0 0 24px ${gold}26`,
           textAlign:    'center',
         }}>
 
           {/* Ligne décorative top */}
-          <div style={{ height: '1px', background: `linear-gradient(90deg, transparent, ${gold}60, transparent)`, marginBottom: 'clamp(10px, 2vw, 16px)' }} />
+          <div style={{ height: '1px', background: `linear-gradient(90deg, transparent, ${gold}90, transparent)`, marginBottom: 'clamp(10px, 2vw, 16px)' }} />
 
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 'clamp(0.55rem, 1.2vw, 0.65rem)', letterSpacing: '0.3em', textTransform: 'uppercase', color: `${gold}80`, marginBottom: 'clamp(6px, 1.5vw, 10px)' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 'clamp(0.55rem, 1.2vw, 0.65rem)', letterSpacing: '0.3em', textTransform: 'uppercase', color: CREAM, opacity: 0.75, marginBottom: 'clamp(6px, 1.5vw, 10px)' }}>
             Invitation
           </p>
 
@@ -147,16 +172,16 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
             {groomName} &amp; {brideName}
           </p>
 
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 'clamp(0.6rem, 1.3vw, 0.72rem)', color: `rgba(255,255,255,0.45)`, marginBottom: 'clamp(6px, 1.5vw, 12px)', fontStyle: 'italic' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 'clamp(0.6rem, 1.3vw, 0.72rem)', color: 'rgba(255,255,255,0.55)', marginBottom: 'clamp(6px, 1.5vw, 12px)', fontStyle: 'italic' }}>
             vous prient de leur faire l&apos;honneur
           </p>
 
-          <p style={{ fontFamily: 'var(--font-script)', fontSize: 'clamp(0.9rem, 2vw, 1.2rem)', color: gold, opacity: 0.9 }}>
+          <p style={{ fontFamily: 'var(--font-script)', fontSize: 'clamp(0.9rem, 2vw, 1.2rem)', color: CREAM, opacity: 0.95 }}>
             {guestName}
           </p>
 
           {/* Ligne décorative bottom */}
-          <div style={{ height: '1px', background: `linear-gradient(90deg, transparent, ${gold}60, transparent)`, marginTop: 'clamp(10px, 2vw, 16px)' }} />
+          <div style={{ height: '1px', background: `linear-gradient(90deg, transparent, ${gold}90, transparent)`, marginTop: 'clamp(10px, 2vw, 16px)' }} />
         </div>
       </div>
 
@@ -167,16 +192,16 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
         fontSize:      'clamp(0.65rem, 1.5vw, 0.75rem)',
         letterSpacing: '0.25em',
         textTransform: 'uppercase',
-        color:         `rgba(255,255,255,0.2)`,
+        color:         CREAM,
         position:      'relative',
         zIndex:        2,
-        opacity:       phase === 'rise' || phase === 'fadeout' ? 1 : 0,
+        opacity:       phase === 'rise' || phase === 'fadeout' ? 0.5 : 0,
         transition:    'opacity 0.8s ease 0.5s',
       }}>
         Découvrez votre invitation
       </p>
 
-      {/* Particules dorées */}
+      {/* Particules */}
       {(phase === 'rise' || phase === 'fadeout') && (
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
           {[...Array(12)].map((_, i) => (
@@ -187,7 +212,7 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
                 width:        `${2 + Math.random() * 3}px`,
                 height:       `${2 + Math.random() * 3}px`,
                 borderRadius: '50%',
-                background:   gold,
+                background:   CREAM,
                 left:         `${20 + Math.random() * 60}%`,
                 top:          `${30 + Math.random() * 40}%`,
                 opacity:      0,
@@ -202,17 +227,17 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
         @keyframes particle0 {
           0%   { opacity: 0; transform: translate(0, 0) scale(1); }
           20%  { opacity: 0.8; }
-          100% { opacity: 0; transform: translate(${Math.random() > 0.5 ? '' : '-'}${30 + Math.floor(Math.random() * 60)}px, -${40 + Math.floor(Math.random() * 80)}px) scale(0); }
+          100% { opacity: 0; transform: translate(${Math.random() > 0.5 ? '' : '-'}${30 + Math.floor(Math.random() * 60)}px, -${40 + Math.floor(Math.random() *80)}px) scale(0); }
         }
         @keyframes particle1 {
           0%   { opacity: 0; transform: translate(0, 0) scale(1); }
           20%  { opacity: 0.6; }
-          100% { opacity: 0; transform: translate(${Math.random() > 0.5 ? '' : '-'}${20 + Math.floor(Math.random() * 50)}px, -${30 + Math.floor(Math.random() * 70)}px) scale(0); }
+          100% { opacity: 0; transform: translate(${Math.random() > 0.5 ? '' : '-'}${20 + Math.floor(Math.random() * 50)}px, -${30 + Math.floor(Math.random() *70)}px) scale(0); }
         }
         @keyframes particle2 {
           0%   { opacity: 0; transform: translate(0, 0) scale(1); }
           20%  { opacity: 0.9; }
-          100% { opacity: 0; transform: translate(${Math.random() > 0.5 ? '' : '-'}${40 + Math.floor(Math.random() * 40)}px, -${50 + Math.floor(Math.random() * 60)}px) scale(0); }
+          100% { opacity: 0; transform: translate(${Math.random() > 0.5 ? '' : '-'}${40 + Math.floor(Math.random() * 40)}px, -${50 + Math.floor(Math.random() *60)}px) scale(0); }
         }
       `}</style>
     </div>
