@@ -1,9 +1,11 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
 
 :root {
   --font-display: 'Cormorant Garamond', serif;
   --font-body: 'DM Sans', sans-serif;
   --font-script: 'Great Vibes', cursive;
+  --font-invitation: 'EB Garamond', serif;
 
   --gold: #C9A96E;
   --gold-light: #E8D5B0;
@@ -82,8 +84,9 @@ body {
 }
 
 /* ─── TYPOGRAPHY ─── */
-.font-display { font-family: var(--font-display); }
-.font-script  { font-family: var(--font-script); }
+.font-display    { font-family: var(--font-display); }
+.font-script     { font-family: var(--font-script); }
+.font-invitation { font-family: var(--font-invitation); }
 
 .label-overline {
   font-family: var(--font-body);

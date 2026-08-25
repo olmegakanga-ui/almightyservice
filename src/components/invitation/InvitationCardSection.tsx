@@ -47,7 +47,7 @@ export default function InvitationCardSection({ event, guest }: Props) {
     line.trim() === '' ? (
       <div key={i} style={{ height: '1em' }} />
     ) : (
-      <p key={i} className="font-display" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', color: 'rgba(255,255,255,0.95)', lineHeight: 1.8, fontStyle: 'italic', textShadow: '0 1px 8px rgba(0,0,0,0.6)', margin: '0 0 8px' }}>
+            <p key={i} className="font-invitation" style={{ fontSize: 'clamp(1.15rem, 2.1vw, 1.4rem)', color: 'rgba(255,255,255,0.95)', lineHeight: 1.75, fontStyle: 'italic', textShadow: '0 1px 8px rgba(0,0,0,0.6)', margin: '0 0 10px' }}>
         {line}
       </p>
     )
