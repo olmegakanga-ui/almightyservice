@@ -26,7 +26,7 @@ export default async function TablesPage({
 
   const { data: guests } = await supabase
     .from('guests')
-    .select('id, full_name, table_id, side, rsvp_responses(status)')
+    .select('id, full_name, table_id, side, is_couple, rsvp_responses(status)')
     .eq('event_id', eventId)
     .order('full_name', { ascending: true })
 

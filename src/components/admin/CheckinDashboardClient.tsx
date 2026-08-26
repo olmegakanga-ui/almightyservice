@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Users, UserCheck, Clock, QrCode, Search } from 'lucide-react'
@@ -10,6 +9,7 @@ interface Guest {
   id: string
   full_name: string
   side: string
+  is_couple: boolean
   checked_in: boolean
   checked_in_at: string | null
   guest_tables: { name: string } | null
@@ -27,6 +27,10 @@ interface Props {
   recentLogs: Log[]
 }
 
+/** Un couple compte pour deux personnes, une entrée simple pour une. */
+const countPersons = (list: Guest[]) =>
+  list.reduce((acc, g) => acc + (g.is_couple ? 2 : 1), 0)
+
 function formatTime(iso: string) {
   const d = new Date(iso)
   return d.getHours() + 'h' + String(d.getMinutes()).padStart(2, '0')
@@ -37,7 +41,6 @@ export default function CheckinDashboardClient({
   guests: initialGuests,
   recentLogs: initialLogs,
 }: Props) {
-  const router = useRouter()
   const [search, setSearch]         = useState('')
   const [guests, setGuests]         = useState<Guest[]>(initialGuests)
   const [recentLogs, setRecentLogs] = useState<Log[]>(initialLogs)
@@ -47,7 +50,7 @@ export default function CheckinDashboardClient({
 
     const { data: updatedGuests } = await supabase
       .from('guests')
-      .select('id, full_name, side, checked_in, checked_in_at, guest_tables(name), rsvp_responses(status)')
+      .select('id, full_name, side, is_couple, checked_in, checked_in_at, guest_tables(name), rsvp_responses(status)')
       .eq('event_id', event.id)
       .order('checked_in_at', { ascending: false, nullsFirst: false })
 
@@ -94,11 +97,15 @@ export default function CheckinDashboardClient({
     return () => { supabase.removeChannel(channel) }
   }, [event.id, refresh])
 
-  const total     = guests.length
-  const confirmed = guests.filter(g => g.rsvp_responses?.status === 'confirmed').length
-  const arrived   = guests.filter(g => g.checked_in).length
-  const remaining = Math.max(0, confirmed - arrived)
-  const rate      = confirmed > 0 ? Math.round((arrived / confirmed) * 100) : 0
+  // ── Comptages en personnes ────────────────────────────────
+  const total       = countPersons(guests)
+  const confirmed   = countPersons(guests.filter(g => g.rsvp_responses?.status === 'confirmed'))
+  const arrived     = countPersons(guests.filter(g => g.checked_in))
+  const remaining   = Math.max(0, confirmed - arrived)
+  const rate        = confirmed > 0 ? Math.round((arrived / confirmed) * 100) : 0
+
+  // Nombre d'invitations, utile pour situer l'écart avec les personnes
+  const entries     = guests.length
 
   const filtered = useMemo(() => {
     if (!search) return guests
@@ -110,7 +117,18 @@ export default function CheckinDashboardClient({
   }, [guests, search])
 
   return (
-    <div style={{ padding: '40px' }}>
+    <div className="admin-page">
+      <style>{`
+        .admin-page { padding: 40px; max-width: 100%; box-sizing: border-box; }
+        @media (max-width: 767px) { .admin-page { padding: 68px 16px 32px; } }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          margin-bottom: 32px;
+        }
+        @media (min-width: 720px) { .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+      `}</style>
 
       {/* Header */}
       <div style={{
@@ -121,13 +139,16 @@ export default function CheckinDashboardClient({
         flexWrap: 'wrap',
         gap: '16px',
       }}>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
-            {event.groom_name} & {event.bride_name}
+            {event.groom_name} &amp; {event.bride_name}
           </p>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white', lineHeight: 1.15 }}>
             Dashboard Check-in
           </h1>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginTop: '4px' }}>
+            {total} personne{total > 1 ? 's' : ''} · {entries} invitation{entries > 1 ? 's' : ''}
+          </p>
           <p style={{ color: 'rgba(90,138,106,0.7)', fontSize: '0.72rem', marginTop: '4px' }}>
             ● Temps réel activé
           </p>
@@ -148,26 +169,27 @@ export default function CheckinDashboardClient({
             fontFamily: 'var(--font-body)',
             fontSize: '0.85rem',
             letterSpacing: '0.1em',
+            whiteSpace: 'nowrap',
           }}
         >
           <QrCode size={16} /> Scanner un invité
         </Link>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '32px' }}>
+      {/* Stats — toutes en personnes */}
+      <div className="stats-grid">
         {[
-          { icon: Users,     label: 'Total invités', value: total,     color: 'rgba(255,255,255,0.7)' },
-          { icon: UserCheck, label: 'Confirmés',      value: confirmed, color: '#9DB4F5' },
-          { icon: UserCheck, label: 'Arrivés',        value: arrived,   color: '#7EC89A' },
-          { icon: Clock,     label: 'Restants',       value: remaining, color: 'rgba(201,169,110,0.8)' },
+          { icon: Users,     label: 'Total personnes', value: total,     color: 'rgba(255,255,255,0.7)' },
+          { icon: UserCheck, label: 'Confirmées',      value: confirmed, color: '#9DB4F5' },
+          { icon: UserCheck, label: 'Arrivées',        value: arrived,   color: '#7EC89A' },
+          { icon: Clock,     label: 'Restantes',       value: remaining, color: 'rgba(201,169,110,0.8)' },
         ].map((s, i) => (
-          <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
+          <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', minWidth: 0 }}>
             <s.icon size={18} color={s.color} style={{ marginBottom: '10px' }} />
             <p style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: s.color, lineHeight: 1 }}>
               {s.value}
             </p>
-            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.1em' }}>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px', letterSpacing: '0.08em' }}>
               {s.label}
             </p>
           </div>
@@ -176,9 +198,9 @@ export default function CheckinDashboardClient({
 
       {/* Taux de présence */}
       <div style={{ marginBottom: '32px', padding: '20px 24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px' }}>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem' }}>Taux de présence</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: rate >= 80 ? '#7EC89A' : rate >= 50 ? 'var(--gold)' : '#E89AA6' }}>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: rate >= 80 ? '#7EC89A' : rate >= 50 ? 'var(--gold)' : '#E89AA6', flexShrink: 0 }}>
             {rate}%
           </p>
         </div>
@@ -192,7 +214,7 @@ export default function CheckinDashboardClient({
           }} />
         </div>
         <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', marginTop: '8px' }}>
-          {arrived} arrivés sur {confirmed} confirmés
+          {arrived} personne{arrived > 1 ? 's' : ''} arrivée{arrived > 1 ? 's' : ''} sur {confirmed} confirmée{confirmed > 1 ? 's' : ''}
         </p>
       </div>
 
@@ -208,15 +230,16 @@ export default function CheckinDashboardClient({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                gap: '12px',
                 padding: '10px 14px',
                 background: 'rgba(90,138,106,0.06)',
                 borderRadius: '10px',
                 border: '1px solid rgba(90,138,106,0.15)',
               }}>
-                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.88rem' }}>
+                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.88rem', minWidth: 0, overflowWrap: 'anywhere' }}>
                   {log.guests?.full_name ?? 'Invité'}
                 </p>
-                <p style={{ color: '#7EC89A', fontSize: '0.78rem' }}>
+                <p style={{ color: '#7EC89A', fontSize: '0.78rem', flexShrink: 0 }}>
                   {formatTime(log.performed_at)}
                 </p>
               </div>
@@ -227,7 +250,7 @@ export default function CheckinDashboardClient({
 
       {/* Liste complète */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
           <p style={{ fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>
             Tous les invités
           </p>
@@ -237,7 +260,7 @@ export default function CheckinDashboardClient({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher..."
-              style={{ padding: '8px 10px 8px 30px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.82rem', outline: 'none', width: '200px' }}
+              style={{ padding: '8px 10px 8px 30px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: 'white', fontFamily: 'var(--font-body)', fontSize: '0.82rem', outline: 'none', width: '200px', maxWidth: '100%', boxSizing: 'border-box' }}
             />
           </div>
         </div>
@@ -248,13 +271,14 @@ export default function CheckinDashboardClient({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '12px',
               padding: '12px 16px',
               background: g.checked_in ? 'rgba(90,138,106,0.06)' : 'rgba(255,255,255,0.02)',
               border: g.checked_in ? '1px solid rgba(90,138,106,0.2)' : '1px solid rgba(255,255,255,0.05)',
               borderRadius: '12px',
               transition: 'all 0.3s ease',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                 <div style={{
                   width: '8px',
                   height: '8px',
@@ -263,9 +287,14 @@ export default function CheckinDashboardClient({
                   flexShrink: 0,
                   transition: 'background 0.3s ease',
                 }} />
-                <div>
-                  <p style={{ color: g.checked_in ? 'white' : 'rgba(255,255,255,0.6)', fontSize: '0.88rem' }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ color: g.checked_in ? 'white' : 'rgba(255,255,255,0.6)', fontSize: '0.88rem', overflowWrap: 'anywhere' }}>
                     {g.full_name}
+                    {g.is_couple && (
+                      <span style={{ color: 'rgba(201,169,110,0.7)', fontSize: '0.72rem', marginLeft: '8px' }}>
+                        × 2 personnes
+                      </span>
+                    )}
                   </p>
                   {g.guest_tables?.name && (
                     <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem' }}>
@@ -274,13 +303,13 @@ export default function CheckinDashboardClient({
                   )}
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 {g.checked_in && g.checked_in_at ? (
-                  <p style={{ color: '#7EC89A', fontSize: '0.78rem' }}>
+                  <p style={{ color: '#7EC89A', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
                     ✓ {formatTime(g.checked_in_at)}
                   </p>
                 ) : (
-                  <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
                     Pas encore arrivé
                   </p>
                 )}

@@ -21,6 +21,7 @@ interface Guest {
   full_name:      string
   table_id:       string | null
   side:           string
+  is_couple:      boolean
   rsvp_responses: { status: string } | null
 }
 
@@ -37,6 +38,20 @@ interface Props {
 }
 
 type ModalMode = 'add' | 'edit' | null
+
+/** Un couple occupe deux sièges. */
+const countPersons = (list: Guest[]) =>
+  list.reduce((acc, g) => acc + (g.is_couple ? 2 : 1), 0)
+
+/**
+ * Couleur du compteur d'occupation :
+ * en dessous de la capacité → doré, à la capacité exacte → vert, au-delà → rouge.
+ */
+function occupancyColor(persons: number, capacity: number): string {
+  if (persons > capacity)  return '#E89AA6'
+  if (persons === capacity) return '#7EC89A'
+  return 'var(--gold)'
+}
 
 const CATEGORY_COLOR: Record<string, string> = {
   VIP:     'rgba(201,169,110,0.15)',
@@ -162,6 +177,9 @@ function TableModal({
               onFocus={e => { e.target.style.borderColor = 'rgba(201,169,110,0.5)' }}
               onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.1)' }}
             />
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '6px' }}>
+              Un couple occupe deux chaises.
+            </p>
           </div>
 
           <div className="modal-duo">
@@ -235,6 +253,8 @@ function GuestsDrawer({ table, guests, onClose }: {
   onClose: () => void
 }) {
   const tableGuests = guests.filter(g => g.table_id === table.id)
+  const persons     = countPersons(tableGuests)
+  const color       = occupancyColor(persons, table.capacity)
 
   return (
     <div
@@ -248,7 +268,8 @@ function GuestsDrawer({ table, guests, onClose }: {
               {table.name}
             </p>
             <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
-              {tableGuests.length} / {table.capacity} invités
+              <span style={{ color }}>{persons} / {table.capacity} personnes</span>
+              {' · '}{tableGuests.length} invitation{tableGuests.length > 1 ? 's' : ''}
             </p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', flexShrink: 0 }}>
@@ -258,11 +279,11 @@ function GuestsDrawer({ table, guests, onClose }: {
 
         <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', marginBottom: '24px', overflow: 'hidden' }}>
           <div style={{
-            height:     '100%',
-            width:      Math.min(100, (tableGuests.length / table.capacity) * 100) + '%',
-            background: tableGuests.length >= table.capacity ? '#E89AA6' : 'var(--gold)',
+            height:      '100%',
+            width:       Math.min(100, (persons / table.capacity) * 100) + '%',
+            background:  color,
             borderRadius:'2px',
-            transition: 'width 0.5s ease',
+            transition:  'width 0.5s ease',
           }} />
         </div>
 
@@ -278,6 +299,9 @@ function GuestsDrawer({ table, guests, onClose }: {
                 <div key={guest.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <p style={{ color: RSVP_COLOR[status], fontSize: '0.88rem', minWidth: 0, overflowWrap: 'anywhere' }}>
                     {guest.full_name}
+                    {guest.is_couple && (
+                      <span style={{ color: 'rgba(201,169,110,0.7)', fontSize: '0.7rem', marginLeft: '8px' }}>× 2</span>
+                    )}
                   </p>
                   <span style={{ fontSize: '0.65rem', color: RSVP_COLOR[status], flexShrink: 0 }}>
                     {status === 'confirmed' ? '✓' : status === 'declined' ? '✗' : '—'}
@@ -302,6 +326,9 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
   const [drawerTable, setDrawerTable]   = useState<Table | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting]         = useState(false)
+
+  const personsAtTable = (tableId: string) =>
+    countPersons(guests.filter(g => g.table_id === tableId))
 
   const filtered = useMemo(() => {
     return tables.filter(t => {
@@ -328,8 +355,8 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
   const handleDelete = async (tableId: string) => {
     setDeleting(true)
     try {
-      const supabase      = createClient()
-      const { error }     = await supabase
+      const supabase  = createClient()
+      const { error } = await supabase
         .from('guest_tables')
         .delete()
         .eq('id', tableId)
@@ -348,10 +375,11 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
   }
 
   const exportCSV = () => {
-    const headers = ['Nom','Côté','Catégorie','Capacité','Invités','Taux remplissage']
+    const headers = ['Nom','Côté','Catégorie','Capacité','Personnes','Invitations','Taux remplissage']
     const rows    = filtered.map(t => {
-      const count = guests.filter(g => g.table_id === t.id).length
-      return [t.name, t.side, t.category, t.capacity, count, Math.round((count / t.capacity) * 100) + '%']
+      const list    = guests.filter(g => g.table_id === t.id)
+      const persons = countPersons(list)
+      return [t.name, t.side, t.category, t.capacity, persons, list.length, Math.round((persons / t.capacity) * 100) + '%']
     })
     const csv  = [headers, ...rows].map(r => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -360,6 +388,10 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
     a.download = 'tables-' + event.groom_name + '-' + event.bride_name + '.csv'
     a.click()
   }
+
+  // Totaux généraux
+  const totalPersons = countPersons(guests)
+  const totalSeats   = tables.reduce((acc, t) => acc + t.capacity, 0)
 
   const thStyle: React.CSSProperties = {
     padding:       '12px 16px',
@@ -380,7 +412,6 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
     whiteSpace:   'nowrap',
   }
 
-  // Bouton d'action carré — ne se comprime jamais
   const iconBtn: React.CSSProperties = {
     flexShrink:     0,
     width:          '30px',
@@ -398,32 +429,20 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
   return (
     <div className="admin-page">
       <style>{`
-        /* ---------- Page ---------- */
-        .admin-page {
-          padding: 40px;
-          max-width: 100%;
-          box-sizing: border-box;
-        }
-        @media (max-width: 767px) {
-          .admin-page { padding: 68px 16px 32px; }
-        }
+        .admin-page { padding: 40px; max-width: 100%; box-sizing: border-box; }
+        @media (max-width: 767px) { .admin-page { padding: 68px 16px 32px; } }
 
         .page-title { font-size: 2rem; }
         @media (max-width: 599px) { .page-title { font-size: 1.55rem; } }
 
-        /* ---------- Cartes de statistiques ---------- */
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
           margin-bottom: 32px;
         }
-        @media (min-width: 720px) {
-          .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        }
-        @media (max-width: 339px) {
-          .stats-grid { grid-template-columns: minmax(0, 1fr); }
-        }
+        @media (min-width: 720px) { .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        @media (max-width: 339px) { .stats-grid { grid-template-columns: minmax(0, 1fr); } }
 
         .stat-value { font-size: 1.8rem; }
         @media (max-width: 599px) {
@@ -431,54 +450,30 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
           .stat-value { font-size: 1.45rem; }
         }
 
-        /* ---------- Résumé Marié / Mariée ---------- */
         .sides-grid {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
           gap: 16px;
           margin-bottom: 32px;
         }
-        @media (min-width: 720px) {
-          .sides-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-        @media (max-width: 599px) {
-          .sides-grid > div { padding: 14px !important; }
-        }
+        @media (min-width: 720px) { .sides-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 599px) { .sides-grid > div { padding: 14px !important; } }
 
-        /* ---------- Champs jumelés dans la modale ---------- */
         .modal-duo {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
           gap: 12px;
         }
-        @media (min-width: 420px) {
-          .modal-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
+        @media (min-width: 420px) { .modal-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
         .modal-box { padding: 32px; }
         @media (max-width: 599px) { .modal-box { padding: 20px; border-radius: 18px; } }
 
-        /* ---------- Tiroir latéral ---------- */
-        .side-drawer {
-          width: 380px;
-          max-width: 100vw;
-          padding: 32px;
-        }
-        @media (max-width: 599px) {
-          .side-drawer { width: 100vw; padding: 20px; }
-        }
+        .side-drawer { width: 380px; max-width: 100vw; padding: 32px; }
+        @media (max-width: 599px) { .side-drawer { width: 100vw; padding: 20px; } }
 
-        /* ---------- Tableau ---------- */
-        .table-scroll {
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        /* Les icônes SVG ne se laissent jamais écraser par le flex */
-        .actions-cell svg {
-          flex-shrink: 0;
-          display: block;
-        }
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .actions-cell svg { flex-shrink: 0; display: block; }
       `}</style>
 
       {/* Header */}
@@ -489,15 +484,20 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
         <h1 className="page-title" style={{ fontFamily: 'var(--font-display)', fontWeight: 300, color: 'white', lineHeight: 1.15 }}>
           Gestion des tables
         </h1>
+        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem', marginTop: '4px' }}>
+          <span style={{ color: 'var(--gold-light)' }}>{totalPersons} personne{totalPersons > 1 ? 's' : ''}</span>
+          {' · '}{guests.length} invitation{guests.length > 1 ? 's' : ''}
+          {' · '}{totalSeats} place{totalSeats > 1 ? 's' : ''} disponibles
+        </p>
       </div>
 
       {/* Stats */}
       <div className="stats-grid">
         {[
-          { label: 'Total tables',  value: tables.length,                                color: 'rgba(255,255,255,0.7)' },
-          { label: 'Côté Marié',    value: tables.filter(t => t.side === 'HOMME').length, color: '#9DB4F5' },
-          { label: 'Côté Mariée',   value: tables.filter(t => t.side === 'FEMME').length, color: '#FFB6C1' },
-          { label: 'Total invités', value: guests.length,                                color: 'rgba(201,169,110,0.8)' },
+          { label: 'Total tables',    value: tables.length,                                color: 'rgba(255,255,255,0.7)' },
+          { label: 'Côté Marié',      value: tables.filter(t => t.side === 'HOMME').length, color: '#9DB4F5' },
+          { label: 'Côté Mariée',     value: tables.filter(t => t.side === 'FEMME').length, color: '#FFB6C1' },
+          { label: 'Total personnes', value: totalPersons,                                 color: 'rgba(201,169,110,0.8)' },
         ].map((s, i) => (
           <div key={i} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', minWidth: 0 }}>
             <p className="stat-value" style={{ fontFamily: 'var(--font-display)', color: s.color, lineHeight: 1 }}>{s.value}</p>
@@ -509,16 +509,16 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
       {/* Résumé Marié / Mariée */}
       <div className="sides-grid">
         {(['HOMME', 'FEMME'] as const).map(side => {
-          const sideTables = tables.filter(t => t.side === side)
-          const sideGuests = guests.filter(g => g.side === side)
+          const sideTables  = tables.filter(t => t.side === side)
+          const sidePersons = countPersons(guests.filter(g => g.side === side))
           return (
             <div key={side} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', minWidth: 0 }}>
               <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: side === 'HOMME' ? '#9DB4F5' : '#FFB6C1', marginBottom: '12px', overflowWrap: 'anywhere', lineHeight: 1.6 }}>
-                Côté {side === 'HOMME' ? 'Marié' : 'Mariée'} — {sideTables.length} table{sideTables.length > 1 ? 's' : ''} · {sideGuests.length} invités
+                Côté {side === 'HOMME' ? 'Marié' : 'Mariée'} — {sideTables.length} table{sideTables.length > 1 ? 's' : ''} · {sidePersons} personne{sidePersons > 1 ? 's' : ''}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {sideTables.map(t => {
-                  const count = guests.filter(g => g.table_id === t.id).length
+                  const persons = personsAtTable(t.id)
                   return (
                     <div
                       key={t.id}
@@ -529,8 +529,8 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                         <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', overflowWrap: 'anywhere' }}>{t.name}</span>
                         <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginLeft: '8px' }}>{t.category}</span>
                       </div>
-                      <span style={{ fontSize: '0.82rem', color: count >= t.capacity ? '#E89AA6' : 'var(--gold)', fontFamily: 'var(--font-display)', padding: '2px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        {count}/{t.capacity}
+                      <span style={{ fontSize: '0.82rem', color: occupancyColor(persons, t.capacity), fontFamily: 'var(--font-display)', padding: '2px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        {persons}/{t.capacity}
                       </span>
                     </div>
                   )
@@ -592,7 +592,7 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                 <th style={thStyle}>Nom de la table</th>
                 <th style={thStyle}>Côté</th>
                 <th style={thStyle}>Catégorie</th>
-                <th style={thStyle}>Invités / Capacité</th>
+                <th style={thStyle}>Personnes / Capacité</th>
                 <th style={thStyle}>Remplissage</th>
                 <th style={{ ...thStyle, textAlign: 'center', width: '1%' }}>Actions</th>
               </tr>
@@ -606,9 +606,10 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                 </tr>
               ) : (
                 filtered.map(table => {
-                  const count     = guests.filter(g => g.table_id === table.id).length
-                  const pct       = Math.min(100, Math.round((count / table.capacity) * 100))
-                  const isFull    = count >= table.capacity
+                  const list      = guests.filter(g => g.table_id === table.id)
+                  const persons   = countPersons(list)
+                  const pct       = Math.min(100, Math.round((persons / table.capacity) * 100))
+                  const color     = occupancyColor(persons, table.capacity)
                   const isConfirm = deleteConfirm === table.id
                   return (
                     <tr key={table.id}
@@ -632,14 +633,19 @@ export default function TablesClient({ event, initialTables, guests }: Props) {
                         </span>
                       </td>
                       <td style={cellStyle}>
-                        <button onClick={() => setDrawerTable(table)} style={{ background: 'none', border: 'none', color: isFull ? '#E89AA6' : 'var(--gold)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: '1rem', padding: 0 }}>
-                          {count}/{table.capacity}
+                        <button onClick={() => setDrawerTable(table)} style={{ background: 'none', border: 'none', color, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: '1rem', padding: 0 }}>
+                          {persons}/{table.capacity}
                         </button>
+                        {list.length !== persons && (
+                          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.7rem', marginLeft: '8px' }}>
+                            {list.length} invit.
+                          </span>
+                        )}
                       </td>
                       <td style={{ ...cellStyle, minWidth: '140px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: pct + '%', background: isFull ? '#E89AA6' : 'var(--gold)', borderRadius: '2px', transition: 'width 0.3s ease' }} />
+                            <div style={{ height: '100%', width: pct + '%', background: color, borderRadius: '2px', transition: 'width 0.3s ease' }} />
                           </div>
                           <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)', minWidth: '32px', flexShrink: 0 }}>{pct}%</span>
                         </div>

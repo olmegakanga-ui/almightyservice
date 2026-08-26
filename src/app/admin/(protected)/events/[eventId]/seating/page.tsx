@@ -27,7 +27,7 @@ export default async function SeatingPage({
 
   const { data: guests } = await supabase
     .from('guests')
-    .select('id, full_name, table_id, side, checked_in, checked_in_at, rsvp_responses(status)')
+    .select('id, full_name, table_id, side, is_couple, checked_in, checked_in_at, rsvp_responses(status)')
     .eq('event_id', eventId)
 
   return (

@@ -20,7 +20,7 @@ export default async function WhatsAppPage({
 
   const { data: guests } = await (supabase as any)
     .from('guests')
-    .select('id, full_name, phone, side, rsvp_responses(status)')
+    .select('id, full_name, phone, side, is_couple, rsvp_responses(status)')
     .eq('event_id', eventId)
     .order('full_name')
 

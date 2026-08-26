@@ -21,7 +21,7 @@ export default async function CheckinPage({
   const { data: guests } = await supabase
     .from('guests')
     .select(`
-      id, full_name, side, checked_in, checked_in_at,
+      id, full_name, side, is_couple, checked_in, checked_in_at,
       guest_tables ( name ),
       rsvp_responses ( status )
     `)

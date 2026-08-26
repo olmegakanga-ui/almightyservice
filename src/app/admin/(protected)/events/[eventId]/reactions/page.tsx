@@ -20,7 +20,7 @@ export default async function ReactionsPage({
 
   const { data: rsvps } = await supabase
     .from('rsvp_responses')
-    .select('status, guests(full_name, side)')
+    .select('status, guests(full_name, side, is_couple)')
     .eq('event_id', eventId)
 
   return <ReactionsClient event={event} rsvps={rsvps ?? []} />

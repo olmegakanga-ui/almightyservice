@@ -17,6 +17,7 @@ interface Guest {
   full_name: string
   table_id: string | null
   side: string
+  is_couple: boolean
   checked_in: boolean
   checked_in_at: string | null
   rsvp_responses: { status: string } | null
@@ -27,6 +28,10 @@ interface Props {
   tables: Table[]
   guests: Guest[]
 }
+
+/** Un couple occupe deux sièges. */
+const countPersons = (list: Guest[]) =>
+  list.reduce((acc, g) => acc + (g.is_couple ? 2 : 1), 0)
 
 function formatTime(iso: string) {
   const d = new Date(iso)
@@ -40,6 +45,20 @@ const CATEGORY_COLORS: Record<string, string> = {
   AUTRES:  'rgba(255,255,255,0.04)',
 }
 
+/**
+ * Construit la liste des sièges d'une table.
+ * Un couple produit deux sièges portant le même invité.
+ */
+function buildSeats(tableGuests: Guest[], capacity: number) {
+  const seats: (Guest | null)[] = []
+  tableGuests.forEach(g => {
+    seats.push(g)
+    if (g.is_couple) seats.push(g)
+  })
+  while (seats.length < capacity) seats.push(null)
+  return seats
+}
+
 function SeatingTableCard({
   table,
   guests,
@@ -50,31 +69,49 @@ function SeatingTableCard({
   onClick: () => void
 }) {
   const tableGuests = guests.filter(g => g.table_id === table.id)
-  const arrived     = tableGuests.filter(g => g.checked_in).length
-  const declined    = tableGuests.filter(g => g.rsvp_responses?.status === 'declined').length
-  const pct         = Math.round((arrived / table.capacity) * 100)
-  const isFull      = arrived >= table.capacity
+  const assigned    = countPersons(tableGuests)
+  const arrived     = countPersons(tableGuests.filter(g => g.checked_in))
+  const declined    = countPersons(tableGuests.filter(g => g.rsvp_responses?.status === 'declined'))
+  const freeSeats   = Math.max(0, table.capacity - assigned)
+  const pct         = Math.min(100, Math.round((arrived / table.capacity) * 100))
+  const allArrived  = arrived >= assigned && assigned > 0
+  const overbooked  = assigned > table.capacity
+
+  const seats = buildSeats(tableGuests, table.capacity)
 
   return (
     <div
       onClick={onClick}
       style={{
         padding: '16px',
-        background: isFull ? 'rgba(90,138,106,0.08)' : CATEGORY_COLORS[table.category] ?? 'rgba(255,255,255,0.03)',
-        border: isFull ? '1px solid rgba(90,138,106,0.3)' : '1px solid rgba(255,255,255,0.07)',
+        background: allArrived ? 'rgba(90,138,106,0.08)' : CATEGORY_COLORS[table.category] ?? 'rgba(255,255,255,0.03)',
+        border: overbooked
+          ? '1px solid rgba(232,154,166,0.45)'
+          : allArrived ? '1px solid rgba(90,138,106,0.3)' : '1px solid rgba(255,255,255,0.07)',
         borderRadius: '16px',
         cursor: 'pointer',
         transition: 'all 0.3s ease',
+        minWidth: 0,
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,169,110,0.3)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = isFull ? 'rgba(90,138,106,0.3)' : 'rgba(255,255,255,0.07)' }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = overbooked
+          ? 'rgba(232,154,166,0.45)'
+          : allArrived ? 'rgba(90,138,106,0.3)' : 'rgba(255,255,255,0.07)'
+      }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-        <div>
-          <p style={{ color: 'white', fontWeight: 500, fontSize: '0.9rem' }}>{table.name}</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', gap: '10px' }}>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ color: 'white', fontWeight: 500, fontSize: '0.9rem', overflowWrap: 'anywhere' }}>{table.name}</p>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.7rem' }}>{table.category}</p>
         </div>
-        <p style={{ fontFamily: 'var(--font-display)', color: isFull ? '#7EC89A' : 'var(--gold)', fontSize: '1.1rem' }}>
+        <p style={{
+          fontFamily: 'var(--font-display)',
+          color: overbooked ? '#E89AA6' : allArrived ? '#7EC89A' : 'var(--gold)',
+          fontSize: '1.1rem',
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+        }}>
           {arrived}/{table.capacity}
         </p>
       </div>
@@ -83,15 +120,14 @@ function SeatingTableCard({
         <div style={{
           height: '100%',
           width: pct + '%',
-          background: isFull ? '#7EC89A' : 'var(--gold)',
+          background: allArrived ? '#7EC89A' : 'var(--gold)',
           borderRadius: '2px',
           transition: 'width 0.5s ease',
         }} />
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-        {Array.from({ length: table.capacity }).map((_, i) => {
-          const g = tableGuests[i]
+        {seats.map((g, i) => {
           let color = 'rgba(255,255,255,0.1)'
           if (g) {
             if (g.checked_in) color = '#7EC89A'
@@ -102,7 +138,7 @@ function SeatingTableCard({
           return (
             <div
               key={i}
-              title={g?.full_name ?? 'Siège libre'}
+              title={g ? (g.is_couple ? g.full_name + ' (couple)' : g.full_name) : 'Siège libre'}
               style={{
                 width: '14px',
                 height: '14px',
@@ -110,6 +146,7 @@ function SeatingTableCard({
                 background: color,
                 transition: 'background 0.4s ease',
                 border: g?.checked_in ? '1px solid rgba(126,200,154,0.5)' : 'none',
+                flexShrink: 0,
               }}
             />
           )
@@ -117,11 +154,17 @@ function SeatingTableCard({
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '0.68rem', color: '#7EC89A' }}>✓ {arrived} arrivés</span>
-        {declined > 0 && <span style={{ fontSize: '0.68rem', color: '#E89AA6' }}>✗ {declined} déclinés</span>}
-        <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)' }}>
-          {table.capacity - tableGuests.length} siège{table.capacity - tableGuests.length > 1 ? 's' : ''} libre{table.capacity - tableGuests.length > 1 ? 's' : ''}
-        </span>
+        <span style={{ fontSize: '0.68rem', color: '#7EC89A' }}>✓ {arrived} arrivé{arrived > 1 ? 's' : ''}</span>
+        {declined > 0 && <span style={{ fontSize: '0.68rem', color: '#E89AA6' }}>✗ {declined} décliné{declined > 1 ? 's' : ''}</span>}
+        {overbooked ? (
+          <span style={{ fontSize: '0.68rem', color: '#E89AA6' }}>
+            {assigned - table.capacity} place{assigned - table.capacity > 1 ? 's' : ''} en trop
+          </span>
+        ) : (
+          <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)' }}>
+            {freeSeats} siège{freeSeats > 1 ? 's' : ''} libre{freeSeats > 1 ? 's' : ''}
+          </span>
+        )}
       </div>
     </div>
   )
@@ -136,7 +179,7 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
     const supabase = createClient()
     const { data } = await supabase
       .from('guests')
-      .select('id, full_name, table_id, side, checked_in, checked_in_at, rsvp_responses(status)')
+      .select('id, full_name, table_id, side, is_couple, checked_in, checked_in_at, rsvp_responses(status)')
       .eq('event_id', event.id)
     if (data) setGuests(data as unknown as Guest[])
   }, [event.id])
@@ -162,23 +205,40 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
   }, [event.id, refreshGuests])
 
   const filtered     = tables.filter(t => sideFilter === 'ALL' || t.side === sideFilter)
-  const totalArrived = guests.filter(g => g.checked_in).length
+  const totalArrived = countPersons(guests.filter(g => g.checked_in))
   const totalSeats   = tables.reduce((acc, t) => acc + t.capacity, 0)
+  const totalPersons = countPersons(guests)
 
   return (
-    <div style={{ padding: '40px' }}>
+    <div className="admin-page">
+      <style>{`
+        .admin-page { padding: 40px; max-width: 100%; box-sizing: border-box; }
+        @media (max-width: 767px) { .admin-page { padding: 68px 16px 32px; } }
+
+        .tables-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+          gap: 12px;
+        }
+
+        .side-drawer { width: 360px; max-width: 100vw; padding: 28px; }
+        @media (max-width: 599px) { .side-drawer { width: 100vw; padding: 20px; } }
+      `}</style>
 
       <div style={{ marginBottom: '24px' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
-          {event.groom_name} & {event.bride_name}
+          {event.groom_name} &amp; {event.bride_name}
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white', marginBottom: '4px' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'white', marginBottom: '4px', lineHeight: 1.15 }}>
           Plan de la salle
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
-          {totalArrived} arrivés sur {totalSeats} places — {tables.length} tables
+          {totalArrived} personne{totalArrived > 1 ? 's' : ''} arrivée{totalArrived > 1 ? 's' : ''} sur {totalSeats} place{totalSeats > 1 ? 's' : ''} — {tables.length} tables
         </p>
-        <p style={{ color: 'rgba(90,138,106,0.7)', fontSize: '0.72rem', marginTop: '2px' }}>
+        <p style={{ color: 'rgba(255,255,255,0.22)', fontSize: '0.75rem', marginTop: '2px' }}>
+          {totalPersons} personne{totalPersons > 1 ? 's' : ''} attendues · {guests.length} invitation{guests.length > 1 ? 's' : ''}
+        </p>
+        <p style={{ color: 'rgba(90,138,106,0.7)', fontSize: '0.72rem', marginTop: '4px' }}>
           ● Temps réel activé
         </p>
       </div>
@@ -186,21 +246,21 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
       {/* Légende */}
       <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
         {[
-          { color: '#7EC89A',               label: 'Arrivé' },
-          { color: 'rgba(201,169,110,0.6)', label: 'Confirmé' },
+          { color: '#7EC89A',                label: 'Arrivé' },
+          { color: 'rgba(201,169,110,0.6)',  label: 'Confirmé' },
           { color: 'rgba(255,255,255,0.25)', label: 'En attente' },
-          { color: '#E89AA6',               label: 'Décliné' },
-          { color: 'rgba(255,255,255,0.1)', label: 'Siège libre' },
+          { color: '#E89AA6',                label: 'Décliné' },
+          { color: 'rgba(255,255,255,0.1)',  label: 'Siège libre' },
         ].map((l, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color }} />
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: l.color, flexShrink: 0 }} />
             <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>{l.label}</span>
           </div>
         ))}
       </div>
 
       {/* Filtres */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '24px', flexWrap: 'wrap' }}>
         {(['ALL', 'HOMME', 'FEMME'] as const).map(f => (
           <button key={f} onClick={() => setSideFilter(f)}
             style={{
@@ -212,6 +272,7 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
               fontSize: '0.78rem',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap',
             }}
           >
             {f === 'ALL' ? 'Toutes' : f === 'HOMME' ? '♂ Marié' : '♀ Mariée'}
@@ -220,7 +281,7 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
       </div>
 
       {/* Grille tables */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+      <div className="tables-grid">
         {filtered.map(table => (
           <SeatingTableCard
             key={table.id}
@@ -232,71 +293,85 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
       </div>
 
       {/* Drawer */}
-      {selectedTable && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}
-          onClick={e => { if (e.target === e.currentTarget) setSelectedTable(null) }}
-        >
-          <div style={{ width: '360px', height: '100vh', background: '#141210', borderLeft: '1px solid rgba(201,169,110,0.15)', padding: '28px', overflowY: 'auto' }}>
+      {selectedTable && (() => {
+        const tableGuests = guests.filter(g => g.table_id === selectedTable.id)
+        const assigned    = countPersons(tableGuests)
+        const arrived     = countPersons(tableGuests.filter(g => g.checked_in))
+        return (
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}
+            onClick={e => { if (e.target === e.currentTarget) setSelectedTable(null) }}
+          >
+            <div className="side-drawer" style={{ height: '100vh', background: '#141210', borderLeft: '1px solid rgba(201,169,110,0.15)', overflowY: 'auto', boxSizing: 'border-box' }}>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: 'white' }}>
-                  {selectedTable.name}
-                </p>
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem' }}>
-                  {selectedTable.category} · {selectedTable.side === 'HOMME' ? 'Côté Marié' : 'Côté Mariée'}
-                </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px' }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: 'white', overflowWrap: 'anywhere' }}>
+                    {selectedTable.name}
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem' }}>
+                    {selectedTable.category} · {selectedTable.side === 'HOMME' ? 'Côté Marié' : 'Côté Mariée'}
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.72rem', marginTop: '4px' }}>
+                    {assigned} / {selectedTable.capacity} personnes placées · {arrived} arrivée{arrived > 1 ? 's' : ''}
+                  </p>
+                </div>
+                <button onClick={() => setSelectedTable(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', flexShrink: 0 }}>
+                  <X size={20} />
+                </button>
               </div>
-              <button onClick={() => setSelectedTable(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
 
-            <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', marginBottom: '20px', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%',
-                width: Math.min(100, (guests.filter(g => g.table_id === selectedTable.id && g.checked_in).length / selectedTable.capacity) * 100) + '%',
-                background: 'var(--gold)',
-                borderRadius: '2px',
-                transition: 'width 0.5s ease',
-              }} />
-            </div>
+              <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', marginBottom: '20px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: Math.min(100, (arrived / selectedTable.capacity) * 100) + '%',
+                  background: 'var(--gold)',
+                  borderRadius: '2px',
+                  transition: 'width 0.5s ease',
+                }} />
+              </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {guests.filter(g => g.table_id === selectedTable.id).map(g => {
-                const status = g.rsvp_responses?.status ?? 'pending'
-                const color = g.checked_in ? '#7EC89A' : status === 'declined' ? '#E89AA6' : status === 'confirmed' ? 'rgba(201,169,110,0.8)' : 'rgba(255,255,255,0.5)'
-                return (
-                  <div key={g.id} style={{
-                    padding: '12px 14px',
-                    background: g.checked_in ? 'rgba(90,138,106,0.08)' : 'rgba(255,255,255,0.02)',
-                    border: '1px solid ' + (g.checked_in ? 'rgba(90,138,106,0.2)' : 'rgba(255,255,255,0.05)'),
-                    borderRadius: '10px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    transition: 'all 0.3s ease',
-                  }}>
-                    <p style={{ color, fontSize: '0.88rem' }}>{g.full_name}</p>
-                    <p style={{ color, fontSize: '0.72rem' }}>
-                      {g.checked_in && g.checked_in_at
-                        ? '✓ ' + formatTime(g.checked_in_at)
-                        : status === 'declined' ? '✗' : '—'}
-                    </p>
-                  </div>
-                )
-              })}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {tableGuests.map(g => {
+                  const status = g.rsvp_responses?.status ?? 'pending'
+                  const color = g.checked_in ? '#7EC89A' : status === 'declined' ? '#E89AA6' : status === 'confirmed' ? 'rgba(201,169,110,0.8)' : 'rgba(255,255,255,0.5)'
+                  return (
+                    <div key={g.id} style={{
+                      padding: '12px 14px',
+                      background: g.checked_in ? 'rgba(90,138,106,0.08)' : 'rgba(255,255,255,0.02)',
+                      border: '1px solid ' + (g.checked_in ? 'rgba(90,138,106,0.2)' : 'rgba(255,255,255,0.05)'),
+                      borderRadius: '10px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '10px',
+                      transition: 'all 0.3s ease',
+                    }}>
+                      <p style={{ color, fontSize: '0.88rem', minWidth: 0, overflowWrap: 'anywhere' }}>
+                        {g.full_name}
+                        {g.is_couple && (
+                          <span style={{ color: 'rgba(201,169,110,0.7)', fontSize: '0.7rem', marginLeft: '8px' }}>× 2</span>
+                        )}
+                      </p>
+                      <p style={{ color, fontSize: '0.72rem', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        {g.checked_in && g.checked_in_at
+                          ? '✓ ' + formatTime(g.checked_in_at)
+                          : status === 'declined' ? '✗' : '—'}
+                      </p>
+                    </div>
+                  )
+                })}
 
-              {guests.filter(g => g.table_id === selectedTable.id).length === 0 && (
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.85rem', textAlign: 'center', padding: '20px 0' }}>
-                  Aucun invité assigné
-                </p>
-              )}
+                {tableGuests.length === 0 && (
+                  <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.85rem', textAlign: 'center', padding: '20px 0' }}>
+                    Aucun invité assigné
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
