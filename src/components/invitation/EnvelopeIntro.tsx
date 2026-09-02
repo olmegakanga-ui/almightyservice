@@ -12,6 +12,7 @@ interface Props {
   venueName:            string
   envelopeMessage?:     string | null
   showCouple?:          boolean
+  showBranding?:        boolean
   onComplete:           () => void
 }
 
@@ -28,6 +29,7 @@ export default function EnvelopeIntro({
   themeColor,
   envelopeMessage,
   showCouple = true,
+  showBranding = true,
   onComplete,
 }: Props) {
   const [phase, setPhase] = useState<'idle' | 'open' | 'rise' | 'fadeout'>('idle')
@@ -90,19 +92,21 @@ export default function EnvelopeIntro({
       }} />
 
       {/* Logo */}
-      <p style={{
-        fontFamily:    'var(--font-script)',
-        fontSize:      'clamp(1.4rem, 3vw, 2rem)',
-        color:         CREAM,
-        opacity:       0.72,
-        marginBottom:  '48px',
-        letterSpacing: '0.05em',
-        position:      'relative',
-        zIndex:        2,
-        textShadow:    '0 2px 16px rgba(0,0,0,0.6)',
-      }}>
-        AlmightyService
-      </p>
+      {showBranding && (
+        <p style={{
+          fontFamily:    'var(--font-script)',
+          fontSize:      'clamp(1.4rem, 3vw, 2rem)',
+          color:         CREAM,
+          opacity:       0.72,
+          marginBottom:  '48px',
+          letterSpacing: '0.05em',
+          position:      'relative',
+          zIndex:        2,
+          textShadow:    '0 2px 16px rgba(0,0,0,0.6)',
+        }}>
+          AlmightyService
+        </p>
+      )}
 
       {/* Enveloppe */}
       <div style={{

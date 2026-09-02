@@ -27,6 +27,7 @@ export interface EventData {
   dressCode:            string | null
   dressColors:          string[]
   galleryImages:        string[]
+  showBranding:         boolean
 }
 
 export interface ProgramItem {

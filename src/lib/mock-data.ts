@@ -14,6 +14,7 @@ export const mockEvent: EventData = {
   heroMessage:         null,
   envelopeMessage:     null,
   envelopeShowCouple:  true,
+  showBranding:        true,
   programItems: [
     { time: '13h00', description: 'Bénédiction nuptiale — Église Centrale' },
     { time: '16h00', description: 'Cocktail de bienvenue — Jardin du Prestige' },

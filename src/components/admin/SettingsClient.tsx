@@ -54,6 +54,7 @@ interface Event {
   gallery_images?:           string[]
   envelope_message?:         string
   envelope_show_couple?:     boolean
+  show_branding?:            boolean
 }
 
 interface Props {
@@ -140,6 +141,7 @@ export default function SettingsClient({ event }: Props) {
     gallery_images:            Array.isArray(event.gallery_images) ? event.gallery_images : [],
     envelope_message:          event.envelope_message ?? '',
     envelope_show_couple:      event.envelope_show_couple ?? true,
+    show_branding:             event.show_branding ?? true,
   })
 
   const [program, setProgram] = useState<ProgramItem[]>(
@@ -194,6 +196,7 @@ export default function SettingsClient({ event }: Props) {
           gallery_images:            form.gallery_images,
           envelope_message:          form.envelope_message.trim() || null,
           envelope_show_couple:      form.envelope_show_couple,
+          show_branding:             form.show_branding,
         })
         .eq('id', event.id)
 
@@ -256,6 +259,7 @@ export default function SettingsClient({ event }: Props) {
       gallery_images:            Array.isArray(event.gallery_images) ? event.gallery_images : [],
       envelope_message:          event.envelope_message ?? null,
       envelope_show_couple:      event.envelope_show_couple ?? true,
+      show_branding:             event.show_branding ?? true,
     }).select('id').single()
     if (newEvent) router.push('/admin/events/' + newEvent.id + '/settings')
   }
@@ -468,6 +472,21 @@ export default function SettingsClient({ event }: Props) {
                 <p style={{ color: 'white', fontSize: '0.85rem' }}>Afficher les noms des mariés sur l&apos;enveloppe</p>
                 <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
                   Si désactivé, seuls la formule et le nom de l&apos;invité apparaissent
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.07)', marginTop: '12px' }}
+              onClick={() => set('show_branding', !form.show_branding)}
+            >
+              <div style={{ width: '20px', height: '20px', borderRadius: '6px', border: form.show_branding ? 'none' : '1px solid rgba(255,255,255,0.2)', background: form.show_branding ? 'var(--gold)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {form.show_branding && <span style={{ color: '#0D0B09', fontSize: '12px', fontWeight: 700 }}>✓</span>}
+              </div>
+              <div>
+                <p style={{ color: 'white', fontSize: '0.85rem' }}>Afficher la signature AlmightyService</p>
+                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
+                  Le logo au-dessus de l&apos;enveloppe. Le pied de page reste inchangé.
                 </p>
               </div>
             </div>

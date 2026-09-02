@@ -60,6 +60,7 @@ export default async function InvitationPage({
     heroMessage:         data.heroMessage,
     envelopeMessage:     data.envelopeMessage,
     envelopeShowCouple:  data.envelopeShowCouple,
+    showBranding:        data.showBranding,
     programItems:        data.programItems,
     rsvpDeadline:        data.rsvpDeadline,
     drinkOptions:        data.drinkOptions,

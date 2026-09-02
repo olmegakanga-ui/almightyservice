@@ -16,6 +16,7 @@ export interface FullInvitationData {
   heroMessage:         string | null
   envelopeMessage:     string | null
   envelopeShowCouple:  boolean
+  showBranding:        boolean
   programItems:        ProgramItem[]
   rsvpDeadline:        string
   drinkOptions:        DrinkCategory[]
@@ -120,6 +121,7 @@ export async function getInvitationByToken(
     heroMessage:         event.hero_message || null,
     envelopeMessage:     event.envelope_message || null,
     envelopeShowCouple:  event.envelope_show_couple ?? true,
+    showBranding:        event.show_branding ?? true,
     programItems:        event.program_json as ProgramItem[],
     rsvpDeadline:        event.rsvp_deadline,
     drinkOptions,

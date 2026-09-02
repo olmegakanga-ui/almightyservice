@@ -197,6 +197,7 @@ export default function InvitationWrapper({ event, guest }: Props) {
           venueName={event.venueName}
           envelopeMessage={event.envelopeMessage}
           showCouple={event.envelopeShowCouple}
+          showBranding={event.showBranding}
           onComplete={() => setIntroDone(true)}
         />
       )}

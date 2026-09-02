@@ -8,6 +8,10 @@ interface Props {
   event: EventData
 }
 
+/** Contact AlmightyService — affiché en pied de chaque invitation. */
+const CONTACT_DISPLAY = '+243 819 890 918'
+const CONTACT_WA      = '243819890918'
+
 export default function FooterSection({ event }: Props) {
   const sectionRef            = useRef<HTMLElement>(null)
   const [visible, setVisible] = useState(false)
@@ -23,6 +27,9 @@ export default function FooterSection({ event }: Props) {
   }, [])
 
   const { dayNumber: day, monthName: month, year, time } = parseEventDate(event.eventDate)
+
+  const waLink = 'https://wa.me/' + CONTACT_WA +
+    '?text=' + encodeURIComponent('Bonjour, j\u2019ai vu une invitation réalisée par AlmightyService et j\u2019aimerais en savoir plus.')
 
   return (
     <footer ref={sectionRef} style={{ padding: '120px 24px 60px', position: 'relative', textAlign: 'center' }}>
@@ -54,11 +61,34 @@ export default function FooterSection({ event }: Props) {
         {/* Divider */}
         <div className="divider-gold" style={{ opacity: 0.2, marginBottom: '32px' }} />
 
-        {/* Copyright */}
-        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', letterSpacing: '0.2em' }}>
+        {/* Signature AlmightyService */}
+        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', letterSpacing: '0.2em', marginBottom: '14px' }}>
           © {new Date().getFullYear()} INVITATION BY{' '}
           <span style={{ color: 'var(--gold)', opacity: 0.5 }}>ALMIGHTYSERVICE</span>
           {' '}· ALL RIGHTS RESERVED
+        </p>
+
+        {/* Contact — création d'invitations */}
+        <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.75rem', lineHeight: 1.7 }}>
+          Votre invitation digitale sur mesure{' '}
+          <span style={{ opacity: 0.5 }}>·</span>{' '}
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color:          'var(--gold-light)',
+              textDecoration: 'none',
+              borderBottom:   '1px solid rgba(201,169,110,0.3)',
+              paddingBottom:  '1px',
+              whiteSpace:     'nowrap',
+              transition:     'border-color 0.25s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderBottomColor = 'var(--gold)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderBottomColor = 'rgba(201,169,110,0.3)' }}
+          >
+            {CONTACT_DISPLAY}
+          </a>
         </p>
       </div>
     </footer>
