@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import ImageUpload from '@/components/admin/ImageUpload'
+import GalleryUpload from '@/components/admin/GalleryUpload'
 import { parseEventDate } from '@/lib/date-utils'
 import {
   Save, Loader, Check, Plus, Trash2,
@@ -50,6 +51,7 @@ interface Event {
   music_volume?:             number
   gift_options?:             string[]
   sections_order?:           string[]
+  gallery_images?:           string[]
 }
 
 interface Props {
@@ -70,7 +72,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'sections',  label: 'Sections' },
 ]
 
-const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode']
+const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode','gallery']
 
 const SECTION_LABELS: Record<string, string> = {
   countdown: 'Compte à rebours',
@@ -82,6 +84,7 @@ const SECTION_LABELS: Record<string, string> = {
   gift:      'Type de cadeau',
   map:       'Carte & Plan',
   dresscode: 'Dress code',
+  gallery:   'Galerie photo',
 }
 
 const SECTION_HINTS: Record<string, string> = {
@@ -94,6 +97,7 @@ const SECTION_HINTS: Record<string, string> = {
   gift:      'Enveloppe ou présent',
   map:       'Localisation et itinéraire',
   dresscode: 'Tenue et couleurs suggérées',
+  gallery:   'Album de photos du couple — se remplit dans l\'onglet Médias',
 }
 
 export default function SettingsClient({ event }: Props) {
@@ -129,6 +133,7 @@ export default function SettingsClient({ event }: Props) {
     music_volume:              event.music_volume ?? 30,
     gift_options:              event.gift_options    ?? ['envelope','present'],
     sections_order:            Array.isArray(event.sections_order) ? event.sections_order : DEFAULT_SECTIONS,
+    gallery_images:            Array.isArray(event.gallery_images) ? event.gallery_images : [],
   })
 
   const [program, setProgram] = useState<ProgramItem[]>(
@@ -180,6 +185,7 @@ export default function SettingsClient({ event }: Props) {
           music_volume:              Number(form.music_volume),
           gift_options:              form.gift_options,
           sections_order:            form.sections_order,
+          gallery_images:            form.gallery_images,
         })
         .eq('id', event.id)
 
@@ -239,6 +245,7 @@ export default function SettingsClient({ event }: Props) {
       music_volume:              event.music_volume ?? 30,
       gift_options:              event.gift_options   ?? ['envelope','present'],
       sections_order:            Array.isArray(event.sections_order) ? event.sections_order : DEFAULT_SECTIONS,
+      gallery_images:            Array.isArray(event.gallery_images) ? event.gallery_images : [],
     }).select('id').single()
     if (newEvent) router.push('/admin/events/' + newEvent.id + '/settings')
   }
@@ -544,6 +551,26 @@ export default function SettingsClient({ event }: Props) {
             Cette image apparaît en arrière-plan fixe sur toute la page d&apos;invitation.
             Recommandé : photo du couple, format paysage, min 1920×1080px.
           </p>
+
+          {/* Galerie photo */}
+          <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <GalleryUpload
+              label="Galerie photo du couple"
+              images={form.gallery_images as string[]}
+              onChange={urls => set('gallery_images', urls)}
+              max={12}
+            />
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem', marginTop: '14px', lineHeight: 1.6 }}>
+              Ces photos s&apos;affichent dans la section Galerie de l&apos;invitation, sous forme de carrousel.
+              Format portrait recommandé. Pensez à activer la section Galerie depuis l&apos;onglet Sections.
+            </p>
+            {(form.gallery_images as string[]).length > 0 && !activeSections.includes('gallery') && (
+              <p style={{ color: '#E89AA6', fontSize: '0.78rem', marginTop: '10px', padding: '12px 14px', background: 'rgba(184,80,96,0.08)', border: '1px solid rgba(184,80,96,0.2)', borderRadius: '10px' }}>
+                La section Galerie est désactivée — ces photos ne sont pas visibles par les invités.
+                Activez-la depuis l&apos;onglet Sections.
+              </p>
+            )}
+          </div>
         </div>
       )}
 

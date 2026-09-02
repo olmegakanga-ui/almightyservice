@@ -23,6 +23,7 @@ export interface EventData {
   sectionsOrder:        string[]
   dressCode:            string | null
   dressColors:          string[]
+  galleryImages:        string[]
 }
 
 export interface ProgramItem {

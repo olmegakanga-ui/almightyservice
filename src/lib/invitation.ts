@@ -24,6 +24,7 @@ export interface FullInvitationData {
   sectionsOrder:       string[]
   dressCode:           string | null
   dressColors:         string[]
+  galleryImages:       string[]
   guestId:             string
   guestFullName:       string
   guestSide:           'HOMME' | 'FEMME'
@@ -37,7 +38,7 @@ export interface FullInvitationData {
   giftChoice:          'envelope' | 'present' | null
 }
 
-const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode']
+const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode','gallery']
 
 /**
  * Résout la liste des sections à afficher.
@@ -124,6 +125,7 @@ export async function getInvitationByToken(
     sectionsOrder:       resolveSections(event.sections_order),
     dressCode:           event.dress_code ?? null,
     dressColors:         Array.isArray(event.dress_colors) ? event.dress_colors : [],
+    galleryImages:       Array.isArray(event.gallery_images) ? event.gallery_images : [],
     guestId:             guest.id,
     guestFullName:       guest.full_name,
     guestSide:           guest.side,

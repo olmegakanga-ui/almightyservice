@@ -35,6 +35,7 @@ export const mockEvent: EventData = {
   sectionsOrder:       ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map'],
   dressCode:           'Tenue de soirée',
   dressColors:         ['#6E1A33', '#C2A24E'],
+  galleryImages:       [],
 }
 
 export const mockGuest: GuestData = {

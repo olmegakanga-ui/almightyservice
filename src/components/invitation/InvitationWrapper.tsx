@@ -12,6 +12,7 @@ import DrinksSection from '@/components/invitation/DrinksSection'
 import GuestbookSection from '@/components/invitation/GuestbookSection'
 import GiftSection from '@/components/invitation/GiftSection'
 import DressCodeSection from '@/components/invitation/DressCodeSection'
+import GallerySection from '@/components/invitation/GallerySection'
 import MapSection from '@/components/invitation/MapSection'
 import FooterSection from '@/components/invitation/FooterSection'
 
@@ -165,6 +166,16 @@ export default function InvitationWrapper({ event, guest }: Props) {
         <Divider />
       </React.Fragment>
     ),
+    gallery: (
+      <React.Fragment key="gallery">
+        <GallerySection
+          images={event.galleryImages}
+          groomName={event.groomName}
+          brideName={event.brideName}
+        />
+        <Divider />
+      </React.Fragment>
+    ),
   }
 
   // La liste vient du serveur, qui a déjà appliqué le repli par défaut.
@@ -201,7 +212,7 @@ export default function InvitationWrapper({ event, guest }: Props) {
           backgroundRepeat:   'no-repeat',
         }}
       >
-                <div style={{
+        <div style={{
           position:   'absolute',
           inset:      0,
           background: `linear-gradient(160deg,
