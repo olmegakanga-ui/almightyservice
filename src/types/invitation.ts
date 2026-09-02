@@ -12,6 +12,7 @@ export interface EventData {
   venueLng:             number
   backgroundImageUrl:   string
   invitationText:       string
+  heroMessage:          string | null
   programItems:         ProgramItem[]
   rsvpDeadline:         string
   drinkOptions:         DrinkCategory[]

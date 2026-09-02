@@ -56,6 +56,27 @@ export default function HeroSection({ event, guest }: Props) {
           </p>
         </div>
 
+        {/* Message d'accueil configurable */}
+        {event.heroMessage && (
+          <p style={{
+            color:         'rgba(255,255,255,0.8)',
+            fontSize:      'clamp(1rem, 2.6vw, 1.25rem)',
+            fontFamily:    'var(--font-display)',
+            fontStyle:     'italic',
+            lineHeight:    1.6,
+            maxWidth:      '640px',
+            margin:        '0 auto',
+            marginBottom:  '36px',
+            textShadow:    '0 1px 12px rgba(0,0,0,0.7)',
+            whiteSpace:    'pre-line',
+            opacity:       mounted ? 1 : 0,
+            transform:     mounted ? 'translateY(0)' : 'translateY(20px)',
+            transition:    'all 1s cubic-bezier(0.16,1,0.3,1) 0.85s',
+          }}>
+            {event.heroMessage}
+          </p>
+        )}
+
         <div className="mx-auto mb-12" style={{ width: mounted ? '120px' : '0px', height: '1px', background: 'linear-gradient(90deg, transparent, var(--gold), transparent)', transition: 'width 1.4s cubic-bezier(0.16,1,0.3,1) 0.9s' }} />
 
         {/* Nom de l'invité */}

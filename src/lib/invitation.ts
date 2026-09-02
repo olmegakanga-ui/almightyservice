@@ -13,6 +13,7 @@ export interface FullInvitationData {
   venueLng:            number
   backgroundImageUrl:  string
   invitationText:      string
+  heroMessage:         string | null
   programItems:        ProgramItem[]
   rsvpDeadline:        string
   drinkOptions:        DrinkCategory[]
@@ -114,6 +115,7 @@ export async function getInvitationByToken(
     venueLng:            Number(event.venue_lng),
     backgroundImageUrl:  event.background_image_url,
     invitationText:      event.invitation_text,
+    heroMessage:         event.hero_message || null,
     programItems:        event.program_json as ProgramItem[],
     rsvpDeadline:        event.rsvp_deadline,
     drinkOptions,
