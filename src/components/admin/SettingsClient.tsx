@@ -52,6 +52,8 @@ interface Event {
   gift_options?:             string[]
   sections_order?:           string[]
   gallery_images?:           string[]
+  envelope_message?:         string
+  envelope_show_couple?:     boolean
 }
 
 interface Props {
@@ -73,6 +75,8 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 const DEFAULT_SECTIONS = ['countdown','card','rsvp','qrcode','drinks','guestbook','gift','map','dresscode','gallery']
+
+const DEFAULT_ENVELOPE_MESSAGE = 'vous prient de leur faire l\u2019honneur'
 
 const SECTION_LABELS: Record<string, string> = {
   countdown: 'Compte à rebours',
@@ -134,6 +138,8 @@ export default function SettingsClient({ event }: Props) {
     gift_options:              event.gift_options    ?? ['envelope','present'],
     sections_order:            Array.isArray(event.sections_order) ? event.sections_order : DEFAULT_SECTIONS,
     gallery_images:            Array.isArray(event.gallery_images) ? event.gallery_images : [],
+    envelope_message:          event.envelope_message ?? '',
+    envelope_show_couple:      event.envelope_show_couple ?? true,
   })
 
   const [program, setProgram] = useState<ProgramItem[]>(
@@ -186,6 +192,8 @@ export default function SettingsClient({ event }: Props) {
           gift_options:              form.gift_options,
           sections_order:            form.sections_order,
           gallery_images:            form.gallery_images,
+          envelope_message:          form.envelope_message.trim() || null,
+          envelope_show_couple:      form.envelope_show_couple,
         })
         .eq('id', event.id)
 
@@ -246,6 +254,8 @@ export default function SettingsClient({ event }: Props) {
       gift_options:              event.gift_options   ?? ['envelope','present'],
       sections_order:            Array.isArray(event.sections_order) ? event.sections_order : DEFAULT_SECTIONS,
       gallery_images:            Array.isArray(event.gallery_images) ? event.gallery_images : [],
+      envelope_message:          event.envelope_message ?? null,
+      envelope_show_couple:      event.envelope_show_couple ?? true,
     }).select('id').single()
     if (newEvent) router.push('/admin/events/' + newEvent.id + '/settings')
   }
@@ -422,9 +432,71 @@ export default function SettingsClient({ event }: Props) {
       {/* ── CONTENU ── */}
       {tab === 'content' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px' }}>
+
+          {/* Enveloppe d'ouverture */}
+          <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
+            <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '8px' }}>
+              Enveloppe d&apos;ouverture
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginBottom: '20px', lineHeight: 1.6 }}>
+              La carte qui sort de l&apos;enveloppe au tout début de l&apos;invitation.
+            </p>
+
+            <div style={{ marginBottom: '18px' }}>
+              <label style={labelStyle}>Formule d&apos;invitation</label>
+              <textarea
+                style={{ ...inputStyle, resize: 'vertical', minHeight: '70px', lineHeight: 1.6 }}
+                value={form.envelope_message}
+                onChange={e => set('envelope_message', e.target.value)}
+                placeholder={DEFAULT_ENVELOPE_MESSAGE}
+                onFocus={focus}
+                onBlur={blur}
+              />
+              <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '6px' }}>
+                Laissez vide pour utiliser la formule par défaut : « {DEFAULT_ENVELOPE_MESSAGE} »
+              </p>
+            </div>
+
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.07)' }}
+              onClick={() => set('envelope_show_couple', !form.envelope_show_couple)}
+            >
+              <div style={{ width: '20px', height: '20px', borderRadius: '6px', border: form.envelope_show_couple ? 'none' : '1px solid rgba(255,255,255,0.2)', background: form.envelope_show_couple ? 'var(--gold)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {form.envelope_show_couple && <span style={{ color: '#0D0B09', fontSize: '12px', fontWeight: 700 }}>✓</span>}
+              </div>
+              <div>
+                <p style={{ color: 'white', fontSize: '0.85rem' }}>Afficher les noms des mariés sur l&apos;enveloppe</p>
+                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
+                  Si désactivé, seuls la formule et le nom de l&apos;invité apparaissent
+                </p>
+              </div>
+            </div>
+
+            {/* Aperçu de la carte */}
+            <div style={{ marginTop: '20px', padding: '20px 24px', borderRadius: '12px', background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(201,169,110,0.25)', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.6rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '10px' }}>
+                Invitation
+              </p>
+              {form.envelope_show_couple && (
+                <p style={{ fontFamily: 'var(--font-script)', fontSize: '1.4rem', color: 'white', marginBottom: '6px' }}>
+                  {form.groom_name} &amp; {form.bride_name}
+                </p>
+              )}
+              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginBottom: '8px', whiteSpace: 'pre-line' }}>
+                {form.envelope_message.trim() || DEFAULT_ENVELOPE_MESSAGE}
+              </p>
+              <p style={{ fontFamily: 'var(--font-script)', fontSize: '1.1rem', color: 'var(--gold-light)' }}>
+                Nom de l&apos;invité
+              </p>
+            </div>
+          </div>
+
           <div>
             <label style={labelStyle}>Message Hero</label>
             <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: 1.6 }} value={form.hero_message} onChange={e => set('hero_message', e.target.value)} onFocus={focus} onBlur={blur} />
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.72rem', marginTop: '6px' }}>
+              S&apos;affiche sous les noms des mariés, en haut de l&apos;invitation.
+            </p>
           </div>
           <div>
             <label style={labelStyle}>Texte principal de l&apos;invitation</label>

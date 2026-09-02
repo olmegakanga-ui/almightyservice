@@ -195,6 +195,8 @@ export default function InvitationWrapper({ event, guest }: Props) {
           themeColorSecondary={goldLight}
           eventDate={event.eventDate}
           venueName={event.venueName}
+          envelopeMessage={event.envelopeMessage}
+          showCouple={event.envelopeShowCouple}
           onComplete={() => setIntroDone(true)}
         />
       )}

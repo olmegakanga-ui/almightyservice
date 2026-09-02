@@ -12,6 +12,8 @@ export const mockEvent: EventData = {
   backgroundImageUrl:  'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=1920&q=80',
   invitationText:      "ont l'immense joie et l'honneur de vous convier aux festivités de leur mariage religieux",
   heroMessage:         null,
+  envelopeMessage:     null,
+  envelopeShowCouple:  true,
   programItems: [
     { time: '13h00', description: 'Bénédiction nuptiale — Église Centrale' },
     { time: '16h00', description: 'Cocktail de bienvenue — Jardin du Prestige' },

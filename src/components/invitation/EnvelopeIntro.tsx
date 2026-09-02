@@ -10,13 +10,26 @@ interface Props {
   themeColorSecondary?: string
   eventDate:            string
   venueName:            string
+  envelopeMessage?:     string | null
+  showCouple?:          boolean
   onComplete:           () => void
 }
 
 /** Crème du thème — lisible sur n'importe quel fond profond. */
 const CREAM = '#EFE3CE'
 
-export default function EnvelopeIntro({ groomName, brideName, guestName, themeColor, onComplete }: Props) {
+/** Formule affichée quand les mariés n'en ont pas défini une. */
+const DEFAULT_MESSAGE = 'vous prient de leur faire l\u2019honneur'
+
+export default function EnvelopeIntro({
+  groomName,
+  brideName,
+  guestName,
+  themeColor,
+  envelopeMessage,
+  showCouple = true,
+  onComplete,
+}: Props) {
   const [phase, setPhase] = useState<'idle' | 'open' | 'rise' | 'fadeout'>('idle')
 
   useEffect(() => {
@@ -31,7 +44,10 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4) }
   }, [onComplete])
 
-  const gold = themeColor || '#C9A96E'
+  const gold    = themeColor || '#C9A96E'
+  const message = envelopeMessage && envelopeMessage.trim() !== ''
+    ? envelopeMessage
+    : DEFAULT_MESSAGE
 
   // Matières teintées par la couleur du thème — mélangées à du noir pour rester profondes.
   const bgDeep     = `color-mix(in srgb, ${gold} 22%, #0A0806)`   // fond de scène
@@ -168,12 +184,24 @@ export default function EnvelopeIntro({ groomName, brideName, guestName, themeCo
             Invitation
           </p>
 
-          <p style={{ fontFamily: 'var(--font-script)', fontSize: 'clamp(1.1rem, 2.5vw, 1.6rem)', color: 'white', lineHeight: 1.2, marginBottom: 'clamp(4px, 1vw, 8px)' }}>
-            {groomName} &amp; {brideName}
-          </p>
+          {/* Noms du couple — affichage optionnel */}
+          {showCouple && (
+            <p style={{ fontFamily: 'var(--font-script)', fontSize: 'clamp(1.1rem, 2.5vw, 1.6rem)', color: 'white', lineHeight: 1.2, marginBottom: 'clamp(4px, 1vw, 8px)' }}>
+              {groomName} &amp; {brideName}
+            </p>
+          )}
 
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 'clamp(0.6rem, 1.3vw, 0.72rem)', color: 'rgba(255,255,255,0.55)', marginBottom: 'clamp(6px, 1.5vw, 12px)', fontStyle: 'italic' }}>
-            vous prient de leur faire l&apos;honneur
+          {/* Formule d'invitation — configurable */}
+          <p style={{
+            fontFamily:   'var(--font-body)',
+            fontSize:     'clamp(0.6rem, 1.3vw, 0.72rem)',
+            color:        'rgba(255,255,255,0.6)',
+            marginBottom: 'clamp(6px, 1.5vw, 12px)',
+            fontStyle:    'italic',
+            lineHeight:   1.5,
+            whiteSpace:   'pre-line',
+          }}>
+            {message}
           </p>
 
           <p style={{ fontFamily: 'var(--font-script)', fontSize: 'clamp(0.9rem, 2vw, 1.2rem)', color: CREAM, opacity: 0.95 }}>
