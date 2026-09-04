@@ -25,6 +25,8 @@ interface Event {
   id:                        string
   groom_name:                string
   bride_name:                string
+  groom_full_name?:          string
+  bride_full_name?:          string
   event_date:                string
   event_time:                string
   venue_name:                string
@@ -115,6 +117,8 @@ export default function SettingsClient({ event }: Props) {
   const [form, setForm] = useState({
     groom_name:                event.groom_name,
     bride_name:                event.bride_name,
+    groom_full_name:           event.groom_full_name ?? '',
+    bride_full_name:           event.bride_full_name ?? '',
     event_date:                event.event_date?.split('T')[0] ?? '',
     event_time:                event.event_time ?? event.event_date?.split('T')[1]?.slice(0, 5) ?? '19:00',
     venue_name:                event.venue_name,
@@ -168,6 +172,8 @@ export default function SettingsClient({ event }: Props) {
         .update({
           groom_name:                form.groom_name.trim(),
           bride_name:                form.bride_name.trim(),
+          groom_full_name:           form.groom_full_name.trim() || null,
+          bride_full_name:           form.bride_full_name.trim() || null,
           event_date:                eventDatetime,
           event_time:                form.event_time,
           venue_name:                form.venue_name.trim(),
@@ -231,6 +237,8 @@ export default function SettingsClient({ event }: Props) {
       slug:                      event.groom_name + '-' + event.bride_name + '-copy-' + Date.now(),
       groom_name:                event.groom_name + ' (Copie)',
       bride_name:                event.bride_name,
+      groom_full_name:           event.groom_full_name ?? null,
+      bride_full_name:           event.bride_full_name ?? null,
       event_date:                event.event_date,
       event_time:                event.event_time,
       venue_name:                event.venue_name,
@@ -390,6 +398,32 @@ export default function SettingsClient({ event }: Props) {
               <input style={inputStyle} value={form.bride_name} onChange={e => set('bride_name', e.target.value)} onFocus={focus} onBlur={blur} />
             </div>
           </div>
+
+          <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
+            <p style={{ fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '8px' }}>
+              Noms complets — messages WhatsApp
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginBottom: '18px', lineHeight: 1.6 }}>
+              Utilisés uniquement dans les messages envoyés aux invités. L&apos;invitation continue d&apos;afficher les prénoms ci-dessus.
+            </p>
+            <div className="duo-grid">
+              <div>
+                <label style={labelStyle}>Nom complet du marié</label>
+                <input style={inputStyle} value={form.groom_full_name} onChange={e => set('groom_full_name', e.target.value)} placeholder={form.groom_name} onFocus={focus} onBlur={blur} />
+              </div>
+              <div>
+                <label style={labelStyle}>Nom complet de la mariée</label>
+                <input style={inputStyle} value={form.bride_full_name} onChange={e => set('bride_full_name', e.target.value)} placeholder={form.bride_name} onFocus={focus} onBlur={blur} />
+              </div>
+            </div>
+            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginTop: '14px' }}>
+              Aperçu du message :{' '}
+              <span style={{ color: 'var(--gold-light)' }}>
+                {(form.groom_full_name.trim() || form.groom_name)} &amp; {(form.bride_full_name.trim() || form.bride_name)}
+              </span>
+            </p>
+          </div>
+
           <div className="duo-grid">
             <div>
               <label style={labelStyle}>Date du mariage</label>

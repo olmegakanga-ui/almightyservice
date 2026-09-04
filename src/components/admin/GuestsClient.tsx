@@ -33,11 +33,13 @@ interface Table {
 }
 
 interface Event {
-  id:         string
-  groom_name: string
-  bride_name: string
-  event_date: string
-  venue_name?: string
+  id:               string
+  groom_name:       string
+  bride_name:       string
+  groom_full_name?: string
+  bride_full_name?: string
+  event_date:       string
+  venue_name?:      string
 }
 
 interface Props {
@@ -85,7 +87,9 @@ function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string)
   const url        = `${origin}/invitation/${guest.invitation_token}`
   const { full, time } = formatEventDate(event.event_date)
   const venue      = event.venue_name ?? ''
-  const couple     = `${event.groom_name} & ${event.bride_name}`
+  const groomLabel = (event.groom_full_name || '').trim() || event.groom_name
+  const brideLabel = (event.bride_full_name || '').trim() || event.bride_name
+  const couple     = `${groomLabel} & ${brideLabel}`
 
   switch (type) {
     case 'INVITATION':

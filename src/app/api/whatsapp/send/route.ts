@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Charger l'événement avec l'image
     const { data: event } = await db
       .from('events')
-      .select('groom_name, bride_name, event_date, event_time, venue_name, background_image_url')
+      .select('groom_name, bride_name, groom_full_name, bride_full_name, event_date, event_time, venue_name, background_image_url')
       .eq('id', eventId)
       .single()
 
@@ -53,6 +53,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Noms utilisés dans les messages WhatsApp — complets si renseignés,
+    // sinon les prénoms affichés sur l'invitation.
+    const groomLabel = (event.groom_full_name || '').trim() || event.groom_name
+    const brideLabel = (event.bride_full_name || '').trim() || event.bride_name
+
     // Construire l'URL d'invitation
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://almightyservice.vercel.app'
     const invitationUrl = `${baseUrl}/invitation/${guest.invitation_token}`
@@ -60,8 +65,8 @@ export async function POST(request: NextRequest) {
     // Données du template
     const templateData = {
       guestName:     guest.full_name,
-      groomName:     event.groom_name,
-      brideName:     event.bride_name,
+      groomName:     groomLabel,
+      brideName:     brideLabel,
       eventDate:     formatDate(event.event_date),
       eventTime:     event.event_time ?? formatTime(event.event_date),
       venueName:     event.venue_name,

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Charger l'événement avec la photo
     const { data: event } = await db
       .from('events')
-      .select('groom_name, bride_name, event_date, venue_name, background_image_url')
+      .select('groom_name, bride_name, groom_full_name, bride_full_name, event_date, venue_name, background_image_url')
       .eq('id', eventId)
       .single()
 
@@ -31,6 +31,11 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Noms utilisés dans les messages WhatsApp — complets si renseignés,
+    // sinon les prénoms affichés sur l'invitation.
+    const groomLabel = (event.groom_full_name || '').trim() || event.groom_name
+    const brideLabel = (event.bride_full_name || '').trim() || event.bride_name
 
     // Charger les invités avec téléphone
     let query = db
@@ -83,8 +88,8 @@ export async function POST(request: NextRequest) {
       // TemplateData pour le template Meta approuvé
       const templateData: TemplateData = {
         guestName:     guest.full_name,
-        groomName:     event.groom_name,
-        brideName:     event.bride_name,
+        groomName:     groomLabel,
+        brideName:     brideLabel,
         eventDate:     eventDateStr,
         eventTime:     eventTimeStr,
         venueName:     event.venue_name,
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Message texte de secours
-      const fallbackMessage = `✨ ${guest.full_name} ✨\n\n${event.groom_name} & ${event.bride_name} ont l'immense joie de vous convier à leur mariage.\n\n📅 ${eventDateStr} à ${eventTimeStr}\n📍 ${event.venue_name}\n\n👇 ${invitationUrl}\n\n— AlmightyService`
+      const fallbackMessage = `✨ ${guest.full_name} ✨\n\n${groomLabel} & ${brideLabel} ont l'immense joie de vous convier à leur mariage.\n\n📅 ${eventDateStr} à ${eventTimeStr}\n📍 ${event.venue_name}\n\n👇 ${invitationUrl}\n\n— AlmightyService`
 
       // Enregistrer en DB
       const { data: waMessage } = await db
