@@ -12,7 +12,7 @@ export default async function SeatingPage({
 
   const { data: event } = await supabase
     .from('events')
-    .select('id, groom_name, bride_name')
+    .select('id, groom_name, bride_name, room_map_url')
     .eq('id', eventId)
     .single()
 
