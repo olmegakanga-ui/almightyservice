@@ -2,6 +2,7 @@
 
 import { LocateFixed, Minus, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { getTableCategoryStyle, TABLE_CATEGORY_STYLES } from '@/lib/table-category-colors'
 
 export interface RoomMapTable {
   id: string
@@ -43,6 +44,14 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
           <button aria-label="Agrandir" onClick={() => setZoom(z => Math.min(2.2, z + .15))} style={controlStyle}><Plus size={15} /></button>
         </div>
       </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 14px', marginBottom: 12 }}>
+        {TABLE_CATEGORY_STYLES.map(item => (
+          <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.58)', fontSize: '.68rem' }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, boxShadow: `0 0 0 2px ${item.color}33` }} />
+            {item.label}
+          </div>
+        ))}
+      </div>
       <div style={{ overflow: 'auto', borderRadius: '18px', border: '1px solid rgba(201,169,110,.2)', background: '#171411' }}>
         <div style={{
           position: 'relative', width: `${100 * zoom}%`, minWidth: 620, aspectRatio: '16/10',
@@ -52,13 +61,14 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
           {!backgroundUrl && <div style={{ position: 'absolute', inset: '6%', border: '1px dashed rgba(255,255,255,.12)', borderRadius: '28px' }} />}
           {positioned.map(table => {
             const active = table.id === highlightedTableId
+            const categoryStyle = getTableCategoryStyle(table.category)
             return <div key={table.id} style={{
               position: 'absolute', left: `${table.x}%`, top: `${table.y}%`, transform: 'translate(-50%,-50%)',
               width: active ? 92 : 72, minHeight: active ? 92 : 72, borderRadius: '50%', padding: '8px',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-              background: active ? '#7EC89A' : table.category === 'VIP' ? '#C9A96E' : '#2A2621',
-              color: active ? '#07120B' : 'white', border: active ? '4px solid white' : '1px solid rgba(255,255,255,.22)',
-              boxShadow: active ? '0 0 0 9px rgba(126,200,154,.22), 0 0 34px rgba(126,200,154,.8)' : '0 8px 18px rgba(0,0,0,.28)',
+              background: categoryStyle.color,
+              color: categoryStyle.textColor, border: active ? '4px solid white' : '1px solid rgba(255,255,255,.35)',
+              boxShadow: active ? `0 0 0 9px ${categoryStyle.color}55, 0 0 34px ${categoryStyle.color}` : '0 8px 18px rgba(0,0,0,.28)',
               zIndex: active ? 4 : 1, animation: active ? 'room-map-pulse 1.25s ease-in-out infinite' : undefined,
             }}>
               <strong style={{ fontSize: active ? '.88rem' : '.72rem', lineHeight: 1.1, overflowWrap: 'anywhere' }}>{table.name}</strong>
