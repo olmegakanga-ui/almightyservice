@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { X } from 'lucide-react'
+import { X, MapPinned, Settings2 } from 'lucide-react'
+import RoomMapEditor from './RoomMapEditor'
+import RoomMap from './RoomMap'
 
 interface Table {
   id: string
@@ -10,6 +12,8 @@ interface Table {
   capacity: number
   category: string
   side: 'HOMME' | 'FEMME'
+  position_x: number | null
+  position_y: number | null
 }
 
 interface Guest {
@@ -24,7 +28,7 @@ interface Guest {
 }
 
 interface Props {
-  event: { id: string; groom_name: string; bride_name: string }
+  event: { id: string; groom_name: string; bride_name: string; room_map_url: string | null }
   tables: Table[]
   guests: Guest[]
 }
@@ -174,6 +178,8 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
   const [guests, setGuests]               = useState<Guest[]>(initialGuests)
   const [selectedTable, setSelectedTable] = useState<Table | null>(null)
   const [sideFilter, setSideFilter]       = useState<'ALL' | 'HOMME' | 'FEMME'>('ALL')
+  const [mapEditing, setMapEditing]       = useState(false)
+  const [mapVersion, setMapVersion]       = useState(0)
 
   const refreshGuests = useCallback(async () => {
     const supabase = createClient()
@@ -225,7 +231,8 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
         @media (max-width: 599px) { .side-drawer { width: 100vw; padding: 20px; } }
       `}</style>
 
-      <div style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+        <div>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '6px' }}>
           {event.groom_name} &amp; {event.bride_name}
         </p>
@@ -241,7 +248,26 @@ export default function SeatingClient({ event, tables, guests: initialGuests }: 
         <p style={{ color: 'rgba(90,138,106,0.7)', fontSize: '0.72rem', marginTop: '4px' }}>
           ● Temps réel activé
         </p>
+        </div>
+        <button onClick={() => setMapEditing(value => !value)} style={{ padding: '12px 18px', borderRadius: '100px', border: '1px solid rgba(201,169,110,.4)', background: mapEditing ? 'rgba(201,169,110,.18)' : 'rgba(201,169,110,.08)', color: 'var(--gold-light)', display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <Settings2 size={15} /> {mapEditing ? 'Fermer la configuration' : 'Configurer la cartographie'}
+        </button>
       </div>
+
+      {mapEditing ? (
+        <RoomMapEditor
+          key={'editor-' + mapVersion}
+          eventId={event.id}
+          initialBackgroundUrl={event.room_map_url}
+          tables={tables}
+          onSaved={() => { setMapEditing(false); setMapVersion(v => v + 1); window.location.reload() }}
+        />
+      ) : (
+        <div style={{ marginBottom: 30, padding: 16, background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}><MapPinned size={17} color="var(--gold)" /><p style={{ color: 'white', fontFamily: 'var(--font-display)', fontSize: '1.15rem' }}>Cartographie de la salle</p></div>
+          <RoomMap tables={tables} backgroundUrl={event.room_map_url} />
+        </div>
+      )}
 
       {/* Légende */}
       <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
