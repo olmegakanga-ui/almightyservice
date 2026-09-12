@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export type UserRole = 'superadmin' | 'couple' | 'protocole'
 
 export interface EventUser {
@@ -13,7 +15,7 @@ export interface EventUser {
 export async function getCurrentUser(): Promise<EventUser | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user?.email) return null
 
   const { data } = await (supabase as any)
     .from('event_users')
@@ -34,9 +36,8 @@ export async function getCurrentUser(): Promise<EventUser | null> {
   }
 }
 
-export function getNavItemsByRole(role: UserRole, eventId: string) {
-  const base = `/admin/events/${eventId}`
-
+export function getNavItemsByRole(role: UserRole, _eventId: string) {
+  void _eventId
   const superadminItems = [
     { label: 'Paramètres',    slug: 'settings' },
     { label: 'Invités',       slug: 'guests' },
@@ -46,6 +47,7 @@ export function getNavItemsByRole(role: UserRole, eventId: string) {
     { label: 'Réactions',     slug: 'reactions' },
     { label: 'WhatsApp',      slug: 'whatsapp' },
     { label: 'Scanner QR',    slug: 'scan' },
+    { label: 'Orientation',   slug: 'orientation' },
     { label: 'Check-in',      slug: 'checkin' },
     { label: 'Plan de salle', slug: 'seating' },
   ]
@@ -57,11 +59,13 @@ export function getNavItemsByRole(role: UserRole, eventId: string) {
     { label: "Livre d'or",    slug: 'guestbook' },
     { label: 'Réactions',     slug: 'reactions' },
     { label: 'Check-in',      slug: 'checkin' },
+    { label: 'Orientation',   slug: 'orientation' },
     { label: 'Plan de salle', slug: 'seating' },
   ]
 
   const protocoleItems = [
     { label: 'Scanner QR',    slug: 'scan' },
+    { label: 'Orientation',   slug: 'orientation' },
     { label: 'Check-in',      slug: 'checkin' },
     { label: 'Plan de salle', slug: 'seating' },
   ]

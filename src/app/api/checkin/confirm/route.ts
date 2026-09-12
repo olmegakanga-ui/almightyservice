@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       action:       'checkin',
       performed_by: performedBy ?? 'Protocole',
       performed_at: now,
+      orientation_status: 'new',
     })
 
     return NextResponse.json({ success: true, checkedInAt: now })
