@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -7,7 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Users, Table2, Wine,
   BookOpen, Heart, LogOut, ChevronLeft,
-  QrCode, CheckSquare, Map, Menu, X,
+  QrCode, CheckSquare, Map, Menu, X, Navigation,
   MessageCircle, Settings, Key, Crown,
   Shield, BarChart2,
 } from 'lucide-react'
@@ -22,12 +24,13 @@ const ALL_NAV_ITEMS = [
   { slug: 'reactions', label: 'Réactions',       icon: Heart,          roles: ['superadmin', 'couple'] },
   { slug: 'whatsapp',  label: 'WhatsApp',        icon: MessageCircle,  roles: ['superadmin'] },
   { slug: 'scan',      label: 'Scanner QR',      icon: QrCode,         roles: ['superadmin', 'protocole'] },
+  { slug: 'orientation', label: 'Orientation',   icon: Navigation,     roles: ['superadmin', 'couple', 'protocole'] },
   { slug: 'checkin',   label: 'Check-in',        icon: CheckSquare,    roles: ['superadmin', 'couple', 'protocole'] },
   { slug: 'seating',   label: 'Plan de salle',   icon: Map,            roles: ['superadmin', 'couple', 'protocole'] },
 ]
 
 const SECTION_GESTION = ['settings', 'access', 'guests', 'tables', 'drinks', 'guestbook', 'reactions', 'whatsapp']
-const SECTION_JOUR_J  = ['scan', 'checkin', 'seating']
+const SECTION_JOUR_J  = ['scan', 'orientation', 'checkin', 'seating']
 
 interface Props {
   userEmail: string

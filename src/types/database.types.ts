@@ -33,6 +33,7 @@ export interface Database {
           status: 'draft' | 'active' | 'completed' | 'archived'
           created_at: string
           updated_at: string
+          room_map_url: string | null
         }
         Insert: Record<string, unknown>
         Update: Record<string, unknown>
@@ -126,6 +127,21 @@ export interface Database {
           performed_by: string | null
           performed_at: string
           notes: string | null
+          orientation_status: 'new' | 'claimed' | 'seated'
+          orientation_updated_at: string | null
+          orientation_by: string | null
+        }
+        Insert: Record<string, unknown>
+        Update: Record<string, unknown>
+      }
+      event_users: {
+        Row: {
+          id: string
+          event_id: string
+          email: string
+          role: 'superadmin' | 'couple' | 'protocole'
+          full_name: string
+          created_at: string
         }
         Insert: Record<string, unknown>
         Update: Record<string, unknown>
