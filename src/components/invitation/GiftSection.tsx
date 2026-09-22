@@ -7,6 +7,8 @@ interface Props {
   eventId:      string
   initialChoice: 'envelope' | 'present' | null
   giftOptions:  string[]
+  giftPreferenceMessage?: string
+  showGiftPreferenceMessage?: boolean
 }
 
 type GiftType = 'envelope' | 'present' | null
@@ -37,7 +39,7 @@ const ALL_OPTIONS = [
   },
 ]
 
-export default function GiftSection({ guestId, eventId, initialChoice, giftOptions }: Props) {
+export default function GiftSection({ guestId, eventId, initialChoice, giftOptions, giftPreferenceMessage, showGiftPreferenceMessage }: Props) {
   const [choice, setChoice]   = useState<GiftType>(initialChoice)
   const [saving, setSaving]   = useState(false)
   const sectionRef            = useRef<HTMLElement>(null)
@@ -104,6 +106,13 @@ export default function GiftSection({ guestId, eventId, initialChoice, giftOptio
           </h2>
           {saving && <p style={{ color: 'var(--gold)', fontSize: '0.75rem', marginTop: '8px' }}>Sauvegarde...</p>}
         </div>
+
+        {showGiftPreferenceMessage && giftPreferenceMessage?.trim() && (
+          <div style={{ margin: '0 auto 28px', maxWidth: 560, padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(201,169,110,.3)', background: 'rgba(201,169,110,.08)', color: 'rgba(255,255,255,.7)', lineHeight: 1.7, textAlign: 'center', fontSize: '.9rem' }}>
+            <strong style={{ display: 'block', color: 'var(--gold)', marginBottom: 6 }}>Attention particulière des mariés</strong>
+            {giftPreferenceMessage}
+          </div>
+        )}
 
         <div style={{
           display:             'grid',

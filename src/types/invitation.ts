@@ -23,6 +23,8 @@ export interface EventData {
   musicUrl:             string | null
   musicVolume:          number
   giftOptions:          string[]
+  giftPreferenceMessage?: string
+  showGiftPreferenceMessage?: boolean
   sectionsOrder:        string[]
   dressCode:            string | null
   dressColors:          string[]

@@ -25,6 +25,8 @@ export interface FullInvitationData {
   musicUrl:            string | null
   musicVolume:         number
   giftOptions:         string[]
+  giftPreferenceMessage?: string
+  showGiftPreferenceMessage?: boolean
   sectionsOrder:       string[]
   dressCode:           string | null
   dressColors:         string[]
@@ -130,6 +132,8 @@ export async function getInvitationByToken(
     musicUrl:            event.music_url             ?? null,
     musicVolume:         event.music_volume          ?? 30,
     giftOptions:         Array.isArray(event.gift_options) ? event.gift_options : ['envelope','present'],
+    giftPreferenceMessage: event.gift_preference_message ?? undefined,
+    showGiftPreferenceMessage: Array.isArray(event.gift_message_channels) && event.gift_message_channels.includes('DIGITAL_INVITATION'),
     sectionsOrder:       resolveSections(event.sections_order),
     dressCode:           event.dress_code ?? null,
     dressColors:         Array.isArray(event.dress_colors) ? event.dress_colors : [],

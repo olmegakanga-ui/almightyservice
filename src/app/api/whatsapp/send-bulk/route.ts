@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendWhatsAppMessage, TemplateData } from '@/lib/whatsapp/service'
-import { formatDate, formatTime } from '@/lib/whatsapp/templates'
+import { dayOfTemplate, formatDate, formatTime, invitationTemplate, lastReminderTemplate, reminderTemplate } from '@/lib/whatsapp/templates'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Charger l'événement avec la photo
     const { data: event } = await db
       .from('events')
-      .select('groom_name, bride_name, groom_full_name, bride_full_name, event_date, venue_name, background_image_url')
+      .select('groom_name, bride_name, groom_full_name, bride_full_name, event_date, venue_name, background_image_url, gift_preference_message, gift_message_channels')
       .eq('id', eventId)
       .single()
 
@@ -95,10 +95,15 @@ export async function POST(request: NextRequest) {
         venueName:     event.venue_name,
         invitationUrl,
         imageUrl:      event.background_image_url || undefined,
+        giftPreferenceMessage: Array.isArray(event.gift_message_channels) && event.gift_message_channels.includes(messageType)
+          ? event.gift_preference_message ?? undefined
+          : undefined,
       }
 
-      // Message texte de secours
-      const fallbackMessage = `✨ ${guest.full_name} ✨\n\n${groomLabel} & ${brideLabel} ont l'immense joie de vous convier à leur mariage.\n\n📅 ${eventDateStr} à ${eventTimeStr}\n📍 ${event.venue_name}\n\n👇 ${invitationUrl}\n\n— AlmightyService`
+      const fallbackMessage = messageType === 'RELANCE' ? reminderTemplate(templateData)
+        : messageType === 'RAPPEL_WA' ? lastReminderTemplate(templateData)
+        : messageType === 'MERCI' ? dayOfTemplate(templateData)
+        : invitationTemplate(templateData)
 
       // Enregistrer en DB
       const { data: waMessage } = await db

@@ -22,6 +22,7 @@ export interface TemplateData {
   venueName:     string
   invitationUrl: string
   imageUrl?:     string
+  giftPreferenceMessage?: string
 }
 
 function getConfig(): WhatsAppConfig {

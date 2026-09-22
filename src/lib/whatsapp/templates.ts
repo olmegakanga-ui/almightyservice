@@ -8,6 +8,11 @@ export interface MessageTemplateData {
   eventTime:     string
   venueName:     string
   invitationUrl: string
+  giftPreferenceMessage?: string
+}
+
+function giftPreferenceBlock(message?: string): string {
+  return message?.trim() ? `\n\n🎁 *Attention particulière des mariés*\n${message.trim()}` : ''
 }
 
 export function formatDate(isoString: string): string {
@@ -33,7 +38,7 @@ Vous êtes cordialement invité(e) à célébrer le mariage de
 Votre invitation personnalisée :
 👇 ${data.invitationUrl}
 
-Merci de confirmer votre présence via ce lien.
+Merci de confirmer votre présence via ce lien.${giftPreferenceBlock(data.giftPreferenceMessage)}
 
 _— AlmightyService_`
 }
@@ -48,7 +53,7 @@ Le grand jour approche ! 🎊
 📅 ${data.eventDate}
 
 Confirmez votre présence ici :
-👇 ${data.invitationUrl}
+👇 ${data.invitationUrl}${giftPreferenceBlock(data.giftPreferenceMessage)}
 
 _— AlmightyService_`
 }
@@ -66,7 +71,7 @@ Le mariage de *${data.groomName} & ${data.brideName}* a lieu demain :
 N'oubliez pas votre QR Code dans votre invitation :
 👇 ${data.invitationUrl}
 
-À demain ! 🥂
+À demain ! 🥂${giftPreferenceBlock(data.giftPreferenceMessage)}
 
 _— AlmightyService_`
 }
@@ -84,7 +89,7 @@ Le mariage de *${data.groomName} & ${data.brideName}* commence ce soir à *${dat
 Présentez votre QR Code à l'entrée :
 👇 ${data.invitationUrl}
 
-À tout à l'heure ! ✨
+À tout à l'heure ! ✨${giftPreferenceBlock(data.giftPreferenceMessage)}
 
 _— AlmightyService_`
 }
