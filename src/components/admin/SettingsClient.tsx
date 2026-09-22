@@ -57,6 +57,9 @@ interface Event {
   envelope_message?:         string
   envelope_show_couple?:     boolean
   show_branding?:            boolean
+  gift_preference_type?:     'none' | 'envelope' | 'present' | 'contribution' | 'custom'
+  gift_preference_message?:  string
+  gift_message_channels?:    string[]
 }
 
 interface Props {
@@ -107,6 +110,65 @@ const SECTION_HINTS: Record<string, string> = {
   gallery:   'Album de photos du couple — se remplit dans l\'onglet Médias',
 }
 
+interface GiftMessageForm {
+  gift_preference_type: 'none' | 'envelope' | 'present' | 'contribution' | 'custom'
+  gift_preference_message: string
+  gift_message_channels: string[]
+}
+
+function GiftMessageSettings({ form, set, inputStyle, labelStyle, focus, blur }: {
+  form: GiftMessageForm
+  set: (key: string, value: string | string[]) => void
+  inputStyle: React.CSSProperties
+  labelStyle: React.CSSProperties
+  focus: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
+  blur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
+}) {
+  const channels = [
+    { id: 'INVITATION', label: 'Message d’invitation' },
+    { id: 'RELANCE', label: 'Relance' },
+    { id: 'RAPPEL_WA', label: 'Rappel J-1' },
+    { id: 'MERCI', label: 'Message du jour J' },
+    { id: 'DIGITAL_INVITATION', label: 'Invitation numérique' },
+  ]
+
+  return <div style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div>
+      <label style={labelStyle}>Préférence de présent dans les messages</label>
+      <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.gift_preference_type} onChange={e => {
+        const value = e.target.value as GiftMessageForm['gift_preference_type']
+        set('gift_preference_type', value)
+        if (value === 'envelope' && !form.gift_preference_message.trim()) {
+          set('gift_preference_message', 'Ne résidant pas en République démocratique du Congo, les mariés privilégient avec gratitude les enveloppes comme présents de mariage. Ils vous remercient chaleureusement pour votre compréhension et votre délicate attention.')
+        }
+      }} onFocus={focus} onBlur={blur}>
+        <option value="none">Aucune mention</option>
+        <option value="envelope">Enveloppes uniquement</option>
+        <option value="present">Cadeaux physiques</option>
+        <option value="contribution">Contribution financière</option>
+        <option value="custom">Message personnalisé</option>
+      </select>
+    </div>
+    {form.gift_preference_type !== 'none' && <>
+      <div>
+        <label style={labelStyle}>Texte à afficher</label>
+        <textarea style={{ ...inputStyle, minHeight: '115px', resize: 'vertical', lineHeight: 1.6 }} value={form.gift_preference_message} onChange={e => set('gift_preference_message', e.target.value)} onFocus={focus} onBlur={blur} />
+      </div>
+      <div>
+        <label style={labelStyle}>Afficher dans</label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '8px' }}>
+          {channels.map(channel => {
+            const active = form.gift_message_channels.includes(channel.id)
+            return <button type="button" key={channel.id} onClick={() => set('gift_message_channels', active ? form.gift_message_channels.filter(item => item !== channel.id) : [...form.gift_message_channels, channel.id])} style={{ padding: '11px 12px', borderRadius: '10px', border: active ? '1px solid rgba(201,169,110,.4)' : '1px solid rgba(255,255,255,.08)', background: active ? 'rgba(201,169,110,.09)' : 'rgba(255,255,255,.02)', color: active ? 'var(--gold-light)' : 'rgba(255,255,255,.45)', cursor: 'pointer', textAlign: 'left', fontSize: '.78rem' }}>
+              {active ? '✓ ' : ''}{channel.label}
+            </button>
+          })}
+        </div>
+      </div>
+    </>}
+  </div>
+}
+
 export default function SettingsClient({ event }: Props) {
   const router              = useRouter()
   const [tab, setTab]       = useState<Tab>('general')
@@ -146,6 +208,9 @@ export default function SettingsClient({ event }: Props) {
     envelope_message:          event.envelope_message ?? '',
     envelope_show_couple:      event.envelope_show_couple ?? true,
     show_branding:             event.show_branding ?? true,
+    gift_preference_type:      event.gift_preference_type ?? 'none',
+    gift_preference_message:   event.gift_preference_message ?? '',
+    gift_message_channels:     event.gift_message_channels ?? [],
   })
 
   const [program, setProgram] = useState<ProgramItem[]>(
@@ -203,6 +268,9 @@ export default function SettingsClient({ event }: Props) {
           envelope_message:          form.envelope_message.trim() || null,
           envelope_show_couple:      form.envelope_show_couple,
           show_branding:             form.show_branding,
+          gift_preference_type:      form.gift_preference_type,
+          gift_preference_message:   form.gift_preference_type === 'none' ? null : form.gift_preference_message.trim() || null,
+          gift_message_channels:     form.gift_preference_type === 'none' ? [] : form.gift_message_channels,
         })
         .eq('id', event.id)
 
@@ -268,6 +336,9 @@ export default function SettingsClient({ event }: Props) {
       envelope_message:          event.envelope_message ?? null,
       envelope_show_couple:      event.envelope_show_couple ?? true,
       show_branding:             event.show_branding ?? true,
+      gift_preference_type:      event.gift_preference_type ?? 'none',
+      gift_preference_message:   event.gift_preference_message ?? null,
+      gift_message_channels:     event.gift_message_channels ?? [],
     }).select('id').single()
     if (newEvent) router.push('/admin/events/' + newEvent.id + '/settings')
   }
@@ -862,6 +933,7 @@ export default function SettingsClient({ event }: Props) {
                 Aucune option — la section cadeaux sera masquée sur l&apos;invitation.
               </p>
             )}
+            <GiftMessageSettings form={form} set={set} inputStyle={inputStyle} labelStyle={labelStyle} focus={focus} blur={blur} />
           </div>
         </div>
       )}

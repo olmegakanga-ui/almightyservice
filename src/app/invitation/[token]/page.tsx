@@ -69,6 +69,8 @@ export default async function InvitationPage({
     musicUrl:            data.musicUrl,
     musicVolume:         data.musicVolume,
     giftOptions:         data.giftOptions,
+    giftPreferenceMessage: data.giftPreferenceMessage,
+    showGiftPreferenceMessage: data.showGiftPreferenceMessage,
     sectionsOrder:       data.sectionsOrder,
     dressCode:           data.dressCode,
     dressColors:         data.dressColors,

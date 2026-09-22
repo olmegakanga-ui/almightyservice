@@ -40,6 +40,8 @@ interface Event {
   bride_full_name?: string
   event_date:       string
   venue_name?:      string
+  gift_preference_message?: string
+  gift_message_channels?: string[]
 }
 
 interface Props {
@@ -90,6 +92,10 @@ function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string)
   const groomLabel = (event.groom_full_name || '').trim() || event.groom_name
   const brideLabel = (event.bride_full_name || '').trim() || event.bride_name
   const couple     = `${groomLabel} & ${brideLabel}`
+  const channel    = type === 'RAPPEL_J1' ? 'RAPPEL_WA' : type === 'JOUR_J' ? 'MERCI' : type
+  const giftNote   = event.gift_preference_message?.trim() && event.gift_message_channels?.includes(channel)
+    ? `\n\n🎁 *Attention particulière des mariés*\n${event.gift_preference_message.trim()}`
+    : ''
 
   switch (type) {
     case 'INVITATION':
@@ -98,7 +104,7 @@ function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string)
         `Date : *${full}* à *${time}*\n` +
         (venue ? `Lieu : *${venue}*\n\n` : '\n') +
         `Consultez votre invitation personnalisée et confirmez votre présence :\n${url}\n\n` +
-        `- AlmightyService`
+        `${giftNote}\n\n- AlmightyService`
 
     case 'RELANCE':
       return `*${guest.full_name}*\n\n` +
@@ -106,14 +112,14 @@ function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string)
         `Le grand jour approche et nous aimerions vous compter parmi nous le *${full}* à *${time}*.\n` +
         (venue ? `Lieu : *${venue}*\n\n` : '\n') +
         `Confirmez votre présence via votre invitation :\n${url}\n\n` +
-        `- AlmightyService`
+        `${giftNote}\n\n- AlmightyService`
 
     case 'RAPPEL_J1':
       return `*${guest.full_name}*\n\n` +
         `C'est demain ! Le mariage de *${couple}* a lieu le *${full}* à *${time}*.\n` +
         (venue ? `Lieu : *${venue}*\n\n` : '\n') +
         `Retrouvez tous les détails et votre QR code d'entrée sur votre invitation :\n${url}\n\n` +
-        `- AlmightyService`
+        `${giftNote}\n\n- AlmightyService`
 
     case 'JOUR_J':
       return `*${guest.full_name}*\n\n` +
@@ -121,7 +127,7 @@ function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string)
         `Rendez-vous à *${time}*.\n` +
         (venue ? `Lieu : *${venue}*\n\n` : '\n') +
         `Votre QR code d'entrée se trouve sur votre invitation :\n${url}\n\n` +
-        `- AlmightyService`
+        `${giftNote}\n\n- AlmightyService`
 
     case 'REPORT':
       return `Cher(e) *${guest.full_name}*,\n\n` +

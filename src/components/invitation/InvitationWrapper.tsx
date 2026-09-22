@@ -142,6 +142,8 @@ export default function InvitationWrapper({ event, guest }: Props) {
           eventId={event.id}
           initialChoice={guest.giftChoice}
           giftOptions={event.giftOptions}
+          giftPreferenceMessage={event.giftPreferenceMessage}
+          showGiftPreferenceMessage={event.showGiftPreferenceMessage}
         />
         <Divider />
       </React.Fragment>

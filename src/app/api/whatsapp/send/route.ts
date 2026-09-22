@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Charger l'événement avec l'image
     const { data: event } = await db
       .from('events')
-      .select('groom_name, bride_name, groom_full_name, bride_full_name, event_date, event_time, venue_name, background_image_url')
+      .select('groom_name, bride_name, groom_full_name, bride_full_name, event_date, event_time, venue_name, background_image_url, gift_preference_message, gift_message_channels')
       .eq('id', eventId)
       .single()
 
@@ -72,6 +72,9 @@ export async function POST(request: NextRequest) {
       venueName:     event.venue_name,
       invitationUrl,
       imageUrl:      event.background_image_url ?? undefined,
+      giftPreferenceMessage: Array.isArray(event.gift_message_channels) && event.gift_message_channels.includes(messageType)
+        ? event.gift_preference_message ?? undefined
+        : undefined,
     }
 
     // Choisir le template texte selon le type
