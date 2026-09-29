@@ -3,25 +3,33 @@ import { parseEventDate } from '@/lib/date-utils'
 
 export default function FloralHeroSection({ event, guest }: { event: EventData; guest: GuestData }) {
   const { full: date, time } = parseEventDate(event.eventDate)
+  const photo = event.galleryImages[0] || event.backgroundImageUrl
   return (
-    <section style={{
-      minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '72px 20px',
-      background: 'linear-gradient(155deg,#fff8f5ed,#f1dcd9ed)',
-      color: '#604548', textAlign: 'center', position: 'relative',
+    <section className="floral-hero" style={{
+      minHeight:'100svh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+      padding:'min(14vh,120px) 20px 70px', textAlign:'center', position:'relative',
+      background:"url('/images/floral-invitation-v2.webp') center/cover no-repeat",
+      color:'#684d51',
     }}>
-      <div style={{ maxWidth: 680, width: '100%', border: '1px solid #d6aaa6', padding: 'clamp(35px,8vw,85px) 24px', background: '#fffaf4e8', boxShadow: '0 18px 60px #77565130' }}>
-        <span style={{ fontSize: 55, color: '#d6a5a4', lineHeight: 1 }} aria-hidden="true">❀</span>
-        <p style={{ letterSpacing: '.24em', textTransform: 'uppercase', fontSize: 11, marginTop: 20 }}>Invitation au mariage</p>
-        <h1 style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: 'clamp(45px,9vw,78px)', fontWeight: 400, lineHeight: 1.1, margin: '32px 0' }}>
-          {event.groomName}<br /><span style={{ color: '#be9290', fontSize: '.6em' }}>&amp;</span><br />{event.brideName}
+      <div style={{ width:'min(100%,560px)', position:'relative', zIndex:1 }}>
+        <p style={{ fontSize:11, letterSpacing:'.25em', textTransform:'uppercase' }}>Invitation au mariage</p>
+        <h1 style={{ fontFamily:'Georgia,serif', fontStyle:'italic', fontSize:'clamp(46px,11vw,80px)', fontWeight:400, lineHeight:1.08, margin:'26px 0 12px' }}>
+          {event.groomName} <span style={{ color:'#af8384', fontSize:'.7em' }}>&amp;</span> {event.brideName}
         </h1>
-        {event.heroMessage && <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: 19, whiteSpace: 'pre-line', lineHeight: 1.6 }}>{event.heroMessage}</p>}
-        <div style={{ width: 90, borderTop: '1px solid #cfa09d', margin: '35px auto' }} />
-        <p style={{ fontFamily: 'Georgia,serif', fontSize: 17, lineHeight: 1.7 }}>
-          {date} à {time}<br />{event.venueName}
+        <p style={{ fontFamily:'Georgia,serif', fontStyle:'italic', fontSize:'clamp(17px,3vw,23px)', lineHeight:1.6 }}>
+          {event.heroMessage || 'ont le bonheur de vous inviter à célébrer leur union'}
         </p>
-        <p style={{ fontSize: 13, marginTop: 40, letterSpacing: '.08em' }}>Une invitation personnelle pour {guest.fullName}</p>
-        <span style={{ display: 'block', marginTop: 38, fontSize: 12, letterSpacing: '.15em' }}>DÉCOUVRIR LA SUITE ↓</span>
+        {photo && <div style={{
+          width:'min(60vw,270px)', height:'min(32vh,300px)', margin:'28px auto',
+          backgroundImage:`url("${photo.replaceAll('"', '%22')}")`, backgroundPosition:'center',
+          backgroundSize:'cover', border:'6px solid #fff5ef', borderRadius:'48% 48% 4px 4px',
+          boxShadow:'0 12px 35px #8b606044',
+        }} role="img" aria-label="Photo du couple" />}
+        <p style={{ fontFamily:'Georgia,serif', fontSize:'clamp(18px,3vw,25px)', margin:'14px auto 0' }}>{date} · {time}</p>
+        <p style={{ fontSize:14, marginTop:9 }}>{event.venueName}</p>
+        <div style={{ width:80, borderTop:'1px solid #bd8d8b', margin:'26px auto' }} />
+        <p style={{ fontFamily:'Georgia,serif', fontStyle:'italic', fontSize:18 }}>Pour {guest.fullName}</p>
+        <p style={{ fontSize:11, letterSpacing:'.18em', marginTop:30 }}>DÉCOUVRIR L’INVITATION ↓</p>
       </div>
     </section>
   )

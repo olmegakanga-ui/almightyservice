@@ -197,7 +197,7 @@ export default function InvitationWrapper({ event, guest }: Props) {
           guestName={guest.fullName}
           eventDate={event.eventDate}
           venueName={event.venueName}
-          backgroundImageUrl={event.backgroundImageUrl}
+          photoUrl={event.galleryImages[0] || event.backgroundImageUrl || null}
           showCouple={event.envelopeShowCouple}
           showBranding={event.showBranding}
           onComplete={() => setIntroDone(true)}
@@ -223,7 +223,9 @@ export default function InvitationWrapper({ event, guest }: Props) {
           position:           'fixed',
           inset:              0,
           zIndex:             0,
-          backgroundImage:    'url(' + event.backgroundImageUrl + ')',
+          backgroundImage:    event.presentationStyle === 'floral'
+            ? "url('/images/floral-invitation-v2.webp')"
+            : 'url(' + event.backgroundImageUrl + ')',
           backgroundSize:     'cover',
           backgroundPosition: 'center',
           backgroundRepeat:   'no-repeat',
@@ -232,7 +234,7 @@ export default function InvitationWrapper({ event, guest }: Props) {
         <div style={{
           position:   'absolute',
           inset:      0,
-          background: `linear-gradient(160deg,
+          background: event.presentationStyle === 'floral' ? 'rgba(248,226,218,.68)' : `linear-gradient(160deg,
                         color-mix(in srgb, ${goldColor} 26%, rgba(0,0,0,0.80)) 0%,
                         color-mix(in srgb, ${goldLight} 22%, rgba(0,0,0,0.62)) 50%,
                         color-mix(in srgb, ${goldColor} 28%, rgba(0,0,0,0.84)) 100%)`,
@@ -242,24 +244,57 @@ export default function InvitationWrapper({ event, guest }: Props) {
       {/* Grain cinématique */}
       <div
         aria-hidden
-        className="grain-overlay"
+        className={event.presentationStyle === 'floral' ? '' : 'grain-overlay'}
         style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
 
       {/* Contenu */}
       <main
+        className={event.presentationStyle === 'floral' ? 'floral-theme' : undefined}
         style={{
           position:   'relative',
           zIndex:     2,
           minHeight:  '100vh',
           opacity:    introDone ? 1 : 0,
           transition: 'opacity 0.8s ease',
-          '--gold':        goldColor,
-          '--gold-light':  goldLight,
-          '--gold-border': goldBorder,
-          '--gold-subtle': goldSubtle,
+          '--gold':        event.presentationStyle === 'floral' ? '#9c6572' : goldColor,
+          '--gold-light':  event.presentationStyle === 'floral' ? '#80515e' : goldLight,
+          '--gold-border': event.presentationStyle === 'floral' ? '#d7adb6' : goldBorder,
+          '--gold-subtle': event.presentationStyle === 'floral' ? '#f4d9dd' : goldSubtle,
         } as React.CSSProperties}
       >
+        {event.presentationStyle === 'floral' && <style>{`
+          .floral-theme { color:#63494e; background:linear-gradient(180deg,#faeae4b0,#f8e3dccc); }
+          .floral-theme section:not(.floral-hero),.floral-theme footer {
+            max-width:880px; margin:18px auto; border:1px solid #e9c8c7;
+            border-radius:26px; background:#fff9f2e8; box-shadow:0 10px 35px #9c6d6c20;
+            overflow:hidden;
+          }
+          .floral-theme section:not(.floral-hero) [style*="color: white"],
+          .floral-theme footer [style*="color: white"],
+          .floral-theme section:not(.floral-hero) [style*="color: rgba(255, 255, 255"],
+          .floral-theme footer [style*="color: rgba(255, 255, 255"],
+          .floral-theme section:not(.floral-hero) [style*="color: rgba(255,255,255"],
+          .floral-theme footer [style*="color: rgba(255,255,255"] {
+            color:#664e53!important; text-shadow:none!important;
+          }
+          .floral-theme section:not(.floral-hero) [style*="background: rgba(0, 0, 0"],
+          .floral-theme footer [style*="background: rgba(0, 0, 0"],
+          .floral-theme section:not(.floral-hero) [style*="background: rgba(0,0,0"],
+          .floral-theme footer [style*="background: rgba(0,0,0"] {
+            background:rgba(255,250,246,.72)!important;
+          }
+          .floral-theme section:not(.floral-hero) textarea,
+          .floral-theme section:not(.floral-hero) input {
+            color:#5e4449!important; background:#fffaf7!important;
+          }
+          .floral-theme .label-overline { color:#946771!important; }
+          .floral-theme .glass,.floral-theme .glass-light,.floral-theme .glass-strong {
+            background:rgba(255,250,247,.84)!important; border-color:#e7c6c4!important;
+          }
+          .floral-theme .divider-gold { opacity:.45; }
+          @media(max-width:920px) { .floral-theme section:not(.floral-hero),.floral-theme footer { margin:14px 12px; } }
+        `}</style>}
         {/* Hero — toujours en premier */}
         {event.presentationStyle === 'floral'
           ? <FloralHeroSection event={event} guest={guest} />
