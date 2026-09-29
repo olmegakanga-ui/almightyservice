@@ -38,6 +38,7 @@ interface Event {
   hero_message:              string
   end_message:               string
   theme_name:                string
+  presentation_style?:       'classic' | 'floral'
   dress_code?:               string
   dress_colors?:             string[]
   rsvp_deadline:             string
@@ -194,6 +195,7 @@ export default function SettingsClient({ event }: Props) {
     dress_code:                event.dress_code ?? '',
     dress_colors:              event.dress_colors ?? [],
     rsvp_deadline:             event.rsvp_deadline?.split('T')[0] ?? '',
+    presentation_style:       event.presentation_style ?? 'classic',
     theme_color_primary:       event.theme_color_primary,
     theme_color_secondary:     event.theme_color_secondary,
     status:                    event.status,
@@ -252,6 +254,7 @@ export default function SettingsClient({ event }: Props) {
           dress_code:                form.dress_code.trim() || null,
           dress_colors:              form.dress_colors,
           rsvp_deadline:             rsvpDeadline,
+          presentation_style:       form.presentation_style,
           theme_color_primary:       form.theme_color_primary,
           theme_color_secondary:     form.theme_color_secondary,
           status:                    form.status,
@@ -320,6 +323,7 @@ export default function SettingsClient({ event }: Props) {
       dress_code:                event.dress_code ?? null,
       dress_colors:              event.dress_colors ?? [],
       rsvp_deadline:             event.rsvp_deadline,
+      presentation_style:       event.presentation_style ?? 'classic',
       theme_color_primary:       event.theme_color_primary,
       theme_color_secondary:     event.theme_color_secondary,
       status:                    'draft',
@@ -837,6 +841,14 @@ export default function SettingsClient({ event }: Props) {
       {/* ── APPARENCE ── */}
       {tab === 'apparence' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '500px' }}>
+          <div>
+            <label style={labelStyle}>Présentation de l’invitation</label>
+            <select style={inputStyle} value={form.presentation_style} onChange={e => set('presentation_style', e.target.value)}>
+              <option value="classic">Classique — enveloppe dorée</option>
+              <option value="floral">Florale — ouverture rose et carte animée</option>
+            </select>
+            <p style={{ fontSize: '0.75rem', opacity: .6, marginTop: 8 }}>Ce choix s’applique aux liens des invités de ce mariage.</p>
+          </div>
           <div className="duo-grid">
             <div>
               <label style={labelStyle}>Couleur principale</label>

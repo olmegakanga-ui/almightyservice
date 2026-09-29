@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import EnvelopeIntro from '@/components/invitation/EnvelopeIntro'
+import FloralIntro from '@/components/invitation/FloralIntro'
 import { EventData, GuestData } from '@/types/invitation'
 import HeroSection from '@/components/invitation/HeroSection'
+import FloralHeroSection from '@/components/invitation/FloralHeroSection'
 import CountdownSection from '@/components/invitation/CountdownSection'
 import InvitationCardSection from '@/components/invitation/InvitationCardSection'
 import RsvpSection from '@/components/invitation/RsvpSection'
@@ -189,7 +191,17 @@ export default function InvitationWrapper({ event, guest }: Props) {
     <>
       {/* Animation d'ouverture */}
       {!introDone && (
-        <EnvelopeIntro
+        event.presentationStyle === 'floral' ? <FloralIntro
+          groomName={event.groomName}
+          brideName={event.brideName}
+          guestName={guest.fullName}
+          eventDate={event.eventDate}
+          venueName={event.venueName}
+          backgroundImageUrl={event.backgroundImageUrl}
+          showCouple={event.envelopeShowCouple}
+          showBranding={event.showBranding}
+          onComplete={() => setIntroDone(true)}
+        /> : <EnvelopeIntro
           groomName={event.groomName}
           brideName={event.brideName}
           guestName={guest.fullName}
@@ -249,7 +261,9 @@ export default function InvitationWrapper({ event, guest }: Props) {
         } as React.CSSProperties}
       >
         {/* Hero — toujours en premier */}
-        <HeroSection event={event} guest={guest} />
+        {event.presentationStyle === 'floral'
+          ? <FloralHeroSection event={event} guest={guest} />
+          : <HeroSection event={event} guest={guest} />}
         <Divider />
 
         {/* Sections dans l'ordre configuré */}

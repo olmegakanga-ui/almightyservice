@@ -19,6 +19,7 @@ interface FormData {
   rsvp_deadline:      string
   hero_message:       string
   invitation_text:    string
+  presentation_style: 'classic' | 'floral'
   theme_name:         string
   end_message:        string
   theme_color_primary:   string
@@ -38,6 +39,7 @@ const INITIAL: FormData = {
   rsvp_deadline:         '',
   hero_message:          'Nous avons l\'immense plaisir de vous convier à la célébration de notre mariage.',
   invitation_text:       'ont l\'immense joie et l\'honneur de vous convier aux festivités de leur mariage religieux',
+  presentation_style:    'classic',
   theme_name:            '',
   end_message:           '',
   theme_color_primary:   '#C9A96E',
@@ -122,6 +124,7 @@ export default function NewEventForm() {
           rsvp_deadline:         rsvpDeadline,
           hero_message:          form.hero_message.trim(),
           invitation_text:       form.invitation_text.trim(),
+          presentation_style:    form.presentation_style,
           theme_name:            form.theme_name.trim(),
           end_message:           form.end_message.trim(),
           theme_color_primary:   form.theme_color_primary,
@@ -398,6 +401,14 @@ export default function NewEventForm() {
               placeholder="ont l'immense joie de vous convier aux festivités..."
               onFocus={focus} onBlur={blur}
             />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Présentation de l’invitation</label>
+            <select style={inputStyle} value={form.presentation_style} onChange={e => set('presentation_style', e.target.value)}>
+              <option value="classic">Classique — enveloppe dorée</option>
+              <option value="floral">Florale — ouverture rose et carte animée</option>
+            </select>
           </div>
 
           <div>
