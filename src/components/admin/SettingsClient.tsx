@@ -33,12 +33,13 @@ interface Event {
   venue_address:             string
   venue_lat:                 number
   venue_lng:                 number
+  couple_cutout_url?:        string | null
   background_image_url:      string
   invitation_text:           string
   hero_message:              string
   end_message:               string
   theme_name:                string
-  presentation_style?:       'classic' | 'floral'
+  presentation_style?:       'classic' | 'floral' | 'animated'
   dress_code?:               string
   dress_colors?:             string[]
   rsvp_deadline:             string
@@ -189,6 +190,7 @@ export default function SettingsClient({ event }: Props) {
     venue_lat:                 String(event.venue_lat),
     venue_lng:                 String(event.venue_lng),
     background_image_url:      event.background_image_url,
+      couple_cutout_url:         event.couple_cutout_url ?? '',
     invitation_text:           event.invitation_text,
     hero_message:              event.hero_message ?? '',
     end_message:               event.end_message ?? '',
@@ -248,6 +250,7 @@ export default function SettingsClient({ event }: Props) {
           venue_lat:                 parseFloat(form.venue_lat) || 0,
           venue_lng:                 parseFloat(form.venue_lng) || 0,
           background_image_url:      form.background_image_url,
+          couple_cutout_url:         form.couple_cutout_url || null,
           invitation_text:           form.invitation_text.trim(),
           hero_message:              form.hero_message.trim(),
           end_message:               form.end_message.trim(),
@@ -317,6 +320,7 @@ export default function SettingsClient({ event }: Props) {
       venue_lat:                 event.venue_lat,
       venue_lng:                 event.venue_lng,
       background_image_url:      event.background_image_url,
+      couple_cutout_url:         event.couple_cutout_url ?? '',
       invitation_text:           event.invitation_text,
       hero_message:              event.hero_message,
       end_message:               event.end_message,
@@ -752,6 +756,11 @@ export default function SettingsClient({ event }: Props) {
             Recommandé : photo du couple, format paysage, min 1920×1080px.
           </p>
 
+          <div style={{ marginTop: '32px' }}>
+            <ImageUpload label="Photo détourée des mariés — faire-part animé" currentUrl={form.couple_cutout_url}
+              onUpload={url => set('couple_cutout_url', url)} aspectRatio="3/4" pngOnly />
+            <p style={{ fontSize: '0.78rem', opacity: .6, marginTop: 12 }}>PNG avec fond transparent, max 10 Mo. La photo apparaît sans cadre dans le modèle animé.</p>
+          </div>
           {/* Galerie photo */}
           <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
             <GalleryUpload
@@ -846,8 +855,9 @@ export default function SettingsClient({ event }: Props) {
             <select style={inputStyle} value={form.presentation_style} onChange={e => set('presentation_style', e.target.value)}>
               <option value="classic">Classique — enveloppe dorée</option>
               <option value="floral">Florale — ouverture rose et carte animée</option>
+              <option value="animated">Faire-part animé — présentation seule</option>
             </select>
-            <p style={{ fontSize: '0.75rem', opacity: .6, marginTop: 8 }}>Ce choix s’applique aux liens des invités de ce mariage.</p>
+            <p style={{ fontSize: '0.75rem', opacity: .6, marginTop: 8 }}>Ce choix s’applique aux liens existants de ce mariage. Le faire-part animé affiche uniquement la présentation, sans RSVP, QR code, boissons, livre d’or ou carte. Les autres paramètres restent enregistrés.</p>
           </div>
           <div className="duo-grid">
             <div>

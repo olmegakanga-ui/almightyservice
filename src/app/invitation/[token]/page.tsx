@@ -47,7 +47,8 @@ export default async function InvitationPage({
   if (!data) notFound()
 
   const event: EventData = {
-    presentationStyle:   data.presentationStyle,
+    presentationStyle: data.presentationStyle,
+    coupleCutoutUrl: data.coupleCutoutUrl,
     id:                  data.eventId,
     groomName:           data.groomName,
     brideName:           data.brideName,

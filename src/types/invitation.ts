@@ -2,7 +2,8 @@ export type RsvpStatus = 'pending' | 'confirmed' | 'declined'
 export type GiftChoice = 'envelope' | 'present' | null
 
 export interface EventData {
-  presentationStyle?:   'classic' | 'floral'
+  coupleCutoutUrl?: string | null
+  presentationStyle?:   'classic' | 'floral' | 'animated'
   id:                   string
   groomName:            string
   brideName:            string

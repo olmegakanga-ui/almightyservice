@@ -8,6 +8,7 @@ interface Props {
   currentUrl?:  string
   onUpload:     (url: string) => void
   aspectRatio?: string
+  pngOnly?: boolean
 }
 
 export default function ImageUpload({
@@ -15,6 +16,7 @@ export default function ImageUpload({
   currentUrl,
   onUpload,
   aspectRatio = '16/9',
+  pngOnly = false,
 }: Props) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview]     = useState<string | null>(currentUrl ?? null)
@@ -24,6 +26,7 @@ export default function ImageUpload({
   const handleFile = async (file: File) => {
     if (!file) return
 
+    if (pngOnly && file.type !== 'image/png') { setError('Choisissez une photo PNG avec fond transparent'); return }
     if (!file.type.startsWith('image/')) {
       setError('Fichier invalide — images uniquement')
       return
@@ -37,6 +40,20 @@ export default function ImageUpload({
     setError(null)
 
     try {
+      if (pngOnly) {
+        const bitmap = await createImageBitmap(file)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.min(bitmap.width, 256)
+        canvas.height = Math.max(1, Math.min(256, Math.round(bitmap.height * canvas.width / bitmap.width)))
+        const context = canvas.getContext('2d')
+        if (!context) { bitmap.close(); throw new Error('Image non lisible') }
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+        bitmap.close()
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+        let transparent = false
+        for (let i = 3; i < pixels.length; i += 4) if (pixels[i] < 250) { transparent = true; break }
+        if (!transparent) { setError('Le PNG doit avoir un fond transparent. Détourez la photo avant de l’envoyer.'); return }
+      }
       const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
       const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
 
@@ -65,7 +82,7 @@ export default function ImageUpload({
 
       const optimizedUrl = data.secure_url.replace(
         '/upload/',
-        '/upload/w_1920,q_auto,f_auto/'
+        pngOnly ? '/upload/w_1600,c_limit,f_png/' : '/upload/w_1920,q_auto,f_auto/'
       )
 
       setPreview(optimizedUrl)
@@ -115,7 +132,8 @@ export default function ImageUpload({
             style={{
               width:       '100%',
               aspectRatio,
-              objectFit:   'cover',
+              objectFit:   pngOnly ? 'contain' : 'cover',
+              background: pngOnly ? 'repeating-conic-gradient(#eee 0% 25%, #ccc 0% 50%) 0 / 20px 20px' : undefined,
               display:     'block',
             }}
           />
@@ -231,7 +249,7 @@ export default function ImageUpload({
                   Glissez une image ici
                 </p>
                 <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem' }}>
-                  ou cliquez pour parcourir · JPG, PNG, WebP · max 10MB
+                  {pngOnly ? 'PNG transparent · max 10 Mo' : 'ou cliquez pour parcourir · JPG, PNG, WebP · max 10MB'}
                 </p>
               </div>
             </>
@@ -248,7 +266,7 @@ export default function ImageUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={pngOnly ? 'image/png' : 'image/*'}
         onChange={handleChange}
         style={{ display: 'none' }}
       />

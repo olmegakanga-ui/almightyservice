@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import AnimatedInvitation from '@/components/invitation/AnimatedInvitation'
 import EnvelopeIntro from '@/components/invitation/EnvelopeIntro'
 import FloralIntro from '@/components/invitation/FloralIntro'
 import { EventData, GuestData } from '@/types/invitation'
@@ -76,6 +77,8 @@ export default function InvitationWrapper({ event, guest }: Props) {
       document.removeEventListener('touchstart', handler)
     }
   }, [event.musicUrl, started])
+
+  if (event.presentationStyle === 'animated') return <AnimatedInvitation event={event} />
 
   // ── Sections dynamiques ───────────────────────────────────
   const SECTIONS: Record<string, React.ReactNode> = {
