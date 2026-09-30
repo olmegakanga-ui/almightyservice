@@ -72,10 +72,10 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
       .border-bouquet img { width:100%; height:100%; object-fit:contain; }
       .corner-top { right:-17%; top:-8%; transform:scale(.65) rotate(-6deg); transform-origin:85% 15%; }
       .corner-bottom { left:-17%; bottom:-8%; transform:rotate(180deg) scale(.65); transform-origin:50% 50%; }
-      .animated-invitation:not(.phase-0) .corner-top { animation:corner-top-bloom 6.2s cubic-bezier(.22,.6,.25,1) both; }
-      .animated-invitation:not(.phase-0) .corner-bottom { animation:corner-bottom-bloom 6.2s cubic-bezier(.22,.6,.25,1) .2s both; }
-      @keyframes corner-top-bloom { 0% { transform:scale(.65) rotate(-6deg); } 55% { transform:translate(-5%,7%) scale(1.08) rotate(3deg); } 100% { transform:translate(-2%,3%) scale(1) rotate(0deg); } }
-      @keyframes corner-bottom-bloom { 0% { transform:rotate(180deg) scale(.65); } 55% { transform:translate(5%,-7%) rotate(183deg) scale(1.08); } 100% { transform:translate(2%,-3%) rotate(180deg) scale(1); } }
+      .animated-invitation:not(.phase-0) .corner-top { animation:corner-top-bloom 4.2s cubic-bezier(.22,.6,.25,1) both; }
+      .animated-invitation:not(.phase-0) .corner-bottom { animation:corner-bottom-bloom 4.5s cubic-bezier(.22,.6,.25,1) .2s both; }
+      @keyframes corner-top-bloom { 0% { transform:scale(.65) rotate(-6deg); } 55% { transform:translate(-5%,7%) scale(1.03) rotate(2deg); } 100% { transform:translate(-2%,3%) scale(1) rotate(0deg); } }
+      @keyframes corner-bottom-bloom { 0% { transform:rotate(180deg) scale(.65); } 55% { transform:translate(5%,-7%) rotate(181deg) scale(1.02); } 100% { transform:translate(2%,-3%) rotate(180deg) scale(1); } }
       .animated-scene { position:absolute; inset:0; opacity:0; visibility:hidden; transform:translateY(12px); transition:opacity .9s ease,transform 1.2s ease,visibility .9s; text-align:center; padding:10% 9%; display:flex; flex-direction:column; align-items:center; justify-content:safe center; overflow-y:auto; }
       .animated-scene.visible { opacity:1; visibility:visible; transform:translateY(0); }
       .animated-copy { width:100%; max-width:440px; overflow-wrap:anywhere; }
