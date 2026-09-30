@@ -14,7 +14,7 @@ function ink(hex: string) {
     .map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4)
   return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2] > .179 ? '#231e1c' : '#fffaf4'
 }
-const TIMING = [8200, 12100, 16600] // reveal, couple, date — final card stays visible
+const SCENE_TIMING = [3900, 8400] // measured from the completed petal animation
 
 export default function AnimatedInvitation({ event }: { event: EventData }) {
   const [phase, setPhase] = useState(0)
@@ -25,12 +25,13 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
   const primary = palette(event.themeColor, '#C9A96E')
   const secondary = palette(event.themeColorSecondary, '#E8D5B0')
   const date = parseEventDate(event.eventDate)
+  const revealed = phase >= 2
   useEffect(() => {
-    if (!playing) return
+    if (!playing || !revealed) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const timers = TIMING.map((time, i) => window.setTimeout(() => setPhase(i + 2), reduced ? (i + 1) * 3500 : time))
+    const timers = SCENE_TIMING.map((time, i) => window.setTimeout(() => setPhase(i + 3), reduced ? (i + 1) * 3500 : time))
     return () => timers.forEach(window.clearTimeout)
-  }, [playing, run])
+  }, [playing, run, revealed])
   const open = () => { setPhase(window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 2 : 1); setPlaying(true); setRun(v => v + 1) }
   const lightTheme = ink(primary) === '#231e1c'
   const card = lightTheme ? `color-mix(in srgb, ${primary} 20%, #fffaf2)` : `color-mix(in srgb, ${primary} 78%, #18141a)`
@@ -58,7 +59,7 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
           <div className="animated-rule" /><p className="animated-venue">{event.venueName}</p><p className="animated-address">{event.venueAddress}</p>
         </div>
       </section>
-      <WaxEnvelope key={envelopeVersion} opening={phase !== 0} hidden={phase >= 2} groomName={event.groomName} brideName={event.brideName} onOpen={open} />
+      <WaxEnvelope key={envelopeVersion} opening={phase !== 0} hidden={phase >= 2} groomName={event.groomName} brideName={event.brideName} onOpen={open} onReveal={() => setPhase(2)} />
       {phase === 4 && <button className="animated-replay" onClick={() => { setPlaying(false); setPhase(0); setEnvelopeVersion(v => v + 1) }}>Revoir l’invitation</button>}
     </div>
     <style>{`
