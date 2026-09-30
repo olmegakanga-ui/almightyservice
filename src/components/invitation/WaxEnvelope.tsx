@@ -65,7 +65,7 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
       .wax-hint { color:var(--envelope-ink); position:absolute; bottom:10%; width:100%; text-align:center; font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.13em; }
       .wax-blossom { position:absolute; left:50%; top:50%; width:0; height:0; z-index:4; opacity:0; }
 
-      .wax-rose { position:absolute; width:clamp(170px,48cqw,260px); height:clamp(170px,48cqw,260px); left:0; top:0; margin-left:clamp(-130px,-24cqw,-85px); margin-top:clamp(-130px,-24cqw,-85px); object-fit:contain; opacity:0; filter:drop-shadow(0 10px 16px #0003); }
+      .wax-rose { max-width:none; position:absolute; width:clamp(170px,48cqw,260px); height:clamp(170px,48cqw,260px); left:0; top:0; margin-left:clamp(-130px,-24cqw,-85px); margin-top:clamp(-130px,-24cqw,-85px); object-fit:contain; opacity:0; filter:drop-shadow(0 10px 16px #0003); }
       .wax-petal { position:absolute; width:var(--size); height:var(--size); left:calc(var(--size) * -.5); top:calc(var(--size) * -.5); background:url('/images/intro-ivory-petal.webp') center/contain no-repeat; filter:drop-shadow(1px 4px 3px #0002); opacity:0; will-change:transform,opacity; }
       .wax-envelope.opening .wax-left { transform:translateX(-110%) rotateY(-78deg); opacity:0; }
       .wax-envelope.opening .wax-right { transform:translateX(110%) rotateY(78deg); opacity:0; }
