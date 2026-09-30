@@ -19,8 +19,8 @@ const PETALS = Array.from({ length: 14 }, (_, i) => {
   } as CSSProperties
 })
 
-export default function WaxEnvelope({ opening, hidden, groomName, brideName, onOpen }: {
-  opening: boolean; hidden: boolean; groomName: string; brideName: string; onOpen: () => void
+export default function WaxEnvelope({ opening, hidden, groomName, brideName, onOpen, onReveal }: {
+  opening: boolean; hidden: boolean; groomName: string; brideName: string; onOpen: () => void; onReveal: () => void
 }) {
   return <div className={`wax-envelope ${opening ? 'opening' : ''} ${hidden ? 'finished' : ''}`} aria-hidden={opening}>
     <div className="wax-back" />
@@ -73,7 +73,7 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
         </svg>
       </button>
     </div>
-    <div className="wax-blossom" aria-hidden="true"><img className="wax-rose" src="/images/intro-ivory-rose.webp" alt="" />{PETALS.map((style, i) => <i key={i} className="wax-petal" style={style} />)}</div>
+    <div className="wax-blossom" aria-hidden="true"><img className="wax-rose" src="/images/intro-ivory-rose.webp" alt="" />{PETALS.map((style, i) => <i key={i} className="wax-petal" style={style} onAnimationEnd={i === PETALS.length - 1 ? onReveal : undefined} />)}</div>
     {!opening && <p className="wax-hint">Touchez le sceau pour ouvrir</p>}
     <style>{`
       .wax-envelope { position:absolute; inset:0; z-index:3; perspective:1200px; pointer-events:none; transition:opacity .55s; }
