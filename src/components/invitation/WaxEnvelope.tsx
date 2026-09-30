@@ -23,8 +23,8 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
   return <div className={`wax-envelope ${opening ? 'opening' : ''} ${hidden ? 'finished' : ''}`} aria-hidden={opening}>
     <div className="wax-back" />
     <div className="wax-fold wax-top" /><div className="wax-fold wax-bottom" />
-    <div className="wax-side wax-right"><div className="wax-side-paper" /></div>
-    <div className="wax-side wax-left"><div className="wax-side-paper" />
+    <div className="wax-side wax-right"><svg className="wax-side-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0 Q48 4 100 50 Q48 96 0 100Z" /></svg></div>
+    <div className="wax-side wax-left"><svg className="wax-side-paper" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0 Q48 4 100 50 Q48 96 0 100Z" /></svg>
       <button className="wax-seal" onClick={onOpen} disabled={opening} aria-label="Ouvrir l’invitation">
         <svg viewBox="0 0 120 120" aria-hidden="true">
           <defs>
@@ -60,10 +60,14 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
           <circle cx="60" cy="60" r="41" fill="url(#wax-imprint)" stroke="color-mix(in srgb,var(--accent) 58%,black)" strokeWidth="2.4" />
           <circle cx="59.3" cy="59.1" r="42.5" fill="none" stroke="#fff8e6" strokeOpacity=".48" strokeWidth="1.3" />
           <circle cx="60.6" cy="61" r="38.5" fill="none" stroke="#fff8e6" strokeOpacity=".28" strokeWidth=".8" />
-          <g className="wax-engraving" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
-            <path d="M42 87Q23 68 34 42M78 87Q97 68 86 42M34 73Q24 71 27 61Q36 62 34 73M32 60Q25 54 29 48Q37 52 32 60M35 48Q30 40 37 35Q42 42 35 48M86 73Q96 71 93 61Q84 62 86 73M88 60Q95 54 91 48Q83 52 88 60M85 48Q90 40 83 35Q78 42 85 48" />
+          <defs>
+            <linearGradient id="wax-leaf" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#fff5d6"/><stop offset=".35" stopColor="var(--accent)"/><stop offset=".7" stopColor="color-mix(in srgb,var(--accent) 48%,#442b14)"/><stop offset="1" stopColor="color-mix(in srgb,var(--accent) 80%,white)"/></linearGradient>
+            <filter id="wax-relief"><feDropShadow dx="1" dy="1.6" stdDeviation=".65" floodColor="#29180d" floodOpacity=".7"/></filter>
+          </defs>
+          <g className="wax-botanical" fill="url(#wax-leaf)" stroke="color-mix(in srgb,var(--accent) 65%,#fff4cb)" strokeWidth=".65" filter="url(#wax-relief)">
+            <path d="M57 87Q59 65 65 33" fill="none" strokeWidth="2.4" />
+            <path d="M63 44Q50 43 51 32Q63 32 63 44ZM62 53Q73 51 76 40Q63 41 62 53ZM60 62Q46 60 45 48Q60 48 60 62ZM59 70Q72 69 78 56Q62 57 59 70ZM58 79Q44 77 42 64Q56 64 58 79ZM58 85Q70 85 76 74Q63 74 58 85ZM65 37Q59 27 67 23Q73 31 65 37Z" />
           </g>
-          <text className="wax-monogram" x="60" y="69" textAnchor="middle">{groomName.charAt(0)}<tspan className="wax-amp">&amp;</tspan>{brideName.charAt(0)}</text>
         </svg>
       </button>
     </div>
@@ -72,17 +76,16 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
     <style>{`
       .wax-envelope { position:absolute; inset:0; z-index:3; perspective:1200px; pointer-events:none; transition:opacity .55s; }
       .wax-envelope.finished { opacity:0; visibility:hidden; }
-      .wax-back { position:absolute; inset:0; background:var(--paper); transition:opacity 1.15s ease .95s; }
+      .wax-back { position:absolute; inset:0; background:var(--paper); transition:opacity 2.3s ease 1.2s; }
       .wax-fold { position:absolute; inset:0; background:linear-gradient(120deg,#ffffff20,#00000020),var(--paper); backface-visibility:hidden; transform-origin:center top; }
       .wax-top { clip-path:polygon(0 0,100% 0,50% 51%); }
       .wax-bottom { transform-origin:center bottom; clip-path:polygon(0 100%,100% 100%,50% 49%); background:linear-gradient(30deg,#00000024,#ffffff16),var(--paper); }
-      .wax-side { position:absolute; top:0; bottom:0; width:50%; transform-style:preserve-3d; backface-visibility:hidden; will-change:transform; filter:drop-shadow(5px 8px 8px #0004); }
+      .wax-side { position:absolute; top:0; bottom:0; width:52%; transform-style:preserve-3d; backface-visibility:hidden; will-change:transform; filter:drop-shadow(5px 8px 8px #0004); }
       .wax-left { left:0; transform-origin:left center; z-index:2; }
       .wax-right { right:0; transform-origin:right center;  }
-      .wax-side-paper { position:absolute; inset:0; background:linear-gradient(110deg,#ffffff28,#00000018),var(--paper); clip-path:polygon(0 0,100% 50%,0 100%); }
-      .wax-right .wax-side-paper { clip-path:polygon(100% 0,0 50%,100% 100%); background:linear-gradient(250deg,#ffffff18,#00000028),var(--paper); }
-      .wax-side-paper:after { content:''; position:absolute; inset:0; opacity:.25; background:repeating-linear-gradient(0deg,#fff1 0 1px,transparent 1px 3px); }
-      .wax-seal { position:absolute; left:calc(100% - 52px); top:calc(50% - 52px); width:104px; height:104px; padding:0; border:0; background:none; color:var(--seal-ink); cursor:pointer; pointer-events:auto; transform:translateZ(8px); filter:drop-shadow(3px 7px 5px #0005); }
+      .wax-side-paper { position:absolute; inset:0; width:100%; height:100%; overflow:visible; fill:var(--paper); filter:drop-shadow(2px 0 2px #0005); } .wax-side-paper path { stroke:color-mix(in srgb,var(--paper) 80%,white); stroke-width:.12; }
+      .wax-right .wax-side-paper { transform:scaleX(-1); filter:brightness(.94) drop-shadow(-2px 0 2px #0005); }
+      .wax-seal { position:absolute; left:calc(96.15% - 52px); top:calc(50% - 52px); width:104px; height:104px; padding:0; border:0; background:none; color:var(--seal-ink); cursor:pointer; pointer-events:auto; transform:translateZ(8px); filter:drop-shadow(3px 7px 5px #0005); }
       .wax-seal:focus-visible { outline:2px solid var(--ink); outline-offset:5px; border-radius:50%; }
       .wax-seal svg { width:100%; height:100%; overflow:visible; }
       .wax-monogram { font:400 28px var(--font-script,Georgia),serif; fill:color-mix(in srgb,var(--seal-ink) 58%,var(--accent)); filter:drop-shadow(0 .8px 0 #ffffff70) drop-shadow(0 -.7px 0 #0003); }
@@ -93,23 +96,23 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
 
       .wax-rose { max-width:none; position:absolute; width:clamp(170px,48cqw,260px); height:clamp(170px,48cqw,260px); left:0; top:0; margin-left:clamp(-130px,-24cqw,-85px); margin-top:clamp(-130px,-24cqw,-85px); object-fit:contain; opacity:0; filter:drop-shadow(0 10px 16px #0003); }
       .wax-petal { position:absolute; width:var(--size); height:var(--size); left:calc(var(--size) * -.5); top:calc(var(--size) * -.5); background:url('/images/intro-ivory-petal.webp') center/contain no-repeat; filter:drop-shadow(1px 4px 3px #0002); opacity:0; will-change:transform,opacity; }
-      .wax-envelope.opening .wax-left { animation:wax-left-unfold 1.8s cubic-bezier(.32,.12,.22,1) .08s both; }
-      .wax-envelope.opening .wax-right { animation:wax-right-unfold 1.8s cubic-bezier(.32,.12,.22,1) .23s both; }
-      .wax-envelope.opening .wax-top { animation:wax-top-unfold 1.6s ease .45s both; }
-      .wax-envelope.opening .wax-bottom { animation:wax-bottom-unfold 1.6s ease .55s both; }
+      .wax-envelope.opening .wax-left { animation:wax-left-unfold 2.65s cubic-bezier(.42,0,.2,1) .08s both; }
+      .wax-envelope.opening .wax-right { animation:wax-right-unfold 2.65s cubic-bezier(.42,0,.2,1) .4s both; }
+      .wax-envelope.opening .wax-top { animation:wax-top-unfold 2.8s ease .6s both; }
+      .wax-envelope.opening .wax-bottom { animation:wax-bottom-unfold 2.8s ease .75s both; }
       @keyframes wax-left-unfold {
         0% { transform:translateX(0) rotateY(0); opacity:1; }
-        22% { transform:translateX(-6%) rotateY(-12deg); opacity:1; }
-        58% { transform:translateX(-42%) rotateY(-52deg); opacity:1; }
+        22% { transform:translateX(0) rotateY(-8deg); opacity:1; }
+        58% { transform:translateX(0) rotateY(-48deg); opacity:1; }
         82% { opacity:1; }
-        100% { transform:translateX(-116%) rotateY(-84deg); opacity:0; }
+        100% { transform:translateX(-8%) rotateY(-108deg); opacity:0; }
       }
       @keyframes wax-right-unfold {
         0% { transform:translateX(0) rotateY(0); opacity:1; }
-        22% { transform:translateX(6%) rotateY(12deg); opacity:1; }
-        58% { transform:translateX(42%) rotateY(52deg); opacity:1; }
+        22% { transform:translateX(0) rotateY(8deg); opacity:1; }
+        58% { transform:translateX(0) rotateY(48deg); opacity:1; }
         82% { opacity:1; }
-        100% { transform:translateX(116%) rotateY(84deg); opacity:0; }
+        100% { transform:translateX(8%) rotateY(108deg); opacity:0; }
       }
       @keyframes wax-top-unfold {
         0% { transform:rotateX(0); opacity:1; }
