@@ -19,7 +19,7 @@ interface FormData {
   rsvp_deadline:      string
   hero_message:       string
   invitation_text:    string
-  presentation_style: 'classic' | 'floral'
+  presentation_style: 'classic' | 'floral' | 'animated'
   theme_name:         string
   end_message:        string
   theme_color_primary:   string
@@ -408,6 +408,7 @@ export default function NewEventForm() {
             <select style={inputStyle} value={form.presentation_style} onChange={e => set('presentation_style', e.target.value)}>
               <option value="classic">Classique — enveloppe dorée</option>
               <option value="floral">Florale — ouverture rose et carte animée</option>
+              <option value="animated">Faire-part animé — présentation seule</option>
             </select>
           </div>
 
