@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, type CSSProperties } from 'react'
+import WaxEnvelope from '@/components/invitation/WaxEnvelope'
 import { EventData } from '@/types/invitation'
 import { parseEventDate } from '@/lib/date-utils'
 
@@ -13,7 +14,7 @@ function ink(hex: string) {
     .map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4)
   return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2] > .179 ? '#231e1c' : '#fffaf4'
 }
-const TIMING = [1100, 4300, 8000] // reveal, couple, date — final card stays visible
+const TIMING = [4100, 7700, 11700] // reveal, couple, date — final card stays visible
 
 export default function AnimatedInvitation({ event }: { event: EventData }) {
   const [phase, setPhase] = useState(0)
@@ -53,13 +54,7 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
           <div className="animated-rule" /><p className="animated-venue">{event.venueName}</p><p className="animated-address">{event.venueAddress}</p>
         </div>
       </section>
-      <div className="animated-envelope" aria-hidden={phase !== 0}>
-        <div className="animated-paper" />
-        <div className="animated-flap"><div className="animated-flap-paper" />
-          <button className="animated-seal" onClick={open} disabled={phase !== 0} aria-label="Ouvrir l’invitation">{event.groomName.charAt(0)}<small>&amp;</small>{event.brideName.charAt(0)}</button>
-        </div>
-        {phase === 0 && <p className="animated-open-hint">Touchez le sceau pour ouvrir</p>}
-      </div>
+      <WaxEnvelope opening={phase !== 0} hidden={phase >= 2} groomName={event.groomName} brideName={event.brideName} onOpen={open} />
       {phase === 4 && <button className="animated-replay" onClick={() => { setPlaying(false); setPhase(0) }}>Revoir l’invitation</button>}
     </div>
     <style>{`
@@ -86,18 +81,8 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
       .animated-rule { height:1px; width:70px; margin:22px auto; background:currentColor; opacity:.4; }
       .animated-venue { font:400 clamp(20px,5vw,30px)/1.3 var(--font-display,Georgia),serif; }
       .animated-address { font:400 13px/1.6 var(--font-body,Arial),sans-serif; margin:10px 0 0; }
-      .animated-envelope { position:absolute; inset:0; z-index:3; pointer-events:none; }
-      .animated-paper { position:absolute; inset:0; background:linear-gradient(120deg,#ffffff22,#00000012),var(--paper); box-shadow:12px 0 26px #0003; transition:transform 1.15s cubic-bezier(.4,0,.2,1); }
-      .animated-paper:after { content:''; position:absolute; inset:0; background:repeating-linear-gradient(0deg,#fff1 0 1px,transparent 1px 3px); opacity:.3; }
-      .animated-flap { position:absolute; top:0; bottom:0; right:0; width:78%; filter:drop-shadow(-8px 9px 10px #0003); transition:transform .95s cubic-bezier(.4,0,.2,1); }
-      .animated-flap-paper { position:absolute; inset:0; clip-path:polygon(100% 0,18% 50%,100% 100%); background:linear-gradient(115deg,#ffffff44,#00000008),var(--paper); }
-      .animated-seal { position:absolute; top:calc(50% - 43px); left:calc(18% - 43px); width:86px; height:86px; border-radius:48% 52% 49% 47%; border:1px solid #0002; background:radial-gradient(circle at 30% 25%,#ffffff55,transparent 70%),var(--accent); color:var(--seal-ink); box-shadow:inset 0 0 0 4px #ffffff33,inset 0 0 0 5px #0002,2px 5px 10px #0003; font:400 30px var(--font-script,Georgia),serif; pointer-events:auto; cursor:pointer; }
-      .animated-seal small { font:italic 13px Georgia,serif; margin:0 2px; }
-      .animated-open-hint { position:absolute; bottom:12%; width:100%; text-align:center; font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.13em; }
-      .animated-invitation:not(.phase-0) .animated-flap { transform:translateX(118%); }
-      .phase-2 .animated-paper,.phase-3 .animated-paper,.phase-4 .animated-paper { transform:translateX(-105%); }
       .animated-replay { position:absolute; z-index:4; bottom:calc(env(safe-area-inset-bottom) + 20px); left:50%; transform:translateX(-50%); font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.1em; padding:10px 14px; border:1px solid currentColor; border-radius:30px; background:var(--paper); color:var(--ink); cursor:pointer; white-space:nowrap; }
-      @media (prefers-reduced-motion:reduce) { .animated-stage * { transition:none!important; transform:none!important; } .animated-invitation:not(.phase-0) .animated-envelope { display:none; } }
+      @media (prefers-reduced-motion:reduce) { .animated-stage * { transition:none!important; transform:none!important; } }
       @media (max-height:650px) { .animated-scene { padding:7% 9% 65px; } .animated-final-names { margin:8px 0 10px; } .animated-number { font-size:68px; } .animated-rule { margin:12px auto; } }
     `}</style>
   </main>
