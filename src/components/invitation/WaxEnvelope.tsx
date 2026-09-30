@@ -28,7 +28,7 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
           <defs>
             <radialGradient id="wax-body" cx="30%" cy="22%" r="85%"><stop stopColor="var(--accent)" /><stop offset=".4" stopColor="var(--accent)" /><stop offset="1" stopColor="var(--accent)" /></radialGradient>
             <linearGradient id="wax-light" x2=".8" y2="1"><stop stopColor="#ffffff" stopOpacity=".5" /><stop offset=".45" stopColor="#ffffff" stopOpacity="0" /><stop offset="1" stopColor="#000000" stopOpacity=".35" /></linearGradient>
-            <filter id="wax-grain"><feTurbulence type="fractalNoise" baseFrequency=".28" numOctaves="3" seed="7" /><feColorMatrix type="saturate" values="0" /><feComponentTransfer><feFuncA type="linear" slope=".12" /></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light" /></filter>
+            <filter id="wax-grain"><feTurbulence type="fractalNoise" baseFrequency=".28" numOctaves="3" seed="7" /><feColorMatrix type="saturate" values="0" /><feComponentTransfer><feFuncA type="linear" slope=".12" /></feComponentTransfer><feComposite in2="SourceGraphic" operator="in" result="texture" /><feBlend in="SourceGraphic" in2="texture" mode="soft-light" /></filter>
           </defs>
           <path className="wax-body" d="M60 5C70 2 76 9 85 9C95 10 96 19 104 25C112 32 109 40 115 49C120 59 114 66 113 75C111 86 102 89 97 98C91 108 81 106 71 113C61 119 51 112 42 112C31 112 28 103 19 98C9 92 13 81 7 72C1 62 7 54 7 44C8 34 17 30 22 21C27 12 38 15 45 9C50 5 55 7 60 5Z" fill="url(#wax-body)" />
           <path d="M60 5C70 2 76 9 85 9C95 10 96 19 104 25C112 32 109 40 115 49C120 59 114 66 113 75C111 86 102 89 97 98C91 108 81 106 71 113C61 119 51 112 42 112C31 112 28 103 19 98C9 92 13 81 7 72C1 62 7 54 7 44C8 34 17 30 22 21C27 12 38 15 45 9C50 5 55 7 60 5Z" fill="url(#wax-light)" filter="url(#wax-grain)" />
@@ -57,6 +57,7 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
       .wax-right .wax-side-paper { clip-path:polygon(100% 0,0 50%,100% 100%); background:linear-gradient(250deg,#ffffff18,#00000028),var(--paper); }
       .wax-side-paper:after { content:''; position:absolute; inset:0; opacity:.25; background:repeating-linear-gradient(0deg,#fff1 0 1px,transparent 1px 3px); }
       .wax-seal { position:absolute; left:calc(100% - 52px); top:calc(50% - 52px); width:104px; height:104px; padding:0; border:0; background:none; color:var(--seal-ink); cursor:pointer; pointer-events:auto; transform:translateZ(8px); filter:drop-shadow(3px 7px 5px #0005); }
+      .wax-seal:focus-visible { outline:2px solid var(--ink); outline-offset:5px; border-radius:50%; }
       .wax-seal svg { width:100%; height:100%; overflow:visible; }
       .wax-initials { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:1px; padding-bottom:5px; font:400 28px var(--font-script,Georgia),serif; text-shadow:0 1px 0 #ffffff70,0 -1px 0 #0005; }
       .wax-initials small { font:italic 12px Georgia,serif; }
