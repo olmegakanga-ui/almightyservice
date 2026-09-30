@@ -82,7 +82,7 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
       .animated-venue { font:400 clamp(20px,5vw,30px)/1.3 var(--font-display,Georgia),serif; }
       .animated-address { font:400 13px/1.6 var(--font-body,Arial),sans-serif; margin:10px 0 0; }
       .animated-replay { position:absolute; z-index:4; bottom:calc(env(safe-area-inset-bottom) + 20px); left:50%; transform:translateX(-50%); font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.1em; padding:10px 14px; border:1px solid currentColor; border-radius:30px; background:var(--paper); color:var(--ink); cursor:pointer; white-space:nowrap; }
-      @media (prefers-reduced-motion:reduce) { .animated-stage * { transition:none!important; transform:none!important; } }
+      @media (prefers-reduced-motion:reduce) { .animated-scene { transition:none!important; transform:none!important; } }
       @media (max-height:650px) { .animated-scene { padding:7% 9% 65px; } .animated-final-names { margin:8px 0 10px; } .animated-number { font-size:68px; } .animated-rule { margin:12px auto; } }
     `}</style>
   </main>
