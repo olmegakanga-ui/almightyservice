@@ -7,11 +7,11 @@ const PETALS = Array.from({ length: 14 }, (_, i) => {
   const radians = angle * Math.PI / 180
   return {
     '--angle': `${angle}deg`,
-    '--drift-x': `${Math.cos(radians) * (280 + i * 18)}px`,
-    '--drift-y': `${Math.sin(radians) * (320 + i * 18)}px`,
+    '--drift-x': `${Math.cos(radians) * (70 + i * 4)}cqw`,
+    '--drift-y': `${Math.sin(radians) * (90 + i * 4)}cqw`,
     '--turn': `${angle + (i % 2 ? 150 : -180)}deg`,
-    '--delay': `${1.05 + i * .035}s`,
-    '--size': `${64 + (i % 4) * 12}px`,
+    '--delay': `${2.05 + i * .025}s`,
+    '--size': `${65 + (i % 4) * 10}px`,
   } as CSSProperties
 })
 
@@ -41,16 +41,16 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
         <span className="wax-initials">{groomName.charAt(0)}<small>&amp;</small>{brideName.charAt(0)}</span>
       </button>
     </div>
-    <div className="wax-blossom" aria-hidden="true">{PETALS.map((style, i) => <i key={i} className="wax-petal" style={style} />)}</div>
+    <div className="wax-blossom" aria-hidden="true"><img className="wax-rose" src="/images/intro-ivory-rose.webp" alt="" />{PETALS.map((style, i) => <i key={i} className="wax-petal" style={style} />)}</div>
     {!opening && <p className="wax-hint">Touchez le sceau pour ouvrir</p>}
     <style>{`
-      .wax-envelope { position:absolute; inset:0; z-index:3; perspective:1200px; pointer-events:none; transition:opacity .4s; }
+      .wax-envelope { position:absolute; inset:0; z-index:3; perspective:1200px; pointer-events:none; transition:opacity .55s; }
       .wax-envelope.finished { opacity:0; visibility:hidden; }
-      .wax-back { position:absolute; inset:0; background:var(--paper); transition:opacity 1s ease 1.1s; }
-      .wax-fold { position:absolute; inset:0; background:linear-gradient(120deg,#ffffff20,#00000020),var(--paper); transition:transform 1.4s cubic-bezier(.22,.6,.25,1) .45s; }
+      .wax-back { position:absolute; inset:0; background:var(--paper); transition:opacity 1.15s ease .95s; }
+      .wax-fold { position:absolute; inset:0; background:linear-gradient(120deg,#ffffff20,#00000020),var(--paper); transition:opacity .9s ease 1.05s; }
       .wax-top { clip-path:polygon(0 0,100% 0,50% 51%); }
       .wax-bottom { clip-path:polygon(0 100%,100% 100%,50% 49%); background:linear-gradient(30deg,#00000024,#ffffff16),var(--paper); }
-      .wax-side { position:absolute; top:0; bottom:0; width:50%; transform-style:preserve-3d; transition:transform 1.65s cubic-bezier(.35,.05,.2,1); filter:drop-shadow(5px 8px 8px #0004); }
+      .wax-side { position:absolute; top:0; bottom:0; width:50%; transform-style:preserve-3d; backface-visibility:hidden; transition:transform 1.85s cubic-bezier(.3,.12,.2,1),opacity .45s ease 1.35s; filter:drop-shadow(5px 8px 8px #0004); }
       .wax-left { left:0; transform-origin:left center; z-index:2; }
       .wax-right { right:0; transform-origin:right center; transition-delay:.12s; }
       .wax-side-paper { position:absolute; inset:0; background:linear-gradient(110deg,#ffffff28,#00000018),var(--paper); clip-path:polygon(0 0,100% 50%,0 100%); }
@@ -59,25 +59,34 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
       .wax-seal { position:absolute; left:calc(100% - 52px); top:calc(50% - 52px); width:104px; height:104px; padding:0; border:0; background:none; color:var(--seal-ink); cursor:pointer; pointer-events:auto; transform:translateZ(8px); filter:drop-shadow(3px 7px 5px #0005); }
       .wax-seal:focus-visible { outline:2px solid var(--ink); outline-offset:5px; border-radius:50%; }
       .wax-seal svg { width:100%; height:100%; overflow:visible; }
-      .wax-initials { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:1px; padding-bottom:5px; font:400 28px var(--font-script,Georgia),serif; text-shadow:0 1px 0 #ffffff70,0 -1px 0 #0005; }
+      .wax-initials { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:4px; opacity:.78; padding-bottom:5px; font:400 23px var(--font-script,Georgia),serif; text-shadow:0 1px 0 #ffffff70,0 -1px 0 #0005; }
       .wax-initials small { font:italic 12px Georgia,serif; }
       .wax-engraving { opacity:.65; filter:drop-shadow(0 1px 0 #ffffff80); }
-      .wax-hint { position:absolute; bottom:10%; width:100%; text-align:center; font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.13em; }
+      .wax-hint { color:var(--envelope-ink); position:absolute; bottom:10%; width:100%; text-align:center; font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.13em; }
       .wax-blossom { position:absolute; left:50%; top:50%; width:0; height:0; z-index:4; opacity:0; }
-      .wax-petal { position:absolute; width:var(--size); height:calc(var(--size) * .72); left:calc(var(--size) * -.5); top:calc(var(--size) * -.35); border-radius:64% 36% 57% 43% / 73% 52% 48% 27%; background:radial-gradient(ellipse at 30% 25%,#ffffff 0%,#fffaf4 35%,color-mix(in srgb,var(--accent) 28%,#f2e6dd) 72%,#c4b8ab 100%); box-shadow:inset 1px 3px 6px #fff9,inset -3px -4px 8px #715a4322,2px 5px 8px #0002; transform:rotate(var(--angle)) translateY(-18px) rotateX(35deg) scale(.35); opacity:0; }
-      .wax-envelope.opening .wax-left { transform:translateX(-32%) rotateY(-112deg); }
-      .wax-envelope.opening .wax-right { transform:translateX(32%) rotateY(112deg); }
-      .wax-envelope.opening .wax-top { transform:translateY(-100%); }
-      .wax-envelope.opening .wax-bottom { transform:translateY(100%); }
+
+      .wax-rose { max-width:none; position:absolute; width:clamp(170px,48cqw,260px); height:clamp(170px,48cqw,260px); left:0; top:0; margin-left:clamp(-130px,-24cqw,-85px); margin-top:clamp(-130px,-24cqw,-85px); object-fit:contain; opacity:0; filter:drop-shadow(0 10px 16px #0003); }
+      .wax-petal { position:absolute; width:var(--size); height:var(--size); left:calc(var(--size) * -.5); top:calc(var(--size) * -.5); background:url('/images/intro-ivory-petal.webp') center/contain no-repeat; filter:drop-shadow(1px 4px 3px #0002); opacity:0; will-change:transform,opacity; }
+      .wax-envelope.opening .wax-left { transform:translateX(-110%) rotateY(-78deg); opacity:0; }
+      .wax-envelope.opening .wax-right { transform:translateX(110%) rotateY(78deg); opacity:0; }
+      .wax-envelope.opening .wax-top,.wax-envelope.opening .wax-bottom { opacity:0; }
       .wax-envelope.opening .wax-back { opacity:0; }
       .wax-envelope.opening .wax-blossom { opacity:1; }
-      .wax-envelope.opening .wax-petal { animation:wax-petal-flight 2.3s cubic-bezier(.2,.6,.3,1) var(--delay) both; }
+      .wax-envelope.opening .wax-rose { animation:wax-rose-bloom 3.3s cubic-bezier(.22,.65,.3,1) .55s both; }
+      .wax-envelope.opening .wax-petal { animation:wax-petal-flight 2.6s cubic-bezier(.28,.45,.3,1) var(--delay) both; }
+      @keyframes wax-rose-bloom {
+        0% { opacity:0; transform:scale(.15) rotate(-18deg); }
+        30% { opacity:1; transform:scale(.82) rotate(-5deg); }
+        52% { opacity:1; transform:scale(1) rotate(0deg); }
+        66% { opacity:.7; transform:scale(1.12) rotate(4deg); }
+        85%,100% { opacity:0; transform:scale(1.25) rotate(8deg); }
+      }
       @keyframes wax-petal-flight {
-        0% { opacity:0; transform:rotate(var(--angle)) translateY(-12px) rotateX(35deg) scale(.35); }
-        18% { opacity:1; transform:rotate(var(--angle)) translateY(-24px) rotateX(20deg) scale(.9); }
-        38% { opacity:1; transform:rotate(var(--angle)) translateY(-45px) rotateX(0) scale(1.15); }
-        78% { opacity:.85; }
-        100% { opacity:0; transform:translate(var(--drift-x),var(--drift-y)) rotate(var(--turn)) rotateY(65deg) scale(1.7); }
+        0% { opacity:0; transform:rotate(var(--angle)) translateY(-32px) scale(.4); }
+        12% { opacity:1; transform:rotate(var(--angle)) translateY(-55px) scale(.8); }
+        35% { opacity:1; transform:rotate(var(--angle)) translateY(-85px) scale(1); }
+        75% { opacity:.85; }
+        100% { opacity:0; transform:translate(var(--drift-x),var(--drift-y)) rotate(var(--turn)) rotateY(55deg) scale(1.35); }
       }
       @media (prefers-reduced-motion:reduce) { .wax-envelope.opening { display:none; } .wax-envelope * { animation:none!important; transition:none!important; } }
     `}</style>
