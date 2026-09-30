@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { DrinkCategory, ProgramItem } from '@/types/database.types'
 
 export interface FullInvitationData {
-  presentationStyle:   'classic' | 'floral'
+  coupleCutoutUrl: string | null
+  presentationStyle:   'classic' | 'floral' | 'animated'
   eventId:             string
   groomName:           string
   brideName:           string
@@ -111,7 +112,8 @@ export async function getInvitationByToken(
     : []
 
   return {
-    presentationStyle:   event.presentation_style === 'floral' ? 'floral' : 'classic',
+    presentationStyle: event.presentation_style === 'animated' ? 'animated' : event.presentation_style === 'floral' ? 'floral' : 'classic',
+    coupleCutoutUrl: event.couple_cutout_url ?? null,
     eventId:             event.id,
     groomName:           event.groom_name,
     brideName:           event.bride_name,
