@@ -118,7 +118,7 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
       .wax-right { right:0; transform-origin:right center; }
       .wax-paper-layer { position:absolute; inset:0; width:100%; height:100%; overflow:visible; transform:translateZ(var(--paper-depth,3.1px)); backface-visibility:hidden; }
       .paper-edge { fill:color-mix(in srgb,var(--paper) 63%,black); stroke:color-mix(in srgb,var(--paper) 60%,white); stroke-width:.16; backface-visibility:visible; }
-      .paper-front { stroke:color-mix(in srgb,var(--paper) 68%,white); stroke-width:.15; }
+      .paper-front { filter:drop-shadow(3px 5px 4px #0005); stroke:color-mix(in srgb,var(--paper) 68%,white); stroke-width:.15; }
       .wax-right .wax-paper-layer { scale:-1 1; }
       .paper-reverse { transform:rotateY(180deg) translateZ(3.1px); scale:-1 1; fill:color-mix(in srgb,var(--paper) 80%,#fff7e8); stroke:color-mix(in srgb,var(--paper) 55%,black); stroke-width:.2; }
       .wax-right .paper-reverse { scale:1; }
@@ -135,7 +135,7 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
       .wax-flower-head { position:absolute; left:0; top:0; width:0; height:0; transform-style:preserve-3d; opacity:0; }
       .bloom-hinge { position:absolute; width:0; height:0; transform-style:preserve-3d; transform:translateZ(var(--bloom-depth)) rotateZ(var(--bloom-angle)); }
       .bloom-petal { position:absolute; width:var(--bloom-width); height:var(--bloom-length); left:calc(var(--bloom-width) * -.5); bottom:-1cqw; transform-origin:50% 100%; transform:rotateX(-82deg); background:url('/images/intro-ivory-petal.webp') center/100% 100% no-repeat; border-radius:70% 70% 42% 42%; backface-visibility:visible; }
-      .bloom-petal:after { content:''; position:absolute; inset:0; border-radius:inherit; background:linear-gradient(0deg,#5b49372e,transparent 65%,#fff9); mix-blend-mode:multiply; }
+      .bloom-petal:after { content:''; position:absolute; inset:0; border-radius:inherit; background:linear-gradient(0deg,#5b49372e,transparent 65%,#fff9); mask:url('/images/intro-ivory-petal.webp') center/100% 100% no-repeat; }
       .wax-rose-core { max-width:none; position:absolute; width:19cqw; height:19cqw; left:-9.5cqw; top:-9.5cqw; object-fit:contain; transform:translateZ(27px); }
       .wax-flower-shadow { position:absolute; width:43cqw; height:24cqw; left:-21.5cqw; top:-8cqw; border-radius:50%; background:radial-gradient(ellipse,#281a174a,transparent 68%); transform:translateZ(-75px); opacity:0; }
       .wax-petal { position:absolute; width:var(--size); height:var(--size); left:calc(var(--size) * -.5); top:calc(var(--size) * -.5); background:url('/images/intro-ivory-petal.webp') center/contain no-repeat; filter:drop-shadow(1px 4px 3px #0002); opacity:0; will-change:transform,opacity; }
