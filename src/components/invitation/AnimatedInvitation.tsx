@@ -60,7 +60,7 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
         </div>
       </section>
       <WaxEnvelope key={envelopeVersion} opening={phase !== 0} hidden={phase >= 2} groomName={event.groomName} brideName={event.brideName} onOpen={open} onReveal={() => setPhase(2)} />
-      {phase === 4 && <button className="animated-replay" onClick={() => { setPlaying(false); setPhase(0); setEnvelopeVersion(v => v + 1) }}>Revoir l’invitation</button>}
+      {phase === 4 && <footer className="animated-footer"><p className="animated-brand">Almighty Service</p><button className="animated-replay" onClick={() => { setPlaying(false); setPhase(0); setEnvelopeVersion(v => v + 1) }}>Revoir l’invitation</button></footer>}
     </div>
     <style>{`
       .animated-invitation { min-height:100svh; background:var(--paper); color:var(--ink); display:flex; justify-content:center; }
@@ -95,9 +95,12 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
       .animated-rule { height:1px; width:70px; margin:22px auto; background:currentColor; opacity:.4; }
       .animated-venue { font:400 clamp(20px,5cqw,30px)/1.3 var(--font-display,Georgia),serif; }
       .animated-address { font:400 13px/1.6 var(--font-body,Arial),sans-serif; margin:10px 0 0; }
-      .animated-replay { position:absolute; z-index:4; bottom:calc(env(safe-area-inset-bottom) + 20px); left:50%; transform:translateX(-50%); font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.1em; padding:10px 14px; border:1px solid currentColor; border-radius:30px; background:var(--card); color:var(--ink); cursor:pointer; white-space:nowrap; }
+      .animated-scene.details { padding-bottom:120px; }
+      .animated-footer { position:absolute; z-index:5; bottom:calc(env(safe-area-inset-bottom) + 20px); left:0; width:100%; display:flex; flex-direction:column; align-items:center; gap:10px; }
+      .animated-brand { margin:0; font:400 12px/1.4 var(--font-body,Arial),sans-serif; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); }
+      .animated-replay { font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.1em; padding:10px 14px; border:1px solid currentColor; border-radius:30px; background:var(--card); color:var(--ink); cursor:pointer; white-space:nowrap; }
       @media (prefers-reduced-motion:reduce) { .animated-scene { transition:none!important; transform:none!important; } .border-bouquet { animation:none!important; } }
-      @media (max-height:650px) { .animated-scene { padding:7% 9% 65px; } .animated-final-names { margin:8px 0 10px; } .animated-number { font-size:68px; } .animated-rule { margin:12px auto; } }
+      @media (max-height:650px) { .animated-scene { padding:7% 9% 65px; } .animated-scene.details { padding-bottom:120px; } .animated-final-names { margin:8px 0 10px; } .animated-number { font-size:68px; } .animated-rule { margin:12px auto; } }
     `}</style>
   </main>
 }
