@@ -2,7 +2,6 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 
-const WAX_OUTLINE = 'M60 5C70 2 76 9 85 9C95 10 96 19 104 25C112 32 109 40 115 49C120 59 114 66 113 75C111 86 102 89 97 98C91 108 81 106 71 113C61 119 51 112 42 112C31 112 28 103 19 98C9 92 13 81 7 72C1 62 7 54 7 44C8 34 17 30 22 21C27 12 38 15 45 9C50 5 55 7 60 5Z'
 
 // Each petal opens and then departs: no replacement flower/flight layer.
 const BLOOM_PETALS = [
@@ -52,50 +51,8 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
     <div className="wax-side wax-right"><PaperFaces side="right"/></div>
     <div className="wax-side wax-left"><PaperFaces side="left">
       <button className="wax-seal" onClick={onOpen} disabled={opening} aria-label="Ouvrir l’invitation">
-        {[0, 2, 4, 6].map(depth => <svg key={depth} className="wax-seal-depth" style={{ transform: `translateZ(${depth}px)` }} viewBox="0 0 120 120" aria-hidden="true"><path d={WAX_OUTLINE}/></svg>)}
-        <svg className="wax-seal-face" viewBox="0 0 120 120" aria-hidden="true">
-          <defs>
-            <radialGradient id="wax-body" cx="32%" cy="24%" r="80%">
-              <stop stopColor="color-mix(in srgb,var(--accent) 75%,white)" />
-              <stop offset=".3" stopColor="var(--accent)" />
-              <stop offset=".65" stopColor="color-mix(in srgb,var(--accent) 90%,black)" />
-              <stop offset=".85" stopColor="color-mix(in srgb,var(--accent) 72%,black)" />
-              <stop offset="1" stopColor="color-mix(in srgb,var(--accent) 85%,white)" />
-            </radialGradient>
-            <radialGradient id="wax-imprint" cx="42%" cy="32%" r="80%">
-              <stop stopColor="color-mix(in srgb,var(--accent) 93%,white)" />
-              <stop offset=".8" stopColor="color-mix(in srgb,var(--accent) 88%,black)" />
-              <stop offset="1" stopColor="color-mix(in srgb,var(--accent) 70%,black)" />
-            </radialGradient>
-            <filter id="wax-bevel" x="-10%" y="-10%" width="120%" height="120%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="1.2" result="height" />
-              <feSpecularLighting in="height" surfaceScale="6" specularConstant=".65" specularExponent="16" lightingColor="#fff7e8" result="shine"><fePointLight x="-50" y="-90" z="160" /></feSpecularLighting>
-              <feComposite in="shine" in2="SourceAlpha" operator="in" result="edge" />
-              <feBlend in="SourceGraphic" in2="edge" mode="screen" />
-            </filter>
-            <filter id="wax-grain">
-              <feTurbulence type="fractalNoise" baseFrequency=".18" numOctaves="3" seed="7" result="grain" />
-              <feColorMatrix type="saturate" values="0" />
-              <feComponentTransfer><feFuncA type="linear" slope=".1" /></feComponentTransfer>
-              <feComposite in2="SourceGraphic" operator="in" result="texture" />
-              <feBlend in="SourceGraphic" in2="texture" mode="soft-light" />
-            </filter>
-          </defs>
-          <path d={WAX_OUTLINE} transform="translate(0 4)" fill="color-mix(in srgb,var(--accent) 58%,black)" />
-          <path d={WAX_OUTLINE} fill="url(#wax-body)" filter="url(#wax-bevel)" />
-          <path d={WAX_OUTLINE} fill="url(#wax-body)" opacity=".35" filter="url(#wax-grain)" />
-          <circle cx="60" cy="60" r="39" fill="url(#wax-imprint)" stroke="color-mix(in srgb,var(--accent) 58%,black)" strokeWidth="4" />
-          <circle cx="59.3" cy="59.1" r="41.5" fill="none" stroke="#fff8e6" strokeOpacity=".65" strokeWidth="2" />
-          <path d="M20 51C18 30 37 15 59 17M75 101C91 96 104 81 104 65" fill="none" stroke="#fff7df" strokeOpacity=".45" strokeWidth="3" strokeLinecap="round"/>
-          <defs>
-            <linearGradient id="wax-leaf" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#fff5d6"/><stop offset=".35" stopColor="var(--accent)"/><stop offset=".7" stopColor="color-mix(in srgb,var(--accent) 48%,#442b14)"/><stop offset="1" stopColor="color-mix(in srgb,var(--accent) 80%,white)"/></linearGradient>
-            <filter id="wax-relief"><feDropShadow dx="1" dy="1.6" stdDeviation=".65" floodColor="#29180d" floodOpacity=".7"/></filter>
-          </defs>
-          <g className="wax-botanical" fill="url(#wax-leaf)" stroke="color-mix(in srgb,var(--accent) 65%,#fff4cb)" strokeWidth=".65" filter="url(#wax-relief)">
-            <path d="M57 87Q59 65 65 33" fill="none" strokeWidth="2.4" />
-            <path d="M63 44Q50 43 51 32Q63 32 63 44ZM62 53Q73 51 76 40Q63 41 62 53ZM60 62Q46 60 45 48Q60 48 60 62ZM59 70Q72 69 78 56Q62 57 59 70ZM58 79Q44 77 42 64Q56 64 58 79ZM58 85Q70 85 76 74Q63 74 58 85ZM65 37Q59 27 67 23Q73 31 65 37Z" />
-          </g>
-        </svg>
+        {[0, 1.5, 3].map(depth => <img key={depth} className="wax-seal-depth" style={{ transform: `translateZ(${depth}px)` }} src="/images/gold-ring-wax-seal.webp" alt="" aria-hidden="true" />)}
+        <img className="wax-seal-face" src="/images/gold-ring-wax-seal.webp" alt="" draggable={false} fetchPriority="high" />
       </button>
     </PaperFaces></div>
     <div className="wax-blossom" aria-hidden="true">
@@ -127,13 +84,13 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
       .wax-paper-layer { position:absolute; inset:0; width:calc(100% + .4px); height:100%; transform:translateZ(.45px); backface-visibility:hidden; }
       .paper-reverse { transform:rotateY(180deg) translateZ(.45px) scaleX(-1); fill:color-mix(in srgb,var(--paper) 94%,#fff7e8); }
       .paper-light { fill:white; opacity:0; transform:translateZ(.5px); }
-      .wax-envelope.opening .paper-strip { animation:paper-curl 3.4s cubic-bezier(.25,.1,.25,1) var(--curl-delay) both; }
+      .wax-envelope.opening .paper-strip { animation:paper-curl 3.8s cubic-bezier(.25,.1,.25,1) var(--curl-delay) both; }
       .wax-envelope.opening .sheet-right .paper-strip { animation-delay:calc(.3s + var(--curl-delay)); }
-      @keyframes paper-curl { 0%,100% { transform:rotateY(0deg); } 38% { transform:rotateY(-5deg); } 72% { transform:rotateY(-2deg); } }
+      @keyframes paper-curl { 0%,100% { transform:rotateY(0deg); } 38% { transform:rotateY(-3deg); } 72% { transform:rotateY(-1.5deg); } }
       .wax-cast-shadow { position:absolute; inset:0; background:radial-gradient(ellipse at 45% 48%,#0009,transparent 68%); opacity:.15; pointer-events:none; }
       .wax-seal { position:absolute; left:calc(100% - 52px); top:calc(50% - 52px); width:104px; height:104px; padding:0; border:0; background:none; color:var(--seal-ink); cursor:pointer; pointer-events:auto; transform:translateZ(7px); transform-style:preserve-3d; }
       .wax-seal:focus-visible { outline:2px solid var(--ink); outline-offset:5px; border-radius:50%; }
-      .wax-seal svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; backface-visibility:hidden; } .wax-seal-depth { fill:color-mix(in srgb,var(--accent) 52%,#382619); stroke:color-mix(in srgb,var(--accent) 80%,white); stroke-width:.35; } .wax-seal-face { transform:translateZ(8px); filter:drop-shadow(2px 4px 3px #0005); }
+      .wax-seal img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; backface-visibility:hidden; } .wax-seal-depth { filter:brightness(.56) saturate(.8); } .wax-seal-face { transform:translateZ(4.5px); filter:drop-shadow(1px 5px 3px #32190665); }
       .wax-monogram { font:400 28px var(--font-script,Georgia),serif; fill:color-mix(in srgb,var(--seal-ink) 58%,var(--accent)); filter:drop-shadow(0 .8px 0 #ffffff70) drop-shadow(0 -.7px 0 #0003); }
       .wax-amp { font:italic 12px Georgia,serif; }
       .wax-engraving { opacity:.65; filter:drop-shadow(0 1px 0 #ffffff80); }
@@ -146,8 +103,8 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
       .wax-envelope.opening .wax-rose-core { animation:rose-heart 3.1s linear .55s both; }
       @keyframes rose-heart { 0% { opacity:0; transform:translateZ(28px) scale(.5); } 22%,57% { opacity:1; transform:translateZ(28px) scale(1); } 80%,100% { opacity:0; transform:translateZ(40px) scale(1.05); } }
       .wax-flower-shadow { position:absolute; width:43cqw; height:24cqw; left:-21.5cqw; top:-8cqw; border-radius:50%; background:radial-gradient(ellipse,#281a174a,transparent 68%); transform:translateZ(-75px); opacity:0; }
-      .wax-envelope.opening .wax-left { animation:wax-left-unfold 3.4s cubic-bezier(.28,.12,.22,1) .04s both; }
-      .wax-envelope.opening .wax-right { animation:wax-right-unfold 3.5s cubic-bezier(.32,.05,.25,1) .32s both; }
+      .wax-envelope.opening .wax-left { animation:wax-left-unfold 3.8s cubic-bezier(.42,0,.28,1) .04s both; }
+      .wax-envelope.opening .wax-right { animation:wax-right-unfold 3.8s cubic-bezier(.42,0,.28,1) .32s both; }
       .wax-envelope.opening .wax-top { animation:wax-top-unfold 3s cubic-bezier(.32,.05,.25,1) .5s both; }
       .wax-envelope.opening .wax-bottom { animation:wax-bottom-unfold 3.4s cubic-bezier(.32,.05,.25,1) .65s both; }
       /* One continuous curve avoids a slowdown at every intermediate keyframe. */
