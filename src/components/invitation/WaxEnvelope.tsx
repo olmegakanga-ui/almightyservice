@@ -20,26 +20,19 @@ const BLOOM_PETALS = [
   } as CSSProperties
 }))
 
-const PAPER_STRIPS = 9
-
-// Nested hinges give the paper a changing curvature, including the seal at its tip.
-function PaperStrip({ side, index, children }: { side: 'left' | 'right'; index: number; children?: ReactNode }) {
-  const front = `paper-light-${side}-${index}`
+// A continuous surface avoids raster seams between independently rotated bands.
+function PaperFaces({ side, children }: { side: 'left' | 'right'; children?: ReactNode }) {
+  const front = `paper-light-${side}`
   const path = 'M0 0 Q52 8 100 50 Q52 92 0 100Z'
-  const viewBox = `${index * 100 / PAPER_STRIPS} 0 ${100 / PAPER_STRIPS} 100`
-  return <div className={`paper-strip ${index === 0 ? 'strip-root' : ''}`} style={{ '--curl-delay': `${index * .018}s` } as CSSProperties}>
-    <svg className="wax-paper-layer paper-front" viewBox={viewBox} preserveAspectRatio="none" aria-hidden="true">
+  return <div className={`paper-sheet sheet-${side}`}>
+    <svg className="wax-paper-layer paper-front" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <defs><linearGradient id={front} x1="0" y1="0" x2="1" y2=".75"><stop stopColor="color-mix(in srgb,var(--paper) 86%,white)"/><stop offset=".48" stopColor="var(--paper)"/><stop offset="1" stopColor="color-mix(in srgb,var(--paper) 72%,black)"/></linearGradient></defs>
       <path d={path} fill={`url(#${front})`}/>
     </svg>
-    <svg className="wax-paper-layer paper-reverse" viewBox={viewBox} preserveAspectRatio="none" aria-hidden="true"><path d={path}/></svg>
-    <svg className="wax-paper-layer paper-light" viewBox={viewBox} preserveAspectRatio="none" aria-hidden="true"><path d={path}/></svg>
-    {index < PAPER_STRIPS - 1 ? <PaperStrip side={side} index={index + 1}>{children}</PaperStrip> : children}
+    <svg className="wax-paper-layer paper-reverse" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={path}/></svg>
+    <svg className="wax-paper-layer paper-light" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={path}/></svg>
+    {children}
   </div>
-}
-
-function PaperFaces({ side, children }: { side: 'left' | 'right'; children?: ReactNode }) {
-  return <div className={`paper-sheet sheet-${side}`}><PaperStrip side={side} index={0}>{children}</PaperStrip></div>
 }
 
 export default function WaxEnvelope({ opening, hidden, groomName, brideName, onOpen, onReveal }: {
@@ -79,14 +72,9 @@ export default function WaxEnvelope({ opening, hidden, groomName, brideName, onO
       .wax-right { right:0; transform-origin:right center; }
       .paper-sheet { position:absolute; inset:0; transform-style:preserve-3d; }
       .sheet-right { transform:scaleX(-1); }
-      .paper-strip { position:absolute; top:0; height:100%; left:calc(100% - .2px); width:100%; transform-origin:left center; transform-style:preserve-3d; }
-      .paper-strip.strip-root { left:0; width:calc(100% / ${PAPER_STRIPS}); }
-      .wax-paper-layer { position:absolute; inset:0; width:calc(100% + .4px); height:100%; transform:translateZ(.45px); backface-visibility:hidden; }
+      .wax-paper-layer { position:absolute; inset:0; width:100%; height:100%; transform:translateZ(.45px); backface-visibility:hidden; }
       .paper-reverse { transform:rotateY(180deg) translateZ(.45px) scaleX(-1); fill:color-mix(in srgb,var(--paper) 94%,#fff7e8); }
       .paper-light { fill:white; opacity:0; transform:translateZ(.5px); }
-      .wax-envelope.opening .paper-strip { animation:paper-curl 3.8s cubic-bezier(.25,.1,.25,1) var(--curl-delay) both; }
-      .wax-envelope.opening .sheet-right .paper-strip { animation-delay:calc(.3s + var(--curl-delay)); }
-      @keyframes paper-curl { 0%,100% { transform:rotateY(0deg); } 38% { transform:rotateY(-3deg); } 72% { transform:rotateY(-1.5deg); } }
       .wax-cast-shadow { position:absolute; inset:0; background:radial-gradient(ellipse at 45% 48%,#0009,transparent 68%); opacity:.15; pointer-events:none; }
       .wax-seal { position:absolute; left:calc(100% - 52px); top:calc(50% - 52px); width:104px; height:104px; padding:0; border:0; background:none; color:var(--seal-ink); cursor:pointer; pointer-events:auto; transform:translateZ(7px); transform-style:preserve-3d; }
       .wax-seal:focus-visible { outline:2px solid var(--ink); outline-offset:5px; border-radius:50%; }
