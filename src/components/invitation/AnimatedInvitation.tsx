@@ -60,7 +60,7 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
         </div>
         {phase === 0 && <p className="animated-open-hint">Touchez le sceau pour ouvrir</p>}
       </div>
-      {phase === 4 && <button className="animated-replay" onClick={open}>Revoir l’invitation</button>}
+      {phase === 4 && <button className="animated-replay" onClick={() => { setPlaying(false); setPhase(0) }}>Revoir l’invitation</button>}
     </div>
     <style>{`
       .animated-invitation { min-height:100svh; background:var(--paper); color:var(--ink); display:flex; justify-content:center; }
