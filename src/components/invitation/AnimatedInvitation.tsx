@@ -40,6 +40,7 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
     <div className="animated-stage">
       <div className="animated-flowers" aria-hidden="true" />
       <div className="animated-wash" aria-hidden="true" />
+      <div className="animated-border-flowers" aria-hidden="true"><div className="border-bouquet corner-top"><img src="/images/invitation-corner-ivory.webp" alt="" /></div><div className="border-bouquet corner-bottom"><img src="/images/invitation-corner-ivory.webp" alt="" /></div></div>
       <section className={`animated-scene announce ${phase === 2 ? 'visible' : ''}`} aria-hidden={phase !== 2}>
         <div className="animated-copy"><p className="animated-eyebrow">Vous êtes invités</p><h1>à notre<br /><em>mariage</em></h1>
           <p className="animated-message">{event.heroMessage || event.invitationText}</p>
@@ -63,8 +64,17 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
     <style>{`
       .animated-invitation { min-height:100svh; background:var(--paper); color:var(--ink); display:flex; justify-content:center; }
       .animated-stage { position:relative; width:min(100%,calc(100svh * .5625)); container-type:inline-size; height:100svh; min-height:540px; overflow:hidden; isolation:isolate; background:var(--card); }
-      .animated-flowers { position:absolute; inset:0; background:url('/images/floral-invitation-v2.webp') center/cover; filter:grayscale(1); mix-blend-mode:luminosity; opacity:.8; }
+      .animated-flowers { position:absolute; inset:0; background:url('/images/floral-invitation-v2.webp') center/cover; filter:grayscale(1); mix-blend-mode:luminosity; opacity:.32; }
       .animated-wash { position:absolute; inset:0; background:linear-gradient(90deg,transparent,var(--card) 35%,var(--card) 65%,transparent); opacity:.42; }
+      .animated-border-flowers { position:absolute; inset:0; z-index:4; pointer-events:none; }
+      .border-bouquet { position:absolute; width:57%; aspect-ratio:1; filter:drop-shadow(0 4px 5px #0003); }
+      .border-bouquet img { width:100%; height:100%; object-fit:contain; }
+      .corner-top { right:-17%; top:-8%; transform:scale(.65) rotate(-6deg); transform-origin:85% 15%; }
+      .corner-bottom { left:-17%; bottom:-8%; transform:rotate(180deg) scale(.65); transform-origin:50% 50%; }
+      .animated-invitation:not(.phase-0) .corner-top { animation:corner-top-bloom 4.4s cubic-bezier(.22,.6,.25,1) both; }
+      .animated-invitation:not(.phase-0) .corner-bottom { animation:corner-bottom-bloom 4.4s cubic-bezier(.22,.6,.25,1) .2s both; }
+      @keyframes corner-top-bloom { 0% { transform:scale(.65) rotate(-6deg); } 55% { transform:translate(-5%,7%) scale(1.08) rotate(3deg); } 100% { transform:translate(-2%,3%) scale(1) rotate(0deg); } }
+      @keyframes corner-bottom-bloom { 0% { transform:rotate(180deg) scale(.65); } 55% { transform:translate(5%,-7%) rotate(183deg) scale(1.08); } 100% { transform:translate(2%,-3%) rotate(180deg) scale(1); } }
       .animated-scene { position:absolute; inset:0; opacity:0; visibility:hidden; transform:translateY(12px); transition:opacity .9s ease,transform 1.2s ease,visibility .9s; text-align:center; padding:10% 9%; display:flex; flex-direction:column; align-items:center; justify-content:safe center; overflow-y:auto; }
       .animated-scene.visible { opacity:1; visibility:visible; transform:translateY(0); }
       .animated-copy { width:100%; max-width:440px; overflow-wrap:anywhere; }
@@ -85,7 +95,7 @@ export default function AnimatedInvitation({ event }: { event: EventData }) {
       .animated-venue { font:400 clamp(20px,5cqw,30px)/1.3 var(--font-display,Georgia),serif; }
       .animated-address { font:400 13px/1.6 var(--font-body,Arial),sans-serif; margin:10px 0 0; }
       .animated-replay { position:absolute; z-index:4; bottom:calc(env(safe-area-inset-bottom) + 20px); left:50%; transform:translateX(-50%); font:400 11px var(--font-body,Arial),sans-serif; letter-spacing:.1em; padding:10px 14px; border:1px solid currentColor; border-radius:30px; background:var(--card); color:var(--ink); cursor:pointer; white-space:nowrap; }
-      @media (prefers-reduced-motion:reduce) { .animated-scene { transition:none!important; transform:none!important; } }
+      @media (prefers-reduced-motion:reduce) { .animated-scene { transition:none!important; transform:none!important; } .border-bouquet { animation:none!important; } }
       @media (max-height:650px) { .animated-scene { padding:7% 9% 65px; } .animated-final-names { margin:8px 0 10px; } .animated-number { font-size:68px; } .animated-rule { margin:12px auto; } }
     `}</style>
   </main>
