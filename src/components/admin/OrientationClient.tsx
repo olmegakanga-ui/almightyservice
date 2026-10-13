@@ -89,9 +89,10 @@ export default function OrientationClient({ event, tables, arrivals: initialArri
   return (
     <div className="orientation-page">
       <style>{`
-        .orientation-page{padding:40px;max-width:1500px;margin:0 auto;box-sizing:border-box}
-        .orientation-layout{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:18px}
-        @media(max-width:900px){.orientation-page{padding:68px 14px 30px}.orientation-layout{grid-template-columns:1fr}.orientation-map{order:-1}}
+        .orientation-page{padding:40px;max-width:1500px;margin:0 auto;box-sizing:border-box;min-width:0}
+        .orientation-layout{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:18px;min-width:0}
+        .orientation-map{min-width:0;max-width:100%;box-sizing:border-box}
+        @media(max-width:900px){.orientation-page{padding:68px 14px 30px;width:100%}.orientation-layout{grid-template-columns:minmax(0,1fr);width:100%}.orientation-map{order:-1;width:100%;overflow:hidden}}
       `}</style>
 
       <div style={{ marginBottom: 24 }}>
