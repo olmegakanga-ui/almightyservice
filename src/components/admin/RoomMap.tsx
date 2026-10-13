@@ -1,7 +1,7 @@
 'use client'
 
-import { LocateFixed, Minus, Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight, LocateFixed, Minus, Plus } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getTableCategoryStyle, TABLE_CATEGORY_STYLES } from '@/lib/table-category-colors'
 
 export interface RoomMapTable {
@@ -21,6 +21,7 @@ interface Props {
 
 export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: Props) {
   const [zoom, setZoom] = useState(1)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const positioned = useMemo(() => tables.map((table, index) => {
     const fallbackCols = Math.max(1, Math.ceil(Math.sqrt(tables.length)))
     const fallbackX = 12 + (index % fallbackCols) * (76 / Math.max(1, fallbackCols - 1))
@@ -32,16 +33,49 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
     }
   }), [tables])
 
+  const centerHighlightedTable = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    const viewport = scrollRef.current
+    if (!viewport || !highlightedTableId) return
+
+    const table = viewport.querySelector<HTMLElement>(`[data-table-id="${highlightedTableId}"]`)
+    if (!table) return
+
+    viewport.scrollTo({
+      left: Math.max(0, table.offsetLeft - viewport.clientWidth / 2),
+      top: Math.max(0, table.offsetTop - viewport.clientHeight / 2),
+      behavior,
+    })
+  }, [highlightedTableId])
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => centerHighlightedTable('smooth'))
+    return () => window.cancelAnimationFrame(frame)
+  }, [centerHighlightedTable, zoom])
+
+  const movePlan = (direction: -1 | 1) => {
+    scrollRef.current?.scrollBy({
+      left: direction * Math.max(180, scrollRef.current.clientWidth * .72),
+      behavior: 'smooth',
+    })
+  }
+
+  const resetView = () => {
+    setZoom(1)
+    window.requestAnimationFrame(() => centerHighlightedTable('smooth'))
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
         <p style={{ color: 'rgba(255,255,255,.45)', fontSize: '.75rem' }}>
-          Pincez ou utilisez les boutons pour agrandir le plan
+          Faites glisser le plan horizontalement pour voir toutes les tables
         </p>
         <div style={{ display: 'flex', gap: '6px' }}>
+          <button aria-label="Déplacer le plan à gauche" onClick={() => movePlan(-1)} style={controlStyle}><ChevronLeft size={15} /></button>
           <button aria-label="Réduire" onClick={() => setZoom(z => Math.max(.7, z - .15))} style={controlStyle}><Minus size={15} /></button>
-          <button aria-label="Centrer" onClick={() => setZoom(1)} style={controlStyle}><LocateFixed size={15} /></button>
+          <button aria-label="Centrer la table sélectionnée" onClick={resetView} style={controlStyle}><LocateFixed size={15} /></button>
           <button aria-label="Agrandir" onClick={() => setZoom(z => Math.min(2.2, z + .15))} style={controlStyle}><Plus size={15} /></button>
+          <button aria-label="Déplacer le plan à droite" onClick={() => movePlan(1)} style={controlStyle}><ChevronRight size={15} /></button>
         </div>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 14px', marginBottom: 12 }}>
@@ -52,8 +86,12 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
           </div>
         ))}
       </div>
-      <div style={{ overflow: 'auto', borderRadius: '18px', border: '1px solid rgba(201,169,110,.2)', background: '#171411' }}>
-        <div style={{
+      <div
+        ref={scrollRef}
+        className="room-map-scroll"
+        style={{ overflowX: 'auto', overflowY: 'auto', width: '100%', maxWidth: '100%', touchAction: 'pan-x pan-y', overscrollBehaviorX: 'contain', borderRadius: '18px', border: '1px solid rgba(201,169,110,.2)', background: '#171411' }}
+      >
+        <div className="room-map-canvas" style={{
           position: 'relative', width: `${100 * zoom}%`, minWidth: 620, aspectRatio: '16/10',
           backgroundImage: backgroundUrl ? `linear-gradient(rgba(13,11,9,.18),rgba(13,11,9,.18)),url(${backgroundUrl})` : 'radial-gradient(circle at center, rgba(201,169,110,.08), transparent 65%)',
           backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', transition: 'width .2s ease',
@@ -62,7 +100,7 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
           {positioned.map(table => {
             const active = table.id === highlightedTableId
             const categoryStyle = getTableCategoryStyle(table.category)
-            return <div key={table.id} style={{
+            return <div key={table.id} data-table-id={table.id} style={{
               position: 'absolute', left: `${table.x}%`, top: `${table.y}%`, transform: 'translate(-50%,-50%)',
               width: active ? 92 : 72, minHeight: active ? 92 : 72, borderRadius: '50%', padding: '8px',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
@@ -78,6 +116,14 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
           {highlightedTableId && <style>{`@keyframes room-map-pulse{50%{transform:translate(-50%,-50%) scale(1.08)}}`}</style>}
         </div>
       </div>
+      <style>{`
+        .room-map-scroll{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(201,169,110,.55) rgba(255,255,255,.05)}
+        .room-map-scroll::-webkit-scrollbar{height:8px}
+        .room-map-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
+        .room-map-scroll::-webkit-scrollbar-thumb{background:rgba(201,169,110,.55);border-radius:999px}
+        .room-map-canvas{max-width:none!important}
+        @media(max-width:600px){.room-map-canvas{min-width:760px!important}.room-map-scroll{cursor:grab}}
+      `}</style>
     </div>
   )
 }
