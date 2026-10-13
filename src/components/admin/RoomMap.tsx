@@ -66,11 +66,11 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-        <p style={{ color: 'rgba(255,255,255,.45)', fontSize: '.75rem' }}>
+      <div className="room-map-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+        <p className="room-map-help" style={{ color: 'rgba(255,255,255,.45)', fontSize: '.75rem' }}>
           Faites glisser le plan horizontalement pour voir toutes les tables
         </p>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div className="room-map-controls" style={{ display: 'flex', gap: '6px' }}>
           <button aria-label="Déplacer le plan à gauche" onClick={() => movePlan(-1)} style={controlStyle}><ChevronLeft size={15} /></button>
           <button aria-label="Réduire" onClick={() => setZoom(z => Math.max(.7, z - .15))} style={controlStyle}><Minus size={15} /></button>
           <button aria-label="Centrer la table sélectionnée" onClick={resetView} style={controlStyle}><LocateFixed size={15} /></button>
@@ -122,7 +122,13 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
         .room-map-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
         .room-map-scroll::-webkit-scrollbar-thumb{background:rgba(201,169,110,.55);border-radius:999px}
         .room-map-canvas{max-width:none!important}
-        @media(max-width:600px){.room-map-canvas{min-width:760px!important}.room-map-scroll{cursor:grab}}
+        @media(max-width:600px){
+          .room-map-toolbar{align-items:stretch!important;flex-direction:column!important}
+          .room-map-help{line-height:1.45;margin:0}
+          .room-map-controls{display:grid!important;grid-template-columns:repeat(5,34px);justify-content:space-between;width:100%}
+          .room-map-canvas{min-width:760px!important}
+          .room-map-scroll{cursor:grab;touch-action:pan-x pan-y!important}
+        }
       `}</style>
     </div>
   )
