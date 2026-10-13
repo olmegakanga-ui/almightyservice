@@ -21,6 +21,8 @@ interface Props {
 
 export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: Props) {
   const [zoom, setZoom] = useState(1)
+  const [scrollPercent, setScrollPercent] = useState(0)
+  const [canScrollHorizontally, setCanScrollHorizontally] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const positioned = useMemo(() => tables.map((table, index) => {
     const fallbackCols = Math.max(1, Math.ceil(Math.sqrt(tables.length)))
@@ -59,6 +61,36 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
     })
   }
 
+  const syncScrollPosition = useCallback(() => {
+    const viewport = scrollRef.current
+    if (!viewport) return
+
+    const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth)
+    setCanScrollHorizontally(maxScroll > 1)
+    setScrollPercent(maxScroll > 0 ? (viewport.scrollLeft / maxScroll) * 100 : 0)
+  }, [])
+
+  useEffect(() => {
+    const viewport = scrollRef.current
+    if (!viewport) return
+
+    syncScrollPosition()
+    const observer = new ResizeObserver(syncScrollPosition)
+    observer.observe(viewport)
+    const canvas = viewport.firstElementChild
+    if (canvas) observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [syncScrollPosition, zoom, tables.length])
+
+  const setHorizontalPosition = (value: number) => {
+    const viewport = scrollRef.current
+    if (!viewport) return
+
+    const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth)
+    viewport.scrollTo({ left: (value / 100) * maxScroll, behavior: 'auto' })
+    setScrollPercent(value)
+  }
+
   const resetView = () => {
     setZoom(1)
     window.requestAnimationFrame(() => centerHighlightedTable('smooth'))
@@ -86,9 +118,24 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
           </div>
         ))}
       </div>
+      <label className="room-map-slider-wrap">
+        <span>Déplacer le plan</span>
+        <input
+          className="room-map-slider"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value={scrollPercent}
+          disabled={!canScrollHorizontally}
+          aria-label="Position horizontale du plan"
+          onChange={event => setHorizontalPosition(Number(event.target.value))}
+        />
+      </label>
       <div
         ref={scrollRef}
         className="room-map-scroll"
+        onScroll={syncScrollPosition}
         style={{ overflowX: 'auto', overflowY: 'auto', width: '100%', maxWidth: '100%', touchAction: 'pan-x pan-y', overscrollBehaviorX: 'contain', borderRadius: '18px', border: '1px solid rgba(201,169,110,.2)', background: '#171411' }}
       >
         <div className="room-map-canvas" style={{
@@ -122,10 +169,14 @@ export default function RoomMap({ tables, highlightedTableId, backgroundUrl }: P
         .room-map-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
         .room-map-scroll::-webkit-scrollbar-thumb{background:rgba(201,169,110,.55);border-radius:999px}
         .room-map-canvas{max-width:none!important}
+        .room-map-slider-wrap{display:none;margin:0 0 12px;color:rgba(255,255,255,.62);font-size:.68rem}
+        .room-map-slider{width:100%;margin-top:7px;accent-color:#c9a96e;cursor:ew-resize}
+        .room-map-slider:disabled{opacity:.35;cursor:default}
         @media(max-width:600px){
           .room-map-toolbar{align-items:stretch!important;flex-direction:column!important}
           .room-map-help{line-height:1.45;margin:0}
           .room-map-controls{display:grid!important;grid-template-columns:repeat(5,34px);justify-content:space-between;width:100%}
+          .room-map-slider-wrap{display:block}
           .room-map-canvas{min-width:760px!important}
           .room-map-scroll{cursor:grab;touch-action:pan-x pan-y!important}
         }
