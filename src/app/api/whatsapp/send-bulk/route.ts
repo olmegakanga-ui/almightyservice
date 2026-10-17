@@ -15,6 +15,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Le rappel J-1 doit désormais partir par SMS classique. Tant que l'API
+    // SMS n'est pas configurée, bloquer cet envoi pour éviter tout départ
+    // accidentel via WhatsApp.
+    if (messageType === 'RAPPEL_WA') {
+      return NextResponse.json(
+        { error: 'Envoi J-1 temporairement bloqué : configuration de l’API SMS requise.' },
+        { status: 503 }
+      )
+    }
+
     const supabase = await createClient()
     const db       = supabase as any
 
