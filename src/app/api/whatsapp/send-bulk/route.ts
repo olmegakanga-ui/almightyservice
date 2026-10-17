@@ -6,7 +6,7 @@ import { dayOfTemplate, formatDate, formatTime, invitationTemplate, lastReminder
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, messageType, onlyPending, onlyConfirmed, guestIds } = await request.json()
+    const { eventId, messageType, onlyPending, guestIds } = await request.json()
 
     if (!eventId || !messageType) {
       return NextResponse.json(
@@ -48,8 +48,9 @@ export async function POST(request: NextRequest) {
     // Si guestIds spécifiés — envoi à un ou plusieurs invités précis
     if (guestIds && Array.isArray(guestIds) && guestIds.length > 0) {
       query = query.in('id', guestIds)
-    } else if (onlyPending || onlyConfirmed) {
-      // Les relances ciblent les non-confirmés ; le rappel J-1 cible les confirmés.
+    } else if (onlyPending && messageType !== 'RAPPEL_WA') {
+      // Les relances ciblent les non-confirmés. Le rappel J-1 est toujours
+      // envoyé à tous les invités disposant d'un numéro de téléphone.
       const { data: confirmed } = await db
         .from('rsvp_responses')
         .select('guest_id')
@@ -57,12 +58,7 @@ export async function POST(request: NextRequest) {
         .eq('status', 'confirmed')
 
       const confirmedIds = (confirmed ?? []).map((r: any) => r.guest_id)
-      if (onlyConfirmed) {
-        if (confirmedIds.length === 0) {
-          return NextResponse.json({ success: true, sent: 0, failed: 0, total: 0 })
-        }
-        query = query.in('id', confirmedIds)
-      } else if (confirmedIds.length > 0) {
+      if (confirmedIds.length > 0) {
         query = query.not('id', 'in', `(${confirmedIds.join(',')})`)
       }
     }
