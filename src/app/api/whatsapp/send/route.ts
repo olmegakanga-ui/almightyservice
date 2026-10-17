@@ -2,10 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendWhatsAppMessage } from '@/lib/whatsapp/service'
+import { isSmsConfigured, sendSmsMessage } from '@/lib/sms/service'
+import { j1SmsTemplate } from '@/lib/sms/templates'
 import {
   invitationTemplate,
   reminderTemplate,
-  lastReminderTemplate,
   dayOfTemplate,
   formatDate,
   formatTime,
@@ -19,6 +20,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Paramètres manquants' },
         { status: 400 }
+      )
+    }
+
+    if (messageType === 'RAPPEL_WA' && !isSmsConfigured()) {
+      return NextResponse.json(
+        { error: 'Configuration de l’API SMS Africa’s Talking requise.' },
+        { status: 503 }
       )
     }
 
@@ -82,7 +90,13 @@ export async function POST(request: NextRequest) {
     switch (messageType) {
       case 'INVITATION': messageText = invitationTemplate(templateData);   break
       case 'RELANCE':    messageText = reminderTemplate(templateData);     break
-      case 'RAPPEL_WA':  messageText = lastReminderTemplate(templateData); break
+      case 'RAPPEL_WA':  messageText = j1SmsTemplate({
+        guestName: guest.full_name,
+        groomName: event.groom_name,
+        brideName: event.bride_name,
+        eventTime: templateData.eventTime,
+        venueName: event.venue_name,
+      }); break
       case 'MERCI':      messageText = dayOfTemplate(templateData);        break
       default:           messageText = invitationTemplate(templateData)
     }
@@ -101,12 +115,14 @@ export async function POST(request: NextRequest) {
       .select('id')
       .single()
 
-    // Envoyer — template Meta pour INVITATION, texte libre pour les autres
-    const result = await sendWhatsAppMessage(
-      guest.phone,
-      messageText,
-      messageType === 'INVITATION' ? templateData : undefined
-    )
+    // Le rappel J-1 part par SMS ; les autres messages restent sur WhatsApp.
+    const result = messageType === 'RAPPEL_WA'
+      ? await sendSmsMessage(guest.phone, messageText)
+      : await sendWhatsAppMessage(
+          guest.phone,
+          messageText,
+          messageType === 'INVITATION' ? templateData : undefined
+        )
 
     // Mettre à jour le statut
     await db
