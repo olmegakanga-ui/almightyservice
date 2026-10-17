@@ -2,7 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendWhatsAppMessage, TemplateData } from '@/lib/whatsapp/service'
-import { dayOfTemplate, formatDate, formatTime, invitationTemplate, lastReminderTemplate, reminderTemplate } from '@/lib/whatsapp/templates'
+import { isSmsConfigured, sendSmsMessage } from '@/lib/sms/service'
+import { j1SmsTemplate } from '@/lib/sms/templates'
+import { dayOfTemplate, formatDate, formatTime, invitationTemplate, reminderTemplate } from '@/lib/whatsapp/templates'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,12 +17,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Le rappel J-1 doit désormais partir par SMS classique. Tant que l'API
-    // SMS n'est pas configurée, bloquer cet envoi pour éviter tout départ
-    // accidentel via WhatsApp.
-    if (messageType === 'RAPPEL_WA') {
+    if (messageType === 'RAPPEL_WA' && !isSmsConfigured()) {
       return NextResponse.json(
-        { error: 'Envoi J-1 temporairement bloqué : configuration de l’API SMS requise.' },
+        { error: 'Configuration de l’API SMS Africa’s Talking requise.' },
         { status: 503 }
       )
     }
@@ -84,81 +83,99 @@ export async function POST(request: NextRequest) {
     let sent   = 0
     let failed = 0
     const errors: string[] = []
+    const isSms = messageType === 'RAPPEL_WA'
 
-    for (const guest of guests) {
-      if (!guest.phone || guest.phone.length < 8) continue
+    // Les SMS personnalisés sont traités par petits lots parallèles afin que
+    // l'envoi de plusieurs centaines d'invités reste compatible avec Vercel.
+    // Les messages WhatsApp conservent leur cadence historique, un par un.
+    const batchSize = isSms ? 10 : 1
 
-      const invitationUrl = `${baseUrl}/invitation/${guest.invitation_token}`
+    for (let offset = 0; offset < guests.length; offset += batchSize) {
+      const batch = guests.slice(offset, offset + batchSize)
+      const batchResults = await Promise.all(batch.map(async (guest: any) => {
+        if (!guest.phone || guest.phone.length < 8) {
+          return { success: false, guestName: guest.full_name, error: 'Numéro de téléphone invalide' }
+        }
 
-      // Extraire l'heure directement depuis la chaîne ISO (pas de conversion UTC)
-      const eventDateStr = formatDate(event.event_date)
-      const eventTimeStr = event.event_time
-        ? event.event_time.slice(0, 5).replace(':', 'h')
-        : event.event_date.includes('T')
-          ? event.event_date.split('T')[1].slice(0, 5).replace(':', 'h')
-          : formatTime(event.event_date)
+        const invitationUrl = `${baseUrl}/invitation/${guest.invitation_token}`
 
-      // TemplateData pour le template Meta approuvé
-      const templateData: TemplateData = {
-        guestName:     guest.full_name,
-        groomName:     groomLabel,
-        brideName:     brideLabel,
-        eventDate:     eventDateStr,
-        eventTime:     eventTimeStr,
-        venueName:     event.venue_name,
-        invitationUrl,
-        imageUrl:      event.background_image_url || undefined,
-        giftPreferenceMessage: Array.isArray(event.gift_message_channels) && event.gift_message_channels.includes(messageType)
-          ? event.gift_preference_message ?? undefined
-          : undefined,
+        // Extraire l'heure directement depuis la chaîne ISO (pas de conversion UTC)
+        const eventDateStr = formatDate(event.event_date)
+        const eventTimeStr = event.event_time
+          ? event.event_time.slice(0, 5).replace(':', 'h')
+          : event.event_date.includes('T')
+            ? event.event_date.split('T')[1].slice(0, 5).replace(':', 'h')
+            : formatTime(event.event_date)
+
+        const templateData: TemplateData = {
+          guestName:     guest.full_name,
+          groomName:     groomLabel,
+          brideName:     brideLabel,
+          eventDate:     eventDateStr,
+          eventTime:     eventTimeStr,
+          venueName:     event.venue_name,
+          invitationUrl,
+          imageUrl:      event.background_image_url || undefined,
+          giftPreferenceMessage: Array.isArray(event.gift_message_channels) && event.gift_message_channels.includes(messageType)
+            ? event.gift_preference_message ?? undefined
+            : undefined,
+        }
+
+        const messageText = messageType === 'RELANCE' ? reminderTemplate(templateData)
+          : isSms ? j1SmsTemplate({
+              guestName: guest.full_name,
+              groomName: event.groom_name,
+              brideName: event.bride_name,
+              eventTime: eventTimeStr,
+              venueName: event.venue_name,
+            })
+          : messageType === 'MERCI' ? dayOfTemplate(templateData)
+          : invitationTemplate(templateData)
+
+        const { data: messageRecord } = await db
+          .from('whatsapp_messages')
+          .insert({
+            guest_id:     guest.id,
+            event_id:     eventId,
+            type:         messageType,
+            status:       'pending',
+            message_text: messageText,
+            sent_at:      new Date().toISOString(),
+          })
+          .select('id')
+          .single()
+
+        const result = isSms
+          ? await sendSmsMessage(guest.phone, messageText)
+          : await sendWhatsAppMessage(
+              guest.phone,
+              messageText,
+              messageType === 'INVITATION' ? templateData : undefined
+            )
+
+        await db
+          .from('whatsapp_messages')
+          .update({
+            status:        result.success ? 'sent' : 'failed',
+            wa_message_id: result.messageId ?? null,
+            error_message: result.error ?? null,
+          })
+          .eq('id', messageRecord?.id)
+
+        return { ...result, guestName: guest.full_name }
+      }))
+
+      for (const result of batchResults) {
+        if (result.success) {
+          sent++
+        } else {
+          failed++
+          errors.push(`${result.guestName}: ${result.error}`)
+          console.error('Erreur envoi message:', result.guestName, result.error)
+        }
       }
 
-      const fallbackMessage = messageType === 'RELANCE' ? reminderTemplate(templateData)
-        : messageType === 'RAPPEL_WA' ? lastReminderTemplate(templateData)
-        : messageType === 'MERCI' ? dayOfTemplate(templateData)
-        : invitationTemplate(templateData)
-
-      // Enregistrer en DB
-      const { data: waMessage } = await db
-        .from('whatsapp_messages')
-        .insert({
-          guest_id:     guest.id,
-          event_id:     eventId,
-          type:         messageType,
-          status:       'pending',
-          message_text: fallbackMessage,
-          sent_at:      new Date().toISOString(),
-        })
-        .select('id')
-        .single()
-
-      // Envoyer avec template Meta
-      const result = await sendWhatsAppMessage(
-        guest.phone,
-        fallbackMessage,
-        messageType === 'INVITATION' ? templateData : undefined
-      )
-
-      // Mettre à jour le statut
-      await db
-        .from('whatsapp_messages')
-        .update({
-          status:        result.success ? 'sent' : 'failed',
-          wa_message_id: result.messageId ?? null,
-          error_message: result.error ?? null,
-        })
-        .eq('id', waMessage?.id)
-
-      if (result.success) {
-        sent++
-      } else {
-        failed++
-        errors.push(`${guest.full_name}: ${result.error}`)
-        console.error('Erreur envoi WhatsApp:', guest.full_name, result.error)
-      }
-
-      // 500ms entre chaque envoi — respecter rate limits Meta
-      await new Promise(r => setTimeout(r, 500))
+      if (!isSms) await new Promise(r => setTimeout(r, 500))
     }
 
     return NextResponse.json({
