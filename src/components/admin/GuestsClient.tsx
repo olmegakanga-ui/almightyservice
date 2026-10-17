@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import ImportGuestsModal from '@/components/admin/ImportGuestsModal'
 import { parseEventDate } from '@/lib/date-utils'
+import { lastReminderTemplate } from '@/lib/whatsapp/templates'
 
 interface Guest {
   id:               string
@@ -39,6 +40,7 @@ interface Event {
   groom_full_name?: string
   bride_full_name?: string
   event_date:       string
+  event_time?:      string
   venue_name?:      string
   gift_preference_message?: string
   gift_message_channels?: string[]
@@ -79,22 +81,25 @@ const countPersons = (list: Guest[]) =>
   list.reduce((acc, g) => acc + (g.is_couple ? 2 : 1), 0)
 
 // ── Formatage date/heure ────────────────────────────────────
-function formatEventDate(iso: string) {
+function formatEventDate(iso: string, eventTime?: string) {
   const { fullLong: full, time } = parseEventDate(iso)
-  return { full, time }
+  return { full, time: eventTime ? eventTime.slice(0, 5).replace(':', 'h') : time }
 }
 
 // ── Construction des messages WhatsApp ──────────────────────
 function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string): string {
   const url        = `${origin}/invitation/${guest.invitation_token}`
-  const { full, time } = formatEventDate(event.event_date)
+  const { full, time } = formatEventDate(event.event_date, event.event_time)
   const venue      = event.venue_name ?? ''
   const groomLabel = (event.groom_full_name || '').trim() || event.groom_name
   const brideLabel = (event.bride_full_name || '').trim() || event.bride_name
   const couple     = `${groomLabel} & ${brideLabel}`
   const channel    = type === 'RAPPEL_J1' ? 'RAPPEL_WA' : type === 'JOUR_J' ? 'MERCI' : type
-  const giftNote   = event.gift_preference_message?.trim() && event.gift_message_channels?.includes(channel)
-    ? `\n\n🎁 *Attention particulière des mariés*\n${event.gift_preference_message.trim()}`
+  const giftPreferenceMessage = event.gift_preference_message?.trim() && event.gift_message_channels?.includes(channel)
+    ? event.gift_preference_message.trim()
+    : undefined
+  const giftNote = giftPreferenceMessage
+    ? `\n\n🎁 *Attention particulière des mariés*\n${giftPreferenceMessage}`
     : ''
 
   switch (type) {
@@ -115,11 +120,16 @@ function buildMessage(type: MsgType, guest: Guest, event: Event, origin: string)
         `${giftNote}\n\n- AlmightyService`
 
     case 'RAPPEL_J1':
-      return `*${guest.full_name}*\n\n` +
-        `C'est demain ! Le mariage de *${couple}* a lieu le *${full}* à *${time}*.\n` +
-        (venue ? `Lieu : *${venue}*\n\n` : '\n') +
-        `Retrouvez tous les détails et votre QR code d'entrée sur votre invitation :\n${url}\n\n` +
-        `${giftNote}\n\n- AlmightyService`
+      return lastReminderTemplate({
+        guestName: guest.full_name,
+        groomName: groomLabel,
+        brideName: brideLabel,
+        eventDate: full,
+        eventTime: time,
+        venueName: venue,
+        invitationUrl: url,
+        giftPreferenceMessage,
+      })
 
     case 'JOUR_J':
       return `*${guest.full_name}*\n\n` +
