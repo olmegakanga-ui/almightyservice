@@ -59,8 +59,8 @@ const MESSAGE_TYPES = [
   },
   {
     id:    'RAPPEL_WA',
-    label: 'Rappel J-1',
-    desc:  'Message texte groupé à tous les invités',
+    label: 'Rappel J-1 par SMS',
+    desc:  'SMS groupé à tous les invités — API SMS à connecter',
     icon:  '⏰',
     color: 'rgba(90,138,106,0.15)',
   },
