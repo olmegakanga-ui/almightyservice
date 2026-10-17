@@ -6,7 +6,7 @@ import { dayOfTemplate, formatDate, formatTime, invitationTemplate, lastReminder
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, messageType, onlyPending, guestIds } = await request.json()
+    const { eventId, messageType, onlyPending, onlyConfirmed, guestIds } = await request.json()
 
     if (!eventId || !messageType) {
       return NextResponse.json(
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Charger l'événement avec la photo
     const { data: event } = await db
       .from('events')
-      .select('groom_name, bride_name, groom_full_name, bride_full_name, event_date, venue_name, background_image_url, gift_preference_message, gift_message_channels')
+      .select('groom_name, bride_name, groom_full_name, bride_full_name, event_date, event_time, venue_name, background_image_url, gift_preference_message, gift_message_channels')
       .eq('id', eventId)
       .single()
 
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
     // Si guestIds spécifiés — envoi à un ou plusieurs invités précis
     if (guestIds && Array.isArray(guestIds) && guestIds.length > 0) {
       query = query.in('id', guestIds)
-    } else if (onlyPending) {
-      // Si onlyPending = true, exclure les confirmés
+    } else if (onlyPending || onlyConfirmed) {
+      // Les relances ciblent les non-confirmés ; le rappel J-1 cible les confirmés.
       const { data: confirmed } = await db
         .from('rsvp_responses')
         .select('guest_id')
@@ -57,7 +57,12 @@ export async function POST(request: NextRequest) {
         .eq('status', 'confirmed')
 
       const confirmedIds = (confirmed ?? []).map((r: any) => r.guest_id)
-      if (confirmedIds.length > 0) {
+      if (onlyConfirmed) {
+        if (confirmedIds.length === 0) {
+          return NextResponse.json({ success: true, sent: 0, failed: 0, total: 0 })
+        }
+        query = query.in('id', confirmedIds)
+      } else if (confirmedIds.length > 0) {
         query = query.not('id', 'in', `(${confirmedIds.join(',')})`)
       }
     }
@@ -81,9 +86,11 @@ export async function POST(request: NextRequest) {
 
       // Extraire l'heure directement depuis la chaîne ISO (pas de conversion UTC)
       const eventDateStr = formatDate(event.event_date)
-      const eventTimeStr = event.event_date.includes('T')
-        ? event.event_date.split('T')[1].slice(0, 5).replace(':', 'h')
-        : formatTime(event.event_date)
+      const eventTimeStr = event.event_time
+        ? event.event_time.slice(0, 5).replace(':', 'h')
+        : event.event_date.includes('T')
+          ? event.event_date.split('T')[1].slice(0, 5).replace(':', 'h')
+          : formatTime(event.event_date)
 
       // TemplateData pour le template Meta approuvé
       const templateData: TemplateData = {
