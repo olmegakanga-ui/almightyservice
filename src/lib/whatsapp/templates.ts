@@ -60,15 +60,17 @@ _— AlmightyService_`
 
 // Rappel J-1
 export function lastReminderTemplate(data: MessageTemplateData): string {
-  return `*${data.guestName}*, c'est demain ! 🎉
+  return `Bonjour *${data.guestName}* 👋
 
-Le mariage de *${data.groomName} & ${data.brideName}* a lieu demain :
+Petit rappel : c'est demain ! 🎉
+
+Nous aurons le plaisir de vous retrouver pour le mariage de *${data.groomName} & ${data.brideName}*.
 
 📅 ${data.eventDate}
-🕐 ${data.eventTime}
+🕐 À partir de ${data.eventTime}
 📍 ${data.venueName}
 
-N'oubliez pas votre QR Code dans votre invitation :
+Votre QR code d'entrée est disponible dans votre invitation :
 👇 ${data.invitationUrl}
 
 À demain ! 🥂${giftPreferenceBlock(data.giftPreferenceMessage)}
