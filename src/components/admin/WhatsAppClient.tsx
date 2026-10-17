@@ -60,7 +60,7 @@ const MESSAGE_TYPES = [
   {
     id:    'RAPPEL_WA',
     label: 'Rappel J-1',
-    desc:  'Rappel la veille du mariage',
+    desc:  'Message texte groupé aux invités confirmés',
     icon:  '⏰',
     color: 'rgba(90,138,106,0.15)',
   },
@@ -105,10 +105,12 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
   // Invitations — ce qui détermine le nombre de messages à envoyer
   const withPhoneList = guests.filter(g => g.phone && g.phone.length > 5)
   const pendingList   = withPhoneList.filter(g => !g.rsvp_responses || g.rsvp_responses.status === 'pending')
+  const confirmedList = withPhoneList.filter(g => g.rsvp_responses?.status === 'confirmed')
 
   const totalEntries = guests.length
   const withPhone    = withPhoneList.length
   const pending      = pendingList.length
+  const confirmed    = confirmedList.length
 
   const daysLeft = daysUntil(event.event_date)
 
@@ -171,6 +173,7 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
           eventId:     event.id,
           messageType: selectedType,
           onlyPending,
+          onlyConfirmed: selectedType === 'RAPPEL_WA',
         }),
       })
 
@@ -202,7 +205,7 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
   })
 
   // Nombre de messages à envoyer selon le filtre
-  const targetCount = onlyPending ? pending : withPhone
+  const targetCount = selectedType === 'RAPPEL_WA' ? confirmed : onlyPending ? pending : withPhone
 
   return (
     <div className="admin-page">
@@ -318,11 +321,11 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
               background:   'rgba(255,255,255,0.03)',
               borderRadius: '12px',
               marginBottom: '20px',
-              cursor:       selectedType === 'RELANCE' ? 'not-allowed' : 'pointer',
+              cursor:       selectedType === 'RELANCE' || selectedType === 'RAPPEL_WA' ? 'not-allowed' : 'pointer',
               border:       '1px solid rgba(255,255,255,0.06)',
-              opacity:      selectedType === 'RELANCE' ? 0.6 : 1,
+              opacity:      selectedType === 'RELANCE' || selectedType === 'RAPPEL_WA' ? 0.6 : 1,
             }}
-            onClick={() => { if (selectedType !== 'RELANCE') setOnlyPending(!onlyPending) }}
+            onClick={() => { if (selectedType !== 'RELANCE' && selectedType !== 'RAPPEL_WA') setOnlyPending(!onlyPending) }}
           >
             <div style={{
               width:          '20px',
@@ -335,12 +338,16 @@ export default function WhatsAppClient({ event, guests, recentMessages }: Props)
               justifyContent: 'center',
               flexShrink:     0,
             }}>
-              {onlyPending && <span style={{ color: '#0D0B09', fontSize: '12px', fontWeight: 700 }}>✓</span>}
+              {(onlyPending || selectedType === 'RAPPEL_WA') && <span style={{ color: '#0D0B09', fontSize: '12px', fontWeight: 700 }}>✓</span>}
             </div>
             <div>
-              <p style={{ color: 'white', fontSize: '0.85rem' }}>Seulement les non-confirmés</p>
+              <p style={{ color: 'white', fontSize: '0.85rem' }}>
+                {selectedType === 'RAPPEL_WA' ? 'Seulement les invités confirmés' : 'Seulement les non-confirmés'}
+              </p>
               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
-                {selectedType === 'RELANCE'
+                {selectedType === 'RAPPEL_WA'
+                  ? 'Activé automatiquement pour le rappel J-1 groupé'
+                  : selectedType === 'RELANCE'
                   ? 'Activé automatiquement pour la relance'
                   : 'Ignore les invités ayant déjà confirmé'}
               </p>
